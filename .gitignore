@@ -40,7 +40,6 @@ match_report.txt
 !/Training/**/*.py
 !/Training/**/*.sh
 !/Training/**/README.md
-!/Training/**/data.yaml
 /Training/runs/
 /Training/weights/
 
