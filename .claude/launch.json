@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-site",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "passcode-harness",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "C:/Users/rudra/AppData/Local/Temp/claude/C--Users-rudra-Downloads-Projects-Tennis-Performance-App/a489be0d-dfc0-4b07-99cf-dc7e743deb15/scratchpad/passcode_harness.py",
+        "."
+      ],
+      "port": 8766
+    }
+  ]
+}

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis Analytics App</title>
+<meta name="description" content="Upload a tennis match video and see what's costing each player points, and what to practise.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1c7a4a">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="site.css">
+<style>
+  .hero { margin: 20px 0 8px; }
+  .hero h1 { font-size: 2rem; }
+  .hero .sub { font-size: 1.1rem; margin-top: 6px; }
+  section[id] { scroll-margin-top: 12px; }
+
+  /* My reports */
+  .report-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); color: var(--text); text-decoration: none; }
+  .report-row:first-child { border-top: none; padding-top: 0; }
+  .report-row:last-child { padding-bottom: 0; }
+  .report-row .when { color: var(--muted); font-size: 0.9rem; }
+  .report-row .pill { margin-left: auto; }
+
+  /* Steps */
+  .step { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .step-badge {
+    width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 800; background: var(--surface-2); color: var(--muted);
+  }
+  .step-badge.active { background: var(--accent); color: var(--on-accent); }
+  .step-badge.done { background: var(--accent-soft); color: var(--accent); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .file-pick { position: relative; overflow: hidden; }
+  .file-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  #fileName { color: var(--text-2); font-size: 0.95rem; }
+  .tip { color: var(--text-2); font-size: 0.95rem; margin-top: 12px; }
+  #uploadProgressWrap { margin-top: 14px; background: var(--surface-2); border-radius: 999px; height: 12px; overflow: hidden; display: none; }
+  #uploadProgressBar { height: 100%; width: 0%; background: var(--accent); transition: width 0.15s ease-out; }
+  #uploadDetail { font-size: 0.9rem; color: var(--muted); margin-top: 6px; }
+  #uploadStatus { margin-top: 8px; color: var(--text-2); font-size: 0.95rem; }
+  #uploadStatus.error { color: var(--bad); }
+
+  /* Calibration */
+  #instruction { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; font-weight: 600; margin: 4px 0 12px; }
+  #canvasWrap { position: relative; display: block; max-width: 100%; }
+  #frameCanvas { display: block; max-width: 100%; border-radius: 10px; cursor: crosshair; touch-action: none; }
+  /* Magnifier that follows the pointer: far-court corners are a few pixels
+     wide, and a few pixels of click error there moves positions by metres. */
+  #loupe {
+    position: absolute; width: 160px; height: 160px; border-radius: 50%;
+    border: 3px solid var(--accent); pointer-events: none; display: none;
+    box-shadow: 0 4px 18px #000a; background: #000;
+  }
+  .point-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .point-chip { font-size: 0.85rem; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); cursor: pointer; }
+  .point-chip.done { background: var(--accent-soft); color: var(--accent); }
+  .point-chip.bad { background: var(--bad-soft); color: var(--bad); }
+  #checkPanel { margin-top: 14px; background: var(--surface-2); border-radius: 10px; padding: 12px 14px; font-size: 0.95rem; }
+  #checkPanel .warn { color: var(--bad); margin-top: 6px; }
+  .legend-swatch { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+  .check-label { display: flex; gap: 10px; align-items: center; margin-top: 12px; color: var(--text); font-weight: 600; }
+  .check-label input { width: 22px; height: 22px; }
+  .names { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+
+  /* Processing */
+  .stage-track { display: flex; gap: 6px; margin: 4px 0 12px; flex-wrap: wrap; }
+  .stage-pill { font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+  .stage-pill.current { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+  .stage-pill.past { background: var(--accent-soft); color: var(--accent); }
+  #statusLine { color: var(--text-2); }
+  #statusLine.error { color: var(--bad); }
+
+  details.advanced { margin-top: 28px; }
+  details.advanced summary { cursor: pointer; color: var(--muted); font-size: 0.95rem; }
+  details.advanced .field { margin-top: 12px; }
+  @media (max-width: 520px) { .names { grid-template-columns: 1fr; } .hero h1 { font-size: 1.6rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header id="topbar" data-page="home"></header>
+
+<div class="hero">
+  <h1>See what's costing you points</h1>
+  <div class="sub">Upload a match video. Each player gets their top 3 things to fix, with drills to practise.</div>
+</div>
+
+<!-- My reports (remembered on this device) -->
+<section id="reports">
+  <h2>My reports</h2>
+  <div class="card" id="reportList"></div>
+  <details class="advanced" style="margin:0 0 12px;">
+    <summary>Open a report by its job code</summary>
+    <form class="row field" id="openJobForm">
+      <input type="text" id="openJobId" aria-label="Job code" placeholder="e.g. 76a383379d90" autocomplete="off" style="flex:1; min-width:160px; max-width:260px;">
+      <button type="submit">Open report</button>
+    </form>
+  </details>
+</section>
+<p class="muted">Want to see what a report looks like? <a href="/report?job=76a383379d90">Open an example report</a>.</p>
+
+<!-- Step 1: Upload -->
+<section id="new">
+<h2>New analysis</h2>
+<div class="card" id="uploadPanel">
+  <div class="step"><span class="step-badge active" id="badge1">1</span><h3>Choose your match video</h3></div>
+  <div class="row">
+    <span class="btn file-pick">Choose video<input type="file" id="videoFile" accept="video/*"></span>
+    <span id="fileName">No video chosen</span>
+  </div>
+  <div class="row" style="margin-top:12px;">
+    <button class="btn-primary" id="uploadBtn" disabled>Upload</button>
+    <button class="hidden" id="cancelUploadBtn">Pause</button>
+    <button class="hidden" id="resumeUploadBtn">Resume upload</button>
+  </div>
+  <div id="uploadProgressWrap"><div id="uploadProgressBar"></div></div>
+  <div id="uploadDetail"></div>
+  <div id="uploadStatus"></div>
+  <div class="tip">Film from high up behind the baseline with the whole court in view. Up to 60 minutes.</div>
+</div>
+
+<!-- Step 2: Calibrate -->
+<div class="card hidden" id="calibratePanel">
+  <div class="step"><span class="step-badge" id="badge2">2</span><h3>Mark the court</h3></div>
+  <div id="instruction">Loading a frame from your video…</div>
+  <div id="canvasWrap"><canvas id="frameCanvas"></canvas><canvas id="loupe" width="160" height="160"></canvas></div>
+  <div class="point-list" id="pointList"></div>
+  <div class="muted" style="margin-top:6px;">Tap a point's label to redo just that point.</div>
+  <div class="row" style="margin-top:10px;">
+    <button id="undoPointBtn">Undo last point</button>
+    <button id="resetPointsBtn">Start over</button>
+  </div>
+  <div id="checkPanel" class="hidden">
+    <div><span class="legend-swatch" style="background:#22d3ee"></span><b>Check the blue lines.</b>
+      They should sit on the court's painted lines everywhere, especially the far service line.
+      Hover over (or press and hold) the far corners to zoom in.</div>
+    <div class="warn hidden" id="checkWarn"></div>
+    <label class="check-label"><input type="checkbox" id="looksRight"> The lines match the court</label>
+  </div>
+  <div class="names">
+    <div><label for="player1Name">Player at the <b>near</b> end at the start (closest to the camera)</label>
+      <input type="text" id="player1Name" maxlength="40" placeholder="e.g. Alex"></div>
+    <div><label for="player2Name">Player at the <b>far</b> end at the start</label>
+      <input type="text" id="player2Name" maxlength="40" placeholder="e.g. Sam"></div>
+  </div>
+  <div class="row" style="margin-top:16px;">
+    <button class="btn-primary" id="submitCalibrationBtn" disabled>Start analysis</button>
+  </div>
+</div>
+
+<!-- Step 3: Processing -->
+<div class="card hidden" id="processingPanel">
+  <div class="step"><span class="step-badge" id="badge3">3</span><h3>Analysing the match</h3></div>
+  <div class="stage-track" id="stageTrack"></div>
+  <div id="statusLine">Starting…</div>
+  <p class="muted">A 15-minute match takes about 10 minutes. You can close this page: the report will appear under <a href="#reports">My reports</a>.</p>
+</div>
+</section>
+
+<details class="advanced">
+  <summary>Continue an earlier upload</summary>
+  <div class="field">
+    <label for="resumeJobId">If an upload finished but the page closed before you marked the court, enter its job code</label>
+    <div class="row" style="margin-top:6px;">
+      <input type="text" id="resumeJobId" placeholder="e.g. 55f471269220" style="max-width:240px;">
+      <button id="resumeBtn">Continue</button>
+    </div>
+    <div id="resumeStatus" class="muted" style="margin-top:6px;"></div>
+  </div>
+</details>
+</div>
+
+<script src="site.js"></script>
+<script src="passcode.js"></script>
+<script>
+// ── EXTENDED_POINT_LABELS / CLICK_INSTRUCTIONS mirror calibration.py's
+// schema, but the authoritative copy is fetched from /api/upload's
+// response each time -- these are just the fallback/initial render
+// before that response arrives. ──────────────────────────────────────
+let POINT_LABELS = [
+  "baseline_near_left", "baseline_near_right", "baseline_far_right",
+  "baseline_far_left", "service_line_near_left", "service_line_near_right",
+  "net_center",
+];
+// Plain names for the points (left/right as seen in the video). The server
+// also sends its own wording; these win, with the server's as fallback.
+const FRIENDLY_POINTS = {
+  baseline_near_left: "Near baseline, left corner", baseline_near_right: "Near baseline, right corner",
+  baseline_far_right: "Far baseline, right corner", baseline_far_left: "Far baseline, left corner",
+  service_line_near_left: "Near service line, left end", service_line_near_right: "Near service line, right end",
+  net_center: "Middle of the net, where it meets the ground",
+};
+let INSTRUCTIONS = { ...FRIENDLY_POINTS };
+
+let jobId = null;
+let clickedPoints = {};   // label -> [x, y] in ORIGINAL frame pixel space
+let canvasScale = 1;      // displayed-canvas-px / original-frame-px
+let pollTimer = null;
+let currentUploadXhr = null;
+
+const $ = (id) => document.getElementById(id);
+
+// Empty = this site (the app serves the pages). Developer testing only:
+// ?backend=<url> points the page at another server.
+const BACKEND = (new URLSearchParams(location.search).get("backend") || "").replace(/\/$/, "");
+function backendUrl() { return BACKEND; }
+
+function setStage(el, state) {
+  el.classList.remove("active", "done");
+  if (state) el.classList.add(state);
+}
+
+function formatBytes(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  return `${(mb / 1024).toFixed(2)} GB`;
+}
+
+// ── Step 1: Upload (chunked, Week 2 #10) ─────────────────────────────
+// The video goes up in CHUNK_SIZE pieces (/api/upload/init -> PUT
+// /part/{i} -> /complete). Each piece is retried with backoff; if the
+// connection drops for longer, "Resume upload" asks the server which
+// pieces it already has and sends only the rest. XMLHttpRequest (not
+// fetch) for upload-progress events and distinct error types.
+const CHUNK_SIZE = 16 * 1024 * 1024;
+const MAX_TRIES = 5;
+let upload = null;   // { file, jobId, cancelled }
+
+function sendPart(jobId, index, blob, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    currentUploadXhr = xhr;
+    xhr.open("PUT", `${backendUrl()}/api/upload/${jobId}/part/${index}`, true);
+    passcodeHeader(xhr);
+    xhr.upload.addEventListener("progress", (e) => { if (e.lengthComputable) onProgress(e.loaded); });
+    xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300)
+      ? resolve() : reject(new Error(`server returned HTTP ${xhr.status}`)));
+    xhr.addEventListener("error", () => reject(new Error("network error")));
+    xhr.addEventListener("timeout", () => reject(new Error("timed out")));
+    xhr.addEventListener("abort", () => reject(new Error("cancelled")));
+    const form = new FormData();
+    form.append("file", blob, `part${index}`);
+    xhr.send(form);
+  });
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function runUpload() {
+  const { file } = upload;
+  const n = Math.ceil(file.size / CHUNK_SIZE);
+  $("uploadBtn").disabled = true;
+  $("resumeUploadBtn").classList.add("hidden");
+  $("cancelUploadBtn").classList.remove("hidden");
+  $("uploadProgressWrap").style.display = "block";
+  $("uploadStatus").classList.remove("error");
+  const startedAt = Date.now();
+  let sentThisSession = 0;
+  try {
+    if (!upload.jobId) {
+      const form = new FormData();
+      form.append("size", file.size);
+      form.append("chunk_size", CHUNK_SIZE);
+      const res = await fetch(`${backendUrl()}/api/upload/init`, { method: "POST", body: form });
+      if (!res.ok) throw new Error(`could not start the upload (HTTP ${res.status})`);
+      upload.jobId = (await res.json()).job_id;
+    }
+    const have = new Set((await (await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`)).json()).parts);
+    let done = [...have].reduce((sum, i) => sum + Math.min(CHUNK_SIZE, file.size - i * CHUNK_SIZE), 0);
+    const show = (inflight) => {
+      const sent = done + inflight;
+      const pct = Math.round((sent / file.size) * 100);
+      $("uploadProgressBar").style.width = pct + "%";
+      const rate = (sentThisSession + inflight) / (1024 * 1024) / Math.max((Date.now() - startedAt) / 1000, 0.001);
+      $("uploadDetail").textContent = `${formatBytes(sent)} / ${formatBytes(file.size)} sent (${pct}%, ~${rate.toFixed(1)} MB/s)`;
+    };
+    $("uploadStatus").textContent = have.size ? `Resuming: ${have.size} of ${n} pieces already on the server.` : "Uploading...";
+    show(0);
+    for (let i = 0; i < n; i++) {
+      if (have.has(i)) continue;
+      const blob = file.slice(i * CHUNK_SIZE, Math.min((i + 1) * CHUNK_SIZE, file.size));
+      for (let attempt = 1; ; attempt++) {
+        if (upload.cancelled) throw new Error("cancelled");
+        try {
+          await sendPart(upload.jobId, i, blob, show);
+          break;
+        } catch (err) {
+          if (err.message === "cancelled" || attempt >= MAX_TRIES) throw err;
+          const wait = Math.min(2000 * 2 ** (attempt - 1), 30000);
+          $("uploadStatus").textContent = `Piece ${i + 1}/${n}: ${err.message}, retrying in ${wait / 1000}s (attempt ${attempt + 1}/${MAX_TRIES})...`;
+          await sleep(wait);
+          $("uploadStatus").textContent = "Uploading...";
+        }
+      }
+      done += blob.size;
+      sentThisSession += blob.size;
+      show(0);
+    }
+    $("uploadStatus").textContent = "Finishing the upload…";
+    const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    jobId = data.job_id;
+    POINT_LABELS = data.point_labels;
+    INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
+    $("uploadStatus").textContent = "Uploaded.";
+    upload = null;
+    setStage($("badge1"), "done");
+    setStage($("badge2"), "active");
+    $("calibratePanel").classList.remove("hidden");
+    $("calibratePanel").scrollIntoView({ behavior: "smooth" });
+    loadFrame();
+  } catch (err) {
+    $("uploadStatus").classList.add("error");
+    if (err.message === "cancelled") {
+      $("uploadStatus").textContent = "Upload paused. Press Resume to continue from where it stopped.";
+    } else {
+      $("uploadStatus").textContent = `Upload interrupted (${err.message}). What was sent is kept: ` +
+        `keep this page open and press "Resume upload".`;
+    }
+    if (upload && upload.jobId) $("resumeUploadBtn").classList.remove("hidden");
+  } finally {
+    finishUpload();
+  }
+}
+
+// Longest video accepted (the server checks too). Checked here first so a
+// too-long video is turned away before minutes of uploading.
+const MAX_VIDEO_MINUTES = 60;
+function videoMinutes(file) {
+  return new Promise((resolve) => {
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    const url = URL.createObjectURL(file);
+    const done = (m) => { URL.revokeObjectURL(url); resolve(m); };
+    v.onloadedmetadata = () => done(isFinite(v.duration) ? v.duration / 60 : null);
+    v.onerror = () => done(null);              // unknown format here: let the server decide
+    setTimeout(() => done(null), 8000);
+    v.src = url;
+  });
+}
+
+$("videoFile").addEventListener("change", () => {
+  const file = $("videoFile").files[0];
+  $("fileName").textContent = file ? `${file.name} (${formatBytes(file.size)})` : "No video chosen";
+  $("uploadBtn").disabled = !file;
+});
+
+$("uploadBtn").addEventListener("click", async () => {
+  const file = $("videoFile").files[0];
+  if (!file) { alert("Choose a video file first."); return; }
+  const minutes = await videoMinutes(file);
+  if (minutes && minutes > MAX_VIDEO_MINUTES) {
+    alert(`This video is ${Math.round(minutes)} minutes long. The limit is ${MAX_VIDEO_MINUTES} minutes; please trim it and try again.`);
+    return;
+  }
+  upload = { file, jobId: null, cancelled: false };
+  runUpload();
+});
+
+$("resumeUploadBtn").addEventListener("click", () => {
+  if (!upload) return;
+  upload.cancelled = false;
+  runUpload();
+});
+
+$("cancelUploadBtn").addEventListener("click", () => {
+  if (upload) upload.cancelled = true;
+  if (currentUploadXhr) currentUploadXhr.abort();
+});
+
+function finishUpload() {
+  $("uploadBtn").disabled = !$("videoFile").files[0];
+  $("cancelUploadBtn").classList.add("hidden");
+  currentUploadXhr = null;
+}
+
+// ── Resume: skip upload entirely for a job_id whose video is already on
+// the volume (e.g. a prior upload that wrote fully but errored before
+// the browser saw a clean response -- check the Modal logs for
+// "upload complete: N MB total" for that job_id to confirm this before
+// resuming). Fetches the point-label schema from a dedicated endpoint
+// (no upload needed for that) then jumps straight to the calibration
+// frame. ─────────────────────────────────────────────────────────────
+$("resumeBtn").addEventListener("click", async () => {
+  const id = $("resumeJobId").value.trim();
+  if (!id) { alert("Enter a job code first."); return; }
+
+  $("resumeBtn").disabled = true;
+  $("resumeStatus").textContent = "Loading job...";
+
+  try {
+    const res = await fetch(`${backendUrl()}/api/point-labels`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    POINT_LABELS = data.point_labels;
+    INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
+
+    jobId = id;
+    clickedPoints = {};
+    clickOrder = [];
+    fit = null;
+    $("resumeStatus").textContent = `Continuing job ${jobId}: mark the court above.`;
+    setStage($("badge1"), "done");
+    setStage($("badge2"), "active");
+    $("calibratePanel").classList.remove("hidden");
+    await loadFrame();
+  } catch (e) {
+    $("resumeStatus").textContent = `Could not continue: ${e.message}.`;
+  } finally {
+    $("resumeBtn").disabled = false;
+  }
+});
+
+// ── Step 2: Calibration frame + click collection ────────────────────
+async function loadFrame() {
+  const res = await fetch(`${backendUrl()}/api/frame/${jobId}`);
+  if (!res.ok) { $("instruction").textContent = "Couldn't load a frame from the video. Try again in a minute."; return; }
+  showFrame(URL.createObjectURL(await res.blob()));
+}
+
+function showFrame(src) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = $("frameCanvas");
+    const maxW = 900;
+    canvasScale = Math.min(1, maxW / img.width);
+    canvas.width = img.width * canvasScale;
+    canvas.height = img.height * canvasScale;
+    canvas.dataset.origW = img.width;
+    canvas.dataset.origH = img.height;
+    canvas._img = img;
+    redrawFrame();
+    renderPointList();
+    updateInstruction();
+  };
+  img.src = src;
+}
+
+// ── Court model + client-side fit (calibration check, Week 2 #6) ─────
+// Mirrors calibration.get_reference_points_schema() and config.py (cm;
+// x = depth from the near baseline, y = width from the camera-left
+// singles sideline). The backend still fits its own matrix on submit;
+// this copy only draws the overlay so a bad click is caught BEFORE the
+// job runs (the 2026-09-27 wrong-matrix bug put far players ~7 m behind
+// the baseline).
+const COURT_W = 2377, COURT_H = 823, SERVICE = 549, NET = COURT_W / 2;
+const COURT_POINTS = {
+  baseline_near_left: [0, 0], baseline_near_right: [0, COURT_H],
+  baseline_far_right: [COURT_W, COURT_H], baseline_far_left: [COURT_W, 0],
+  service_line_near_left: [SERVICE, 0], service_line_near_right: [SERVICE, COURT_H],
+  net_center: [NET, COURT_H / 2],
+};
+const COURT_LINES = [            // [from, to, dashed]
+  [[0, 0], [0, COURT_H]], [[COURT_W, 0], [COURT_W, COURT_H]],                     // baselines
+  [[0, 0], [COURT_W, 0]], [[0, COURT_H], [COURT_W, COURT_H]],                     // singles sidelines
+  [[SERVICE, 0], [SERVICE, COURT_H]], [[COURT_W - SERVICE, 0], [COURT_W - SERVICE, COURT_H]],  // service lines
+  [[SERVICE, COURT_H / 2], [COURT_W - SERVICE, COURT_H / 2]],                     // centre service line
+  [[NET, 0], [NET, COURT_H], true],                                                // net
+];
+const MAX_POINT_ERROR_CM = 75;   // same threshold as calibration.build_perspective_transform
+const BLOCK_POINT_ERROR_CM = 250; // a point this far off is a mis-click, never "looks right": submit is blocked
+
+// Least-squares homography (src -> dst) with Hartley normalization, h33 = 1.
+function fitHomography(src, dst) {
+  const norm = (pts) => {
+    const n = pts.length;
+    const cx = pts.reduce((s, p) => s + p[0], 0) / n, cy = pts.reduce((s, p) => s + p[1], 0) / n;
+    const d = pts.reduce((s, p) => s + Math.hypot(p[0] - cx, p[1] - cy), 0) / n || 1;
+    const k = Math.SQRT2 / d;
+    return { T: [[k, 0, -k * cx], [0, k, -k * cy], [0, 0, 1]], pts: pts.map((p) => [k * (p[0] - cx), k * (p[1] - cy)]) };
+  };
+  const a = norm(src), b = norm(dst);
+  const A = [], y = [];
+  a.pts.forEach(([x, yy], i) => {
+    const [u, v] = b.pts[i];
+    A.push([x, yy, 1, 0, 0, 0, -u * x, -u * yy]); y.push(u);
+    A.push([0, 0, 0, x, yy, 1, -v * x, -v * yy]); y.push(v);
+  });
+  // normal equations, Gaussian elimination with partial pivoting
+  const M = Array.from({ length: 8 }, (_, r) => {
+    const row = Array.from({ length: 8 }, (_, c) => A.reduce((s, ar) => s + ar[r] * ar[c], 0));
+    row.push(A.reduce((s, ar, i) => s + ar[r] * y[i], 0));
+    return row;
+  });
+  for (let c = 0; c < 8; c++) {
+    let p = c;
+    for (let r = c + 1; r < 8; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    [M[c], M[p]] = [M[p], M[c]];
+    if (Math.abs(M[c][c]) < 1e-12) return null;
+    for (let r = 0; r < 8; r++) {
+      if (r === c) continue;
+      const f = M[r][c] / M[c][c];
+      for (let k = c; k < 9; k++) M[r][k] -= f * M[c][k];
+    }
+  }
+  const h = M.map((row, i) => row[8] / row[i]);
+  const Hn = [[h[0], h[1], h[2]], [h[3], h[4], h[5]], [h[6], h[7], 1]];
+  const H = matMul(inv3(b.T), matMul(Hn, a.T));       // denormalize
+  return H.map((row) => row.map((v) => v / H[2][2]));
+}
+function matMul(A, B) {
+  return A.map((row) => B[0].map((_, j) => row.reduce((s, v, k) => s + v * B[k][j], 0)));
+}
+function inv3(m) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = m;
+  const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  return [[A, -(b * i - c * h), b * f - c * e], [B, a * i - c * g, -(a * f - c * d)], [C, -(a * h - b * g), a * e - b * d]]
+    .map((row) => row.map((v) => v / det));
+}
+function applyH(H, x, y) {
+  const w = H[2][0] * x + H[2][1] * y + H[2][2];
+  return [(H[0][0] * x + H[0][1] * y + H[0][2]) / w, (H[1][0] * x + H[1][1] * y + H[1][2]) / w];
+}
+
+let fit = null;   // { imgToCourt, courtToImg, errors: {label: cm} } once all points are in
+
+function refit() {
+  fit = null;
+  const labels = POINT_LABELS.filter((l) => l in clickedPoints && l in COURT_POINTS);
+  if (labels.length < POINT_LABELS.length || labels.length < 4) return;
+  const imgToCourt = fitHomography(labels.map((l) => clickedPoints[l]), labels.map((l) => COURT_POINTS[l]));
+  if (!imgToCourt) return;
+  const errors = {};
+  labels.forEach((l) => {
+    const [cx, cy] = applyH(imgToCourt, ...clickedPoints[l]);
+    errors[l] = Math.abs(cx - COURT_POINTS[l][0]) + Math.abs(cy - COURT_POINTS[l][1]);   // L1, as the backend
+  });
+  fit = { imgToCourt, courtToImg: inv3(imgToCourt), errors };
+}
+
+function updateInstruction() {
+  const remaining = POINT_LABELS.filter((l) => !(l in clickedPoints));
+  $("checkPanel").classList.toggle("hidden", remaining.length > 0 || !fit);
+  if (remaining.length === 0) {
+    const bad = fit ? POINT_LABELS.filter((l) => fit.errors[l] > MAX_POINT_ERROR_CM) : [];
+    $("instruction").textContent = fit
+      ? "All points placed. Check the blue lines below, then start the analysis."
+      : "All points placed, but the court fit failed. Re-click the points.";
+    $("checkWarn").classList.toggle("hidden", bad.length === 0);
+    $("checkWarn").textContent = bad.length
+      ? `⚠ These points don't agree with the others (off by > ${MAX_POINT_ERROR_CM} cm): ` +
+        bad.map((l) => `${INSTRUCTIONS[l] || l} (${Math.round(fit.errors[l])} cm)`).join(", ") +
+        ". Tap its label to redo it."
+      : "";
+    const blocked = fit && POINT_LABELS.some((l) => fit.errors[l] > BLOCK_POINT_ERROR_CM);
+    if (blocked) {
+      $("checkWarn").textContent += ` Submitting is blocked until every point is within ${BLOCK_POINT_ERROR_CM / 100} m.`;
+    }
+    $("submitCalibrationBtn").disabled = !(fit && !blocked && $("looksRight").checked);
+    return;
+  }
+  const next = remaining[0];
+  const n = POINT_LABELS.length - remaining.length + 1;
+  $("instruction").textContent =
+    `Tap point ${n} of ${POINT_LABELS.length}: ${INSTRUCTIONS[next] || next}`;
+  $("submitCalibrationBtn").disabled = true;
+}
+
+function renderPointList() {
+  const wrap = $("pointList");
+  wrap.innerHTML = "";
+  POINT_LABELS.forEach((label) => {
+    const chip = document.createElement("span");
+    const err = fit ? fit.errors[label] : null;
+    chip.className = "point-chip" + (label in clickedPoints ? " done" : "") +
+      (err != null && err > MAX_POINT_ERROR_CM ? " bad" : "");
+    chip.textContent = (INSTRUCTIONS[label] || label) + (label in clickedPoints ? " ✓" : "") +
+      (err != null ? ` · ${Math.round(err)} cm` : "");
+    chip.title = label in clickedPoints ? "Tap to re-click this point" : "";
+    chip.addEventListener("click", () => {
+      if (!(label in clickedPoints)) return;
+      delete clickedPoints[label];
+      clickOrder = clickOrder.filter((l) => l !== label);
+      pointsChanged();
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+function redrawFrame() {
+  const canvas = $("frameCanvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(canvas._img, 0, 0, canvas.width, canvas.height);
+  if (fit) {
+    ctx.strokeStyle = "#22d3ee";
+    ctx.lineWidth = 1.5;
+    for (const [from, to, dashed] of COURT_LINES) {
+      const [x1, y1] = applyH(fit.courtToImg, ...from), [x2, y2] = applyH(fit.courtToImg, ...to);
+      ctx.setLineDash(dashed ? [6, 5] : []);
+      ctx.beginPath();
+      ctx.moveTo(x1 * canvasScale, y1 * canvasScale);
+      ctx.lineTo(x2 * canvasScale, y2 * canvasScale);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  POINT_LABELS.forEach((label, idx) => {
+    if (!(label in clickedPoints)) return;
+    const [x, y] = [clickedPoints[label][0] * canvasScale, clickedPoints[label][1] * canvasScale];
+    const bad = fit && fit.errors[label] > MAX_POINT_ERROR_CM;
+    ctx.fillStyle = bad ? "#f87171" : "#4ade80";
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = "11px sans-serif";
+    ctx.fillText(String(idx + 1), x + 8, y - 8);
+  });
+}
+
+let clickOrder = [];   // labels in the order placed, for "Undo last point"
+
+function pointsChanged() {
+  $("looksRight").checked = false;
+  refit();
+  redrawFrame();
+  renderPointList();
+  updateInstruction();
+}
+
+// Displayed-canvas position -> ORIGINAL frame pixels (the space
+// build_perspective_transform() expects). Uses the canvas's on-screen size,
+// not canvasScale alone: on a phone CSS shrinks the canvas further.
+function toOrig(clientX, clientY) {
+  const canvas = $("frameCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const k = Number(canvas.dataset.origW) / rect.width;
+  return [(clientX - rect.left) * k, (clientY - rect.top) * k];
+}
+
+function placePoint(clientX, clientY) {
+  const remaining = POINT_LABELS.filter((l) => !(l in clickedPoints));
+  if (remaining.length === 0 || !$("frameCanvas")._img) return;
+  const label = remaining[0];
+  clickedPoints[label] = toOrig(clientX, clientY);
+  clickOrder.push(label);
+  pointsChanged();
+}
+
+const LOUPE_ZOOM = 4;   // magnification relative to the displayed canvas
+function showLoupe(clientX, clientY, above) {
+  const canvas = $("frameCanvas"), loupe = $("loupe");
+  if (!canvas._img) return;
+  const rect = canvas.getBoundingClientRect(), wrapRect = $("canvasWrap").getBoundingClientRect();
+  const [ox, oy] = toOrig(clientX, clientY);
+  const srcSize = (loupe.width / LOUPE_ZOOM) * (Number(canvas.dataset.origW) / rect.width);
+  const ctx = loupe.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, loupe.width, loupe.height);
+  ctx.drawImage(canvas._img, ox - srcSize / 2, oy - srcSize / 2, srcSize, srcSize, 0, 0, loupe.width, loupe.height);
+  if (fit) {
+    // Court lines in the loupe too: at full size a far-corner click that's
+    // 25 px off moves the far lines only 1-2 screen pixels, yet shifts
+    // far-court positions by up to ~80 cm. Zoomed in, the gap is visible.
+    const s = loupe.width / srcSize, x0 = ox - srcSize / 2, y0 = oy - srcSize / 2;
+    ctx.strokeStyle = "#22d3ee";
+    ctx.lineWidth = 1.5;
+    for (const [from, to, dashed] of COURT_LINES) {
+      const [x1, y1] = applyH(fit.courtToImg, ...from), [x2, y2] = applyH(fit.courtToImg, ...to);
+      ctx.setLineDash(dashed ? [6, 5] : []);
+      ctx.beginPath();
+      ctx.moveTo((x1 - x0) * s, (y1 - y0) * s);
+      ctx.lineTo((x2 - x0) * s, (y2 - y0) * s);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  ctx.strokeStyle = "#f87171";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(loupe.width / 2, 0); ctx.lineTo(loupe.width / 2, loupe.height);
+  ctx.moveTo(0, loupe.height / 2); ctx.lineTo(loupe.width, loupe.height / 2);
+  ctx.stroke();
+  // beside the cursor; above the finger on touch so it isn't hidden
+  let left = clientX - wrapRect.left + 24, top = clientY - wrapRect.top - (above ? 190 : 80);
+  if (left + loupe.width > wrapRect.width) left = clientX - wrapRect.left - 24 - loupe.width;
+  loupe.style.left = `${left}px`;
+  loupe.style.top = `${Math.max(top, -loupe.height / 2)}px`;
+  loupe.style.display = "block";
+}
+function hideLoupe() { $("loupe").style.display = "none"; }
+
+const fc = $("frameCanvas");
+fc.addEventListener("mousemove", (e) => showLoupe(e.clientX, e.clientY, false));
+fc.addEventListener("mouseleave", hideLoupe);
+fc.addEventListener("click", (e) => placePoint(e.clientX, e.clientY));
+// Touch: drag to aim with the loupe above the finger, lift to place.
+let lastTouch = null;
+fc.addEventListener("touchstart", (e) => { e.preventDefault(); lastTouch = e.touches[0]; showLoupe(lastTouch.clientX, lastTouch.clientY, true); }, { passive: false });
+fc.addEventListener("touchmove", (e) => { e.preventDefault(); lastTouch = e.touches[0]; showLoupe(lastTouch.clientX, lastTouch.clientY, true); }, { passive: false });
+fc.addEventListener("touchend", (e) => {
+  e.preventDefault();
+  hideLoupe();
+  if (lastTouch) placePoint(lastTouch.clientX, lastTouch.clientY);
+  lastTouch = null;
+}, { passive: false });
+
+$("looksRight").addEventListener("change", updateInstruction);
+
+$("undoPointBtn").addEventListener("click", () => {
+  const label = clickOrder.pop();
+  if (!label) return;
+  delete clickedPoints[label];
+  pointsChanged();
+});
+
+$("resetPointsBtn").addEventListener("click", () => {
+  clickedPoints = {};
+  clickOrder = [];
+  pointsChanged();
+});
+
+// Offline preview / testing: calibration_demo.html?frame=<image url> opens
+// the calibration step on that image without a backend job (submit stays
+// disabled-by-error since there's no job).
+(() => {
+  const frame = new URLSearchParams(location.search).get("frame");
+  if (!frame) return;
+  setStage($("badge1"), "done");
+  setStage($("badge2"), "active");
+  $("calibratePanel").classList.remove("hidden");
+  showFrame(frame);
+})();
+
+$("submitCalibrationBtn").addEventListener("click", async () => {
+  if (!jobId) { alert("No job: this is the offline preview. Upload a video to calibrate for real."); return; }
+  $("submitCalibrationBtn").disabled = true;
+  const form = new FormData();
+  form.append("job_id", jobId);
+  form.append("points_json", JSON.stringify(clickedPoints));
+  form.append("player1_name", $("player1Name").value);
+  form.append("player2_name", $("player2Name").value);
+
+  try {
+    const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+
+    setStage($("badge2"), "done");
+    setStage($("badge3"), "active");
+    Site.rememberReport(jobId, `${$("player1Name").value.trim() || "Player 1"} vs ${$("player2Name").value.trim() || "Player 2"}`);
+    renderReports();
+    $("processingPanel").classList.remove("hidden");
+    $("processingPanel").scrollIntoView({ behavior: "smooth" });
+    startPolling();
+  } catch (e) {
+    alert(`Calibration failed: ${e.message}`);
+    $("submitCalibrationBtn").disabled = false;
+  }
+});
+
+// ── Step 3: Processing status polling ────────────────────────────────
+const STAGE_ORDER = ["uploaded", "calibrating", "queued", "detecting", "analyzing", "done"];
+const STAGE_LABEL = {
+  uploaded: "Uploaded", calibrating: "Court marked", queued: "Waiting to start",
+  detecting: "Finding the ball and players", analyzing: "Working out the points",
+  done: "Report ready", error: "Error",
+};
+
+function renderStageTrack(currentStage) {
+  const track = $("stageTrack");
+  track.innerHTML = "";
+  const idx = STAGE_ORDER.indexOf(currentStage);
+  STAGE_ORDER.forEach((stage, i) => {
+    const pill = document.createElement("span");
+    pill.className = "stage-pill" + (stage === currentStage ? " current" : (i < idx ? " past" : ""));
+    pill.textContent = STAGE_LABEL[stage];
+    track.appendChild(pill);
+  });
+}
+
+function startPolling() {
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${backendUrl()}/api/status/${jobId}`);
+      const data = await res.json();
+      renderStageTrack(data.stage);
+      $("statusLine").classList.remove("error");
+      $("statusLine").textContent = data.message || data.stage;
+
+      if (data.stage === "done") {
+        clearInterval(pollTimer);
+        setStage($("badge3"), "done");
+        $("statusLine").textContent = "Report ready. Opening it…";
+        location.href = reportHref(jobId);
+      } else if (data.stage === "error") {
+        clearInterval(pollTimer);
+        $("statusLine").classList.add("error");
+        $("statusLine").textContent = `Error: ${data.message}`;
+      }
+    } catch (e) {
+      $("statusLine").classList.add("error");
+      $("statusLine").textContent = `Lost touch with the server (${e.message}). Still trying…`;
+    }
+  }, 4000);
+}
+
+// ── My reports: this device's jobs, newest first, with live status ────
+function reportHref(job) {
+  const b = backendUrl();
+  return Site.reportUrl(job) + (b ? `&backend=${encodeURIComponent(b)}` : "");
+}
+
+function renderReports() {
+  const list = Site.reports();
+  if (!list.length) {
+    $("reportList").innerHTML = `<div class="muted">No reports yet. Upload a match below and its report will appear here.</div>`;
+    return;
+  }
+  $("reportList").innerHTML = list.map((r) => `
+    <a class="report-row" href="${reportHref(r.job)}" data-job="${encodeURIComponent(r.job)}">
+      <div><h3>${esc(r.title)}</h3><div class="when">${new Date(r.added).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div></div>
+      <span class="pill">Checking…</span>
+    </a>`).join("");
+  list.forEach(async (r) => {
+    const pill = $("reportList").querySelector(`[data-job="${encodeURIComponent(r.job)}"] .pill`);
+    try {
+      const st = await (await fetch(`${backendUrl()}/api/status/${encodeURIComponent(r.job)}`)).json();
+      const [text, cls] = st.report_ready || st.stage === "done" ? ["Ready", "ready"] : st.stage === "error" ? ["Failed", "failed"]
+        : st.stage === "unknown" ? ["Not found", "failed"] : ["Processing…", ""];
+      pill.textContent = text;
+      pill.className = `pill ${cls}`;
+    } catch (e) { pill.textContent = "Offline"; }
+  });
+}
+
+// Open any report by its job code (e.g. one started on another device).
+$("openJobForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id = $("openJobId").value.trim();
+  if (id) location.href = reportHref(id);
+});
+
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+renderReports();
+</script>
+</body>
+</html>

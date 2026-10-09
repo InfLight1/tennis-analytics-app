@@ -1,0 +1,33 @@
+TENNIS MATCH ANALYSIS -- SUMMARY REPORT
+========================================
+
+RALLY PATTERNS
+  Total rallies: 6
+  Avg shots/rally: 3.8
+  Longest rally (shots): 6
+  Avg rally duration: 1.8s
+
+CONSISTENCY (per player)
+  track_1: 11 hits across 6 rallies (1.8 avg/rally)
+  track_2: 12 hits across 6 rallies (2.0 avg/rally)
+
+TACTICAL TENDENCIES (top zone per player)
+  track_1: favors ad_mid (55% of shots)
+  track_2: favors ad_mid (58% of shots)
+
+RECOMMENDATIONS
+  Prioritized by frequency + point-loss impact. This flags what's happening and how much it's costing -- deciding what to change technically is a conversation for the player's coach, not this report.
+
+  track_1:
+    1. [Rally-length pattern] Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer).
+    2. [Error tendency] 1 of 2 errors (50%) are wide errors, 33% of their total lost points.
+    3. [Error tendency] 1 of 2 errors (50%) are long errors, 33% of their total lost points.
+
+  track_2:
+    1. [Points lost under pressure] Lost 3 points to shots they didn't get back in play — not a self-inflicted error, but still costing points.
+    2. [Rally-length pattern] Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer).
+    3. [Shot placement tendency] 58% of shots go to ad_mid — a heavy zone concentration. Not yet cross-referenced against error/point-loss data.
+
+DATA QUALITY NOTES (internal -- not a coaching finding)
+  - [internal QA only] unknown_position_rate: 0.0% of hits had no resolvable court position.
+  - [internal QA only] ambiguous_rate: 0.0% of rallies had no determinable winner (tracking gaps or undetected bounces).

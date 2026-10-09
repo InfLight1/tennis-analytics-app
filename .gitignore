@@ -1,0 +1,48 @@
+# Environment and secrets
+.venv/
+__pycache__/
+*.pyc
+.env*
+.claude/settings.local.json
+
+# Local planning notes (kept out of the repo)
+TennisPerfApp.md
+Demo_Video_Script.md
+Filming_Checklist_Oct11.md
+
+# Videos, model weights and large data
+Videos/
+Diagnostics/
+Archive/
+offline_report*/
+*.log
+*.pt
+*.mp4
+*.mov
+*.avi
+*.npy
+
+# Generated outputs
+*.csv
+!ground_truth_points.csv
+!ground_truth_events.csv
+!Code/ground_truth_events.csv
+match_report.json
+match_report.txt
+*.png
+*.jpg
+*.jpeg
+!web_assets/*.png
+
+# Training: keep only scripts and small notes, not images, labels or runs
+/Training/**
+!/Training/**/
+!/Training/**/*.py
+!/Training/**/*.sh
+!/Training/**/README.md
+!/Training/**/data.yaml
+/Training/runs/
+/Training/weights/
+
+# Editor settings
+.idea/

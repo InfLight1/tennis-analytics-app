@@ -1,0 +1,380 @@
+{
+  "stats": {
+    "shot_placement": {
+      "zone_counts": [
+        {
+          "player_side": "track_1",
+          "zone": "ad_baseline",
+          "count": 5
+        },
+        {
+          "player_side": "track_1",
+          "zone": "ad_mid",
+          "count": 6
+        },
+        {
+          "player_side": "track_2",
+          "zone": "ad_baseline",
+          "count": 5
+        },
+        {
+          "player_side": "track_2",
+          "zone": "ad_mid",
+          "count": 7
+        }
+      ],
+      "unknown_position_rate": 0.0
+    },
+    "rally_lengths": {
+      "per_rally": [
+        {
+          "rally_id": 1,
+          "start_frame": 7,
+          "end_frame": 38,
+          "n_hits": 2,
+          "n_bounces": 3,
+          "duration_sec": 1.0666666666666667,
+          "length_bucket": "short"
+        },
+        {
+          "rally_id": 2,
+          "start_frame": 139,
+          "end_frame": 195,
+          "n_hits": 4,
+          "n_bounces": 5,
+          "duration_sec": 1.9,
+          "length_bucket": "short"
+        },
+        {
+          "rally_id": 3,
+          "start_frame": 301,
+          "end_frame": 385,
+          "n_hits": 6,
+          "n_bounces": 7,
+          "duration_sec": 2.8333333333333335,
+          "length_bucket": "medium"
+        },
+        {
+          "rally_id": 4,
+          "start_frame": 488,
+          "end_frame": 518,
+          "n_hits": 2,
+          "n_bounces": 3,
+          "duration_sec": 1.0333333333333334,
+          "length_bucket": "short"
+        },
+        {
+          "rally_id": 5,
+          "start_frame": 621,
+          "end_frame": 668,
+          "n_hits": 4,
+          "n_bounces": 5,
+          "duration_sec": 1.6,
+          "length_bucket": "short"
+        },
+        {
+          "rally_id": 6,
+          "start_frame": 772,
+          "end_frame": 841,
+          "n_hits": 5,
+          "n_bounces": 6,
+          "duration_sec": 2.3333333333333335,
+          "length_bucket": "medium"
+        }
+      ],
+      "summary": {
+        "n_rallies": 6,
+        "avg_shots_per_rally": 3.8333333333333335,
+        "median_shots_per_rally": 4.0,
+        "max_shots_in_rally": 6,
+        "avg_rally_duration_sec": 1.7944444444444445,
+        "length_distribution": {
+          "short": {
+            "count": 4,
+            "pct": 66.7
+          },
+          "medium": {
+            "count": 2,
+            "pct": 33.3
+          },
+          "long": {
+            "count": 0,
+            "pct": 0.0
+          }
+        }
+      }
+    },
+    "consistency": [
+      {
+        "player_side": "track_1",
+        "total_hits": 11,
+        "rallies_participated": 6,
+        "avg_hits_per_rally": 1.8333333333333333
+      },
+      {
+        "player_side": "track_2",
+        "total_hits": 12,
+        "rallies_participated": 6,
+        "avg_hits_per_rally": 2.0
+      }
+    ],
+    "tactical_tendencies": [
+      {
+        "player_side": "track_1",
+        "zone": "ad_mid",
+        "count": 6,
+        "pct_of_shots": 0.5454545454545454
+      },
+      {
+        "player_side": "track_1",
+        "zone": "ad_baseline",
+        "count": 5,
+        "pct_of_shots": 0.45454545454545453
+      },
+      {
+        "player_side": "track_2",
+        "zone": "ad_mid",
+        "count": 7,
+        "pct_of_shots": 0.5833333333333334
+      },
+      {
+        "player_side": "track_2",
+        "zone": "ad_baseline",
+        "count": 5,
+        "pct_of_shots": 0.4166666666666667
+      }
+    ],
+    "court_coverage": [
+      {
+        "track_id": 1,
+        "row": 5,
+        "col": 0,
+        "frame_count": 403
+      },
+      {
+        "track_id": 2,
+        "row": 0,
+        "col": 3,
+        "frame_count": 360
+      },
+      {
+        "track_id": 2,
+        "row": 1,
+        "col": 3,
+        "frame_count": 43
+      }
+    ]
+  },
+  "priority_patterns": [
+    {
+      "rank": 1,
+      "player": "track_2",
+      "category": "pressure_moments",
+      "pattern": "unreturned_shots_conceded",
+      "frequency_pct": 100.0,
+      "point_loss_count": 3,
+      "combined_score": 1.0,
+      "reason": "Lost 3 points to shots they didn't get back in play \u2014 not a self-inflicted error, but still costing points."
+    },
+    {
+      "rank": 2,
+      "player": "track_1",
+      "category": "rally_length",
+      "pattern": "lost_short_rallies",
+      "frequency_pct": 66.7,
+      "point_loss_count": 2,
+      "combined_score": 0.647,
+      "reason": "Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer)."
+    },
+    {
+      "rank": 3,
+      "player": "track_2",
+      "category": "rally_length",
+      "pattern": "lost_short_rallies",
+      "frequency_pct": 66.7,
+      "point_loss_count": 2,
+      "combined_score": 0.647,
+      "reason": "Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer)."
+    },
+    {
+      "rank": 4,
+      "player": "track_1",
+      "category": "error_location",
+      "pattern": "wide_errors",
+      "frequency_pct": 50.0,
+      "point_loss_count": 1,
+      "combined_score": 0.387,
+      "reason": "1 of 2 errors (50%) are wide errors, 33% of their total lost points."
+    },
+    {
+      "rank": 5,
+      "player": "track_1",
+      "category": "error_location",
+      "pattern": "long_errors",
+      "frequency_pct": 50.0,
+      "point_loss_count": 1,
+      "combined_score": 0.387,
+      "reason": "1 of 2 errors (50%) are long errors, 33% of their total lost points."
+    },
+    {
+      "rank": 6,
+      "player": "track_1",
+      "category": "zone_error_rate",
+      "pattern": "errors_from_ad_baseline",
+      "frequency_pct": 50.0,
+      "point_loss_count": 1,
+      "combined_score": 0.387,
+      "reason": "1 of 2 errors (50%) are hit from ad_baseline -- a specific zone this player errs from, not just a zone they hit from often."
+    },
+    {
+      "rank": 7,
+      "player": "track_1",
+      "category": "zone_error_rate",
+      "pattern": "errors_from_ad_mid",
+      "frequency_pct": 50.0,
+      "point_loss_count": 1,
+      "combined_score": 0.387,
+      "reason": "1 of 2 errors (50%) are hit from ad_mid -- a specific zone this player errs from, not just a zone they hit from often."
+    },
+    {
+      "rank": 8,
+      "player": "track_1",
+      "category": "rally_accuracy",
+      "pattern": "overall_error_rate",
+      "frequency_pct": 18.2,
+      "point_loss_count": 2,
+      "combined_score": 0.375,
+      "reason": "82% shot accuracy (2 of 11 tracked shots went out) \u2014 directly costing 2 points."
+    },
+    {
+      "rank": 9,
+      "player": "track_1",
+      "category": "pressure_moments",
+      "pattern": "unreturned_shots_conceded",
+      "frequency_pct": 33.3,
+      "point_loss_count": 1,
+      "combined_score": 0.294,
+      "reason": "Lost 1 points to shots they didn't get back in play \u2014 not a self-inflicted error, but still costing points."
+    },
+    {
+      "rank": 10,
+      "player": "track_2",
+      "category": "shot_placement",
+      "pattern": "concentration_ad_mid",
+      "frequency_pct": 58.3,
+      "point_loss_count": 0,
+      "combined_score": 0.267,
+      "reason": "58% of shots go to ad_mid \u2014 a heavy zone concentration. Not yet cross-referenced against error/point-loss data."
+    },
+    {
+      "rank": 11,
+      "player": "track_1",
+      "category": "shot_placement",
+      "pattern": "concentration_ad_mid",
+      "frequency_pct": 54.5,
+      "point_loss_count": 0,
+      "combined_score": 0.246,
+      "reason": "55% of shots go to ad_mid \u2014 a heavy zone concentration. Not yet cross-referenced against error/point-loss data."
+    },
+    {
+      "rank": 12,
+      "player": "track_1",
+      "category": "shot_placement",
+      "pattern": "concentration_ad_baseline",
+      "frequency_pct": 45.5,
+      "point_loss_count": 0,
+      "combined_score": 0.195,
+      "reason": "45% of shots go to ad_baseline \u2014 a heavy zone concentration. Not yet cross-referenced against error/point-loss data."
+    },
+    {
+      "rank": 13,
+      "player": "track_2",
+      "category": "shot_placement",
+      "pattern": "concentration_ad_baseline",
+      "frequency_pct": 41.7,
+      "point_loss_count": 0,
+      "combined_score": 0.173,
+      "reason": "42% of shots go to ad_baseline \u2014 a heavy zone concentration. Not yet cross-referenced against error/point-loss data."
+    },
+    {
+      "rank": 14,
+      "player": "track_2",
+      "category": "court_coverage",
+      "pattern": "low_occupancy_r1_c3",
+      "frequency_pct": 10.7,
+      "point_loss_count": 0,
+      "combined_score": 0.0,
+      "reason": "track_2 spends only 10.7% of tracked frames in grid cell (row 1, col 3) \u2014 a positional gap. Point-loss link not available."
+    }
+  ],
+  "recommendations": {
+    "track_1": [
+      {
+        "rank": 2,
+        "player": "track_1",
+        "category": "rally_length",
+        "pattern": "lost_short_rallies",
+        "frequency_pct": 66.7,
+        "point_loss_count": 2,
+        "combined_score": 0.647,
+        "reason": "Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer)."
+      },
+      {
+        "rank": 4,
+        "player": "track_1",
+        "category": "error_location",
+        "pattern": "wide_errors",
+        "frequency_pct": 50.0,
+        "point_loss_count": 1,
+        "combined_score": 0.387,
+        "reason": "1 of 2 errors (50%) are wide errors, 33% of their total lost points."
+      },
+      {
+        "rank": 5,
+        "player": "track_1",
+        "category": "error_location",
+        "pattern": "long_errors",
+        "frequency_pct": 50.0,
+        "point_loss_count": 1,
+        "combined_score": 0.387,
+        "reason": "1 of 2 errors (50%) are long errors, 33% of their total lost points."
+      }
+    ],
+    "track_2": [
+      {
+        "rank": 1,
+        "player": "track_2",
+        "category": "pressure_moments",
+        "pattern": "unreturned_shots_conceded",
+        "frequency_pct": 100.0,
+        "point_loss_count": 3,
+        "combined_score": 1.0,
+        "reason": "Lost 3 points to shots they didn't get back in play \u2014 not a self-inflicted error, but still costing points."
+      },
+      {
+        "rank": 3,
+        "player": "track_2",
+        "category": "rally_length",
+        "pattern": "lost_short_rallies",
+        "frequency_pct": 66.7,
+        "point_loss_count": 2,
+        "combined_score": 0.647,
+        "reason": "Lost 2 of their 3 rallies (67%) in short rallies (4 shots or fewer)."
+      },
+      {
+        "rank": 10,
+        "player": "track_2",
+        "category": "shot_placement",
+        "pattern": "concentration_ad_mid",
+        "frequency_pct": 58.3,
+        "point_loss_count": 0,
+        "combined_score": 0.267,
+        "reason": "58% of shots go to ad_mid \u2014 a heavy zone concentration. Not yet cross-referenced against error/point-loss data."
+      }
+    ]
+  },
+  "data_quality_notes": [
+    "[internal QA only] unknown_position_rate: 0.0% of hits had no resolvable court position.",
+    "[internal QA only] ambiguous_rate: 0.0% of rallies had no determinable winner (tracking gaps or undetected bounces)."
+  ]
+}
