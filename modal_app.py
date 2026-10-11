@@ -606,7 +606,7 @@ def detect_chunk_remote(job_id: str, ball_model_name: str, player_model_name: st
             "fps": round((end_frame - start_frame) / seconds, 2) if seconds else None}
 
 
-@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=1800)
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600)  # 50-60 min videos: linker over the whole video
 def merge_detection_remote(job_id: str, n_chunks: int, total_frames: int) -> dict:
     import sys
     import pandas as pd
@@ -716,7 +716,7 @@ def benchmark_gpus(job_id: str, frames: int = 450, start_frame: int = 1200,
               f"(+ cold start + frame skipping)")
 
 
-@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=1800,
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600,  # 50-60 min videos need more than 30 min headroom
               # ANTHROPIC_API_KEY for insights.py; created with
               # `modal secret create anthropic ANTHROPIC_API_KEY=...`
               secrets=[modal.Secret.from_name("anthropic")])
