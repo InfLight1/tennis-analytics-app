@@ -48,3 +48,6 @@ match_report.txt
 
 # Editor settings
 .idea/
+
+# Browser test screenshots
+.playwright-mcp/
