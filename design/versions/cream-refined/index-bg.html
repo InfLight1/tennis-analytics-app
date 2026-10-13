@@ -39,6 +39,8 @@
   --hero-court-h: clamp(300px, 62vw, 560px);
   --hero-fade-h: 45%;
   --hero-overlap: 24px;
+  --hero-under-w: 960px;
+  --hero-under-ratio: 2 / 1;
   --hero-wide-h: 540px;
   --hero-box: 1320px;
   --hero-fade-x: 30%;
@@ -75,7 +77,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --hero-filter: brightness(.72) saturate(.9);
+    --hero-filter: brightness(.88) saturate(.95);
     --bg: #151410; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
     --ink: #F3EEE4; --ink-2: #D6CFC2; --muted: #B3AA9B; --dim: #8C8475;
     --accent: #86C795; --accent-strong: #9FD6AB; --accent-soft: #233328; --on-accent: #10200F;
@@ -84,7 +86,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --hero-filter: brightness(.72) saturate(.9);
+  --hero-filter: brightness(.88) saturate(.95);
   color-scheme: dark;
   --bg: #151410; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
   --ink: #F3EEE4; --ink-2: #D6CFC2; --muted: #B3AA9B; --dim: #8C8475;
@@ -92,6 +94,8 @@
   --bad: #E0907F; --court: #2A2A22;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
 }
+
+main.wrap { --text-base: 1.15rem; --text-sm: 1rem; font-size: var(--text-base); }
 
 /* ── Base ─────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -182,34 +186,18 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
 .hero-photo::after { content: ""; position: absolute; inset: auto 0 0; height: 35%; z-index: 1; background: linear-gradient(to top, rgba(0,0,0,.45), transparent); }
 .hero-cap { position: absolute; z-index: 2; bottom: var(--space-4); left: var(--hero-pad); right: var(--gutter);
   margin: 0; color: #fff; font-size: var(--text-sm); font-weight: 550; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-/* In-between laptops: the whole photo beside the copy, as a framed 3:2 picture (no fade). */
-@media (min-width: 900px) and (max-width: 1319px) {
-  .hero.hero-bg { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: var(--space-2) var(--space-7);
-    --hero-pad: max(var(--gutter), calc((100% - 1100px) / 2)); padding: var(--space-8) var(--hero-pad) var(--space-6); }
-  .hero-bg .hero-copy { padding: 0; grid-row: span 2; }
-  .hero-photo { height: auto; aspect-ratio: 3 / 2; margin: 0; border-radius: var(--radius-lg); overflow: hidden;
-    -webkit-mask-image: none; mask-image: none; }
-  .hero-photo::after { display: none; }
-  .hero-cap { position: static; grid-column: 2; color: var(--muted); text-shadow: none; font-weight: 400; }
+/* Wider than a phone: the photo stays under the tagline, centred, at a fixed 16:9 shape (never stretched),
+   fading in at the top and softly at the sides. */
+@media (min-width: 760px) {
+  .hero-photo { width: min(100%, var(--hero-under-w)); height: auto; aspect-ratio: var(--hero-under-ratio); margin-inline: auto; clip-path: inset(0 2px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.35) 14%, #000 32%), linear-gradient(to right, transparent 0%, transparent 2px, #000 12%, #000 88%, transparent calc(100% - 2px));
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.35) 14%, #000 32%), linear-gradient(to right, transparent 0%, transparent 2px, #000 12%, #000 88%, transparent calc(100% - 2px));
+    mask-composite: intersect; }
+  .hero-photo img { object-position: 50% 68%; }
+  .hero-cap { left: auto; right: max(var(--gutter), calc((100% - var(--hero-under-w)) / 2 + 12%)); max-width: 340px; text-align: right; }
 }
-/* Wide screens: headline and photo share one centred box (--hero-box) so the pair sits in the middle of the page.
-   The photo keeps its 3:2 shape at the box's right edge and fades in from the left. Past the box width
-   (big monitors) its right edge fades too, so it never ends in a hard line on the page colour. */
-@media (min-width: 1320px) {
-  .hero.hero-bg { display: flex; align-items: center; min-height: var(--hero-wide-h);
-    --box-edge: max(0px, calc((100% - var(--hero-box)) / 2)); }
-  .hero-bg .hero-copy { max-width: calc(var(--box-edge) + var(--space-7) + 500px); padding: var(--space-7) 0 var(--space-7) calc(var(--box-edge) + var(--space-7)); }
-  .hero-photo { position: absolute; top: 0; bottom: 0; right: var(--box-edge); height: auto; width: calc(var(--hero-wide-h) * 1.5); margin: 0; clip-path: inset(0 0 0 2px); }
-  .hero-photo img { object-position: 50% 50%; }
-  .hero-photo { -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x));
-    mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x)); }
-  .hero-cap { left: auto; right: calc(var(--box-edge) + var(--space-5)); max-width: 320px; text-align: right; }
-}
-@media (min-width: 1360px) {
-  .hero-photo { clip-path: inset(2px); -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x), #000 88%, transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 0%, #000 10%, #000 88%, transparent calc(100% - 3px)); -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x), #000 88%, transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 0%, #000 10%, #000 88%, transparent calc(100% - 3px)); mask-composite: intersect; }
-  .hero-cap { right: calc(var(--box-edge) + var(--hero-wide-h) * 0.2); bottom: calc(var(--hero-wide-h) * 0.14); }
-}
+
 
 
 /* ── Sections ─────────────────────────────────────────────────────────── */
@@ -227,8 +215,14 @@ section.block > .lede { color: var(--ink-2); margin-bottom: var(--space-6); max-
   font: 500 var(--text-xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.01em; }
 .step-n { font-variant-numeric: tabular-nums; color: var(--muted); font-size: var(--text-lg); min-width: 1ch; }
 .step.is-active .step-n { color: var(--accent); }
-.step.is-upcoming .step-title { color: var(--dim); }
-.step.is-upcoming p { color: var(--muted); margin-top: var(--space-1); max-width: 56ch; }
+.step.is-upcoming .step-title { color: var(--ink-2); }
+.step.is-done::before { background: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.step.is-done .step-n { color: var(--accent); }
+.step.is-done .step-title { color: var(--ink-2); }
+.step-done-note { margin-top: var(--space-1); color: var(--ink-2); }
+.step-done-note button { margin-left: var(--space-2); padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: var(--tap); }
+.step:not(.is-active) .step-body { display: none; }
+.step:not(.is-active) > p { color: var(--ink-2); margin-top: var(--space-1); max-width: 56ch; }
 .step-body { margin-top: var(--space-4); }
 .picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
 .file-pick { position: relative; }
@@ -332,11 +326,11 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
 <main class="wrap">
 
 
-  <!-- New analysis: step 1 active, 2 and 3 upcoming -->
+  <!-- New analysis: the green bar follows progress (active step), finished steps keep a light bar and a check -->
   <section class="block" id="new" aria-labelledby="newH">
     <h2 id="newH">New analysis</h2>
     <ol class="steps">
-      <li class="step is-active" aria-current="step">
+      <li class="step is-active" aria-current="step" data-step="1">
         <h3 class="step-title"><span class="step-n">1</span>Choose your match video</h3>
         <div class="step-body">
           <div class="picker">
@@ -357,14 +351,24 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
           <div id="uploadStatus" role="status"></div>
           <p class="tip">Film from high up behind the baseline with the whole court in view (see <a href="#filmGuide">how to film your match</a>). Up to 60 minutes.</p>
         </div>
+        <p class="step-done-note" hidden>✓ <span id="doneFile"></span> uploaded.<button type="button" data-goto="1">Change</button></p>
       </li>
-      <li class="step is-upcoming">
+      <li class="step is-upcoming" data-step="2">
         <h3 class="step-title"><span class="step-n">2</span>Mark the court</h3>
         <p>Tap 7 points on the court in a frame from your video, then name both players.</p>
+        <div class="step-body">
+          <p class="tip">[Design mock] The court-marking screen opens here in the real app.</p>
+          <div class="upload-row"><button type="button" class="btn btn-primary" data-goto="3">Lines match: start analysis</button></div>
+        </div>
+        <p class="step-done-note" hidden>✓ Court marked.<button type="button" data-goto="2">Change</button></p>
       </li>
-      <li class="step is-upcoming">
+      <li class="step is-upcoming" data-step="3">
         <h3 class="step-title"><span class="step-n">3</span>Analysing the match</h3>
         <p>A 15-minute match takes about 10 minutes. You can close this page: the report will appear under My reports.</p>
+        <div class="step-body">
+          <p class="tip">[Design mock] Progress stages show here; the report opens when it's ready.</p>
+          <div class="upload-row"><a class="btn" href="report.html">See the example report</a><button type="button" class="btn" data-goto="1">Start over</button></div>
+        </div>
       </li>
     </ol>
   </section>
@@ -469,8 +473,25 @@ file.addEventListener("change", () => {
   nameEl.classList.toggle("has-file", !!f);
   up.disabled = !f;
 });
+// The highlight follows progress: earlier steps are done, the current one is active, later ones upcoming.
+function setStep(n) {
+  document.querySelectorAll(".step[data-step]").forEach((li) => {
+    const i = +li.dataset.step;
+    li.classList.toggle("is-done", i < n);
+    li.classList.toggle("is-active", i === n);
+    li.classList.toggle("is-upcoming", i > n);
+    if (i === n) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    const note = li.querySelector(".step-done-note");
+    if (note) note.hidden = i >= n;
+  });
+}
 up.addEventListener("click", () => {
-  document.getElementById("uploadStatus").textContent = "[TODO] Uploading is not connected in this design version.";
+  document.getElementById("doneFile").textContent = file.files[0] ? file.files[0].name : "Video";
+  setStep(2);  // design mock: the real upload runs first
+});
+document.getElementById("new").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-goto]");
+  if (b) setStep(+b.dataset.goto);
 });
 document.getElementById("openJobForm").addEventListener("submit", (e) => {
   e.preventDefault();
