@@ -225,7 +225,7 @@ function formatBytes(bytes) {
 // pieces it already has and sends only the rest. XMLHttpRequest (not
 // fetch) for upload-progress events and distinct error types.
 const CHUNK_SIZE = 16 * 1024 * 1024;
-const PARALLEL = 4;  // pieces in flight at once (one at a time was ~0.3 MB/s)
+const PARALLEL = 8;  // pieces in flight at once (1 was ~0.3 MB/s, 4 was ~1 MB/s on a phone)
 const MAX_TRIES = 5;
 let upload = null;   // { file, jobId, cancelled }
 const liveXhrs = new Set();
