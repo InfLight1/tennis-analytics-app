@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tennis Analytics</title>
+<title>Advantage AI: Turn Match Data Into Match Wins</title>
 <meta name="description" content="Upload a match video. Each player gets their top 3 things to fix, with drills to practise.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,6 +105,7 @@ p { margin: 0; text-wrap: pretty; }
 /* ── Top bar ──────────────────────────────────────────────────────────── */
 .topbar { border-bottom: 1px solid var(--line); }
 .topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
+.brand-ai { color: var(--accent); }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-height: var(--tap); margin-right: auto;
   color: var(--ink); text-decoration: none; font-weight: 650; font-size: var(--text-lg); letter-spacing: -0.01em; }
 .brand svg { flex: none; }
@@ -236,12 +237,12 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
 
 <header class="topbar">
   <div class="wrap">
-    <a class="brand" href="index.html" aria-label="Tennis Analytics, home">
+    <a class="brand" href="index.html" aria-label="Advantage AI, home">
       <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
         <circle cx="14" cy="14" r="12.5" fill="var(--accent)"/>
         <path d="M5.2 5.6c4.4 3.6 4.4 13.2 0 16.8M22.8 5.6c-4.4 3.6-4.4 13.2 0 16.8" fill="none" stroke="var(--bg)" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
-      <span>Tennis Analytics</span>
+      <span>Advantage <span class="brand-ai">AI</span></span>
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#new" aria-current="page">New analysis</a>
@@ -256,8 +257,8 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
 
 <main class="wrap">
   <div class="hero">
-    <h1>See what's <span class="kw">costing you points</span></h1>
-    <p class="sub">Upload a match video. Each player gets their top 3 things to fix, with drills to practise.</p>
+    <h1>Turn match data into <span class="kw">match wins</span></h1>
+    <p class="sub">See what's costing you points. Upload a match video and each player gets their top 3 things to fix, with drills to practise.</p>
     <div class="actions">
       <a class="btn btn-primary" href="#new">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M5 20h14"/></svg>

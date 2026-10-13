@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Match Report</title>
+<title>Match Report · Advantage AI</title>
 <meta name="description" content="Example match report: what is costing each player points and what to practise.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +107,7 @@ p { margin: 0; text-wrap: pretty; }
 /* ── Top bar ──────────────────────────────────────────────────────────── */
 .topbar { border-bottom: 1px solid var(--line); }
 .topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
+.brand-ai { color: var(--accent); }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-height: var(--tap); margin-right: auto;
   color: var(--ink); text-decoration: none; font-weight: 650; font-size: var(--text-lg); letter-spacing: -0.01em; }
 .nav { display: flex; gap: var(--space-1); }
@@ -288,12 +289,12 @@ details.fold > summary svg { color: var(--muted); }
 
 <header class="topbar">
   <div class="wrap">
-    <a class="brand" href="index.html" aria-label="Tennis Analytics, home">
+    <a class="brand" href="index.html" aria-label="Advantage AI, home">
       <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
         <circle cx="14" cy="14" r="12.5" fill="var(--accent)"/>
         <path d="M5.2 5.6c4.4 3.6 4.4 13.2 0 16.8M22.8 5.6c-4.4 3.6-4.4 13.2 0 16.8" fill="none" stroke="var(--bg)" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
-      <span>Tennis Analytics</span>
+      <span>Advantage <span class="brand-ai">AI</span></span>
     </a>
     <nav class="nav" aria-label="Main">
       <a href="index.html#new">New analysis</a>
