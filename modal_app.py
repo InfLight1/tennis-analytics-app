@@ -299,6 +299,7 @@ gpu_image = (
 # Shared storage for models, videos, and per-job intermediate/output files
 volume = modal.Volume.from_name("tennis-perf-storage", create_if_missing=True)
 VOLUME_PATH = "/data"
+EXAMPLE_JOB_ID = "76a383379d90"   # showcase match; its report is public (no passcode)
 JOBS_DIR = f"{VOLUME_PATH}/jobs"
 MODELS_DIR = f"{VOLUME_PATH}/models"
 
@@ -961,9 +962,14 @@ def web_app():
     # No secret value set -> everything is locked (fail closed).
     passcode = os.environ.get("APP_PASSCODE", "").strip().encode()
 
+    # The example report opens without the passcode, so judges and new
+    # visitors can see a full report (read only; renaming still needs it).
+    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}"}
+
     @fastapi_app.middleware("http")
     async def require_passcode(request, call_next):
-        if request.url.path.startswith("/api/") and request.method != "OPTIONS":
+        is_public = request.method == "GET" and request.url.path in public_api
+        if request.url.path.startswith("/api/") and request.method != "OPTIONS" and not is_public:
             given = request.headers.get("x-passcode", "").strip().encode()
             if not passcode or not hmac.compare_digest(given, passcode):
                 await asyncio.sleep(0.5)              # slows guessing

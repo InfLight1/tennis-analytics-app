@@ -42,8 +42,12 @@
   const isApi = (url) => String(url instanceof Request ? url.url : url).includes("/api/");
   const realFetch = window.fetch.bind(window);
 
+  // The example report's data is public: no prompt for first-time visitors.
+  const isPublic = (url) => /\/api\/profile\/76a383379d90$/.test(String(url instanceof Request ? url.url : url));
+
   window.fetch = async (url, opts = {}) => {
     if (!isApi(url)) return realFetch(url, opts);
+    if (!code && isPublic(url) && (opts.method || "GET").toUpperCase() === "GET") return realFetch(url, opts);
     if (!code) await ask(false);
     for (;;) {
       const headers = new Headers(opts.headers || {});

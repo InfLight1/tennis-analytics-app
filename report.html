@@ -137,7 +137,7 @@ async function load() {
     if (params.get("insights")) {             // local testing: separate insights file
       try { profile.insights = await (await fetch(params.get("insights"))).json(); } catch (e) {}
     }
-    if (JOB) $("editNamesBtn").classList.remove("hidden");
+    if (JOB && JOB !== "76a383379d90") $("editNamesBtn").classList.remove("hidden");   // the example report is read only
     render();
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
   } catch (e) {
