@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Versions</title>
+<style>
+  :root { --bg: #f4f4f2; --card: #fff; --text: #1a1a1a; --muted: #6b6b66; --line: #ddddd8; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151515; --card: #1e1e1e; --text: #eee; --muted: #9a9a94; --line: #333; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; padding: 24px 16px 48px; }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  .bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .bar button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  .bar button[aria-pressed="true"] { border-color: var(--text); font-weight: 600; }
+  section { margin-bottom: 36px; }
+  section h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  section h2 span { color: var(--muted); font-weight: 400; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .v { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .v header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; gap: 8px; }
+  .v header b { font-size: .95rem; }
+  .v header a { color: var(--text); font-size: .85rem; white-space: nowrap; }
+  .frames { display: flex; gap: 10px; }
+  .shot { flex: 1; min-width: 0; }
+  .shot small { display: block; color: var(--muted); margin-bottom: 4px; }
+  .clip { position: relative; width: 100%; aspect-ratio: 375 / 760; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; }
+  .clip iframe { position: absolute; top: 0; left: 0; width: 375px; height: 760px; border: 0; transform-origin: 0 0; }
+  body.desk .clip { aspect-ratio: 1280 / 820; }
+  body.desk .clip iframe { width: 1280px; height: 820px; }
+  body.desk .frames { flex-direction: column; }
+</style>
+</head>
+<body>
+<h1>Tennis app: 6 design versions</h1>
+<p class="lead">3 looks, each built twice (left: impeccable, right: taste). Each card shows Home and the example Report. "Open full" opens it in its own tab.</p>
+<div class="bar">
+  <button type="button" data-w="phone" aria-pressed="true">Phone size</button>
+  <button type="button" data-w="desk" aria-pressed="false">Desktop size</button>
+</div>
+<div id="rows"></div>
+<script>
+const looks = [
+  ["hedging", "Hedging Overview", "dark phone dashboard"],
+  ["cream", "Escape Tab Hell", "warm cream, one thing at a time"],
+  ["etched", "Etched Peaks", "wildcard: pen-and-ink on paper"],
+];
+const skills = [["impeccable", "impeccable"], ["taste", "taste"]];
+document.getElementById("rows").innerHTML = looks.map(([slug, name, note]) => `
+  <section><h2>${name} <span>· ${note}</span></h2><div class="row">
+  ${skills.map(([s, label]) => `<div class="v"><header><b>${label}</b>
+    <a href="${slug}-${s}/index.html" target="_blank" rel="noopener">Open full ↗</a></header>
+    <div class="frames">
+      <div class="shot"><small>Home</small><div class="clip"><iframe loading="lazy" src="${slug}-${s}/index.html" title="${name} ${label} home"></iframe></div></div>
+      <div class="shot"><small>Report</small><div class="clip"><iframe loading="lazy" src="${slug}-${s}/report.html" title="${name} ${label} report"></iframe></div></div>
+    </div></div>`).join("")}
+  </div></section>`).join("");
+function fit() {
+  document.querySelectorAll(".clip").forEach((c) => {
+    const f = c.querySelector("iframe");
+    f.style.transform = `scale(${c.clientWidth / f.offsetWidth})`;
+  });
+}
+document.querySelectorAll(".bar button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".bar button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  document.body.classList.toggle("desk", b.dataset.w === "desk");
+  fit();
+}));
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>

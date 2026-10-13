@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis Analytics App</title>
+<meta name="description" content="Upload a tennis match video and see what's costing each player points, and what to practise.">
+<meta name="theme-color" content="#0a0c0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+/* Hedging (dark dashboard) direction. Every design decision is a token here.
+   Dark is the home mode; light follows the phone setting or the toggle. */
+:root {
+  color-scheme: light;
+  /* colour: light */
+  --bg: #eef1ef; --surface: #fbfcfb; --surface-2: #e6eae8; --surface-3: #d7ddda; --border: #cfd6d2;
+  --text: #0c0f0e; --text-2: #343b38; --muted: #535b57;
+  --accent: #12703f; --on-accent: #ffffff; --accent-soft: #12703f1a;
+  --bad: #b3261e; --bad-soft: #b3261e14;
+  --focus: #12703f;
+  /* type */
+  --font-body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-num: "Barlow Condensed", "Arial Narrow", -apple-system, "Segoe UI", sans-serif;
+  --fs-body: 17px; --fs-sm: 0.94rem; --fs-xs: 0.8rem; --fs-h3: 1.15rem; --fs-h2: 1.65rem;
+  --fs-h1: clamp(2.3rem, 7vw, 3.1rem); --fs-kpi: 2.2rem; --fs-ring: 2.5rem;
+  --lh: 1.5; --tracking-label: 0.06em;
+  /* space */
+  --gutter: 16px; --col: 760px; --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 40px;
+  /* shape: containers 12px, controls 8px, tabs/segments/tags full pill */
+  --r-card: 12px; --r-ctl: 8px; --r-pill: 999px;
+  --tap: 44px;
+  --shadow: 0 1px 2px #0c1f1414;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a0c0b; --surface: #131615; --surface-2: #1b1f1d; --surface-3: #262b29; --border: #262b29;
+    --text: #f2f4f3; --text-2: #c2c9c5; --muted: #949c98;
+    --accent: #4fd17f; --on-accent: #04210f; --accent-soft: #4fd17f1f;
+    --bad: #ef7a70; --bad-soft: #ef7a701c;
+    --focus: #4fd17f; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c0b; --surface: #131615; --surface-2: #1b1f1d; --surface-3: #262b29; --border: #262b29;
+  --text: #f2f4f3; --text-2: #c2c9c5; --muted: #949c98;
+  --accent: #4fd17f; --on-accent: #04210f; --accent-soft: #4fd17f1f;
+  --bad: #ef7a70; --bad-soft: #ef7a701c;
+  --focus: #4fd17f; --shadow: none;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 var(--fs-body)/var(--lh) var(--font-body); }
+.wrap { max-width: calc(var(--col) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter) 64px; }
+h1, h2, h3 { font-family: var(--font-num); font-weight: 600; letter-spacing: 0.005em; margin: 0; }
+h1 { font-size: var(--fs-h1); line-height: 1.05; }
+h2 { font-size: var(--fs-h2); line-height: 1.15; }
+h3 { font-size: var(--fs-h3); line-height: 1.3; font-family: var(--font-body); font-weight: 700; }
+a { color: var(--accent); text-underline-offset: 3px; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--muted); font-size: var(--fs-sm); }
+.label { font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--sp-4); box-shadow: var(--shadow); }
+section.block { margin-top: var(--sp-6); }
+section.block > h2 { margin-bottom: var(--sp-3); }
+
+/* Top bar */
+.topbar { display: flex; align-items: center; gap: var(--sp-1); padding: var(--sp-3) 0; border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; color: var(--text); text-decoration: none; font-family: var(--font-num); font-weight: 700; font-size: 1.3rem; min-height: var(--tap); }
+.mark { width: 30px; height: 30px; border-radius: var(--r-ctl); background: var(--accent); display: grid; place-items: center; flex: none; }
+.mark::after { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid var(--on-accent); }
+.navlink { color: var(--text-2); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); padding: 0 10px; min-height: var(--tap); display: inline-flex; align-items: center; border-radius: var(--r-ctl); white-space: nowrap; }
+.navlink:hover { background: var(--surface-2); color: var(--text); }
+.theme-btn { width: var(--tap); height: var(--tap); border-radius: var(--r-ctl); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; margin-left: var(--sp-1); }
+@media (max-width: 480px) { .brand span { display: none; } .navlink { padding: 0 8px; } }
+
+/* Buttons */
+.btn { font: 600 1rem/1.2 var(--font-body); min-height: 48px; padding: 0 18px; border-radius: var(--r-ctl); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+.btn-primary:hover { border-color: var(--accent); filter: brightness(1.06); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+input[type=text] { width: 100%; font: inherit; min-height: 48px; padding: 0 12px; border-radius: var(--r-ctl); border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+input::placeholder { color: var(--muted); opacity: 1; }
+label { display: block; font-size: var(--fs-sm); color: var(--text-2); margin-bottom: var(--sp-2); }
+
+/* Folds */
+details.fold { margin-top: var(--sp-3); }
+details.fold > summary { list-style: none; cursor: pointer; min-height: var(--tap); display: flex; align-items: center; gap: var(--sp-3); font-weight: 600; color: var(--text); padding: var(--sp-2) var(--sp-4); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "+"; margin-left: auto; font: 600 1.5rem/1 var(--font-num); color: var(--accent); }
+details.fold[open] > summary::after { content: "\2212"; }
+details.fold .fold-body { padding: 0 var(--sp-4) var(--sp-4); }
+details.fold.card { padding: 0; }
+
+/* Home: hero */
+.hero { padding: var(--sp-6) 0 var(--sp-2); }
+.hero .sub { color: var(--text-2); font-size: 1.1rem; margin-top: var(--sp-3); max-width: 34ch; }
+.hero-actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
+@media (max-width: 480px) { .hero-actions .btn { flex: 1 1 100%; } }
+
+/* Home: upload steps */
+.steps { display: grid; gap: var(--sp-3); }
+.step-head { display: flex; align-items: center; gap: var(--sp-3); }
+.step-num { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 1.25rem/1 var(--font-num); background: var(--surface-2); color: var(--muted); }
+.step.active { border-color: var(--accent); }
+.step.active .step-num { background: var(--accent); color: var(--on-accent); }
+.step.upcoming { background: transparent; box-shadow: none; }
+.step.upcoming h3 { color: var(--text-2); }
+.step.upcoming p { color: var(--muted); margin: var(--sp-2) 0 0 48px; font-size: var(--fs-sm); }
+.step .badge { margin-left: auto; font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--muted); }
+.step.active .badge { color: var(--accent); }
+.pick-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-4); }
+.file-pick { position: relative; overflow: hidden; }
+.file-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.file-pick:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+#fileName { color: var(--text-2); font-size: var(--fs-sm); overflow-wrap: anywhere; min-width: 0; }
+.upload-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-3); }
+.wifi-note { display: flex; gap: var(--sp-3); align-items: baseline; margin-top: var(--sp-4); padding: var(--sp-3); border-radius: var(--r-ctl); background: var(--accent-soft); color: var(--text); font-size: var(--fs-sm); }
+.wifi-note b { font-family: var(--font-num); font-size: 1.05rem; color: var(--accent); white-space: nowrap; }
+.tip { color: var(--text-2); font-size: var(--fs-sm); margin-top: var(--sp-3); }
+
+/* Home: filming guide */
+.film { display: grid; grid-template-columns: 1fr 1.45fr; gap: var(--sp-3); }
+.film figure { margin: 0; background: var(--surface-2); border-radius: var(--r-ctl); padding: var(--sp-3); display: flex; flex-direction: column; justify-content: center; }
+.film svg { display: block; width: 100%; height: auto; max-height: 320px; }
+.film figcaption { font-size: var(--fs-sm); color: var(--text-2); text-align: center; margin-top: var(--sp-2); }
+.svg-line { stroke: var(--text-2); }
+.svg-court { fill: var(--accent-soft); }
+.svg-accent { fill: var(--accent); }
+.svg-accent-stroke { stroke: var(--accent); }
+.svg-label { fill: var(--text-2); font: 600 11px var(--font-body); }
+.film-list { list-style: none; counter-reset: s; margin: var(--sp-4) 0 0; padding: 0; display: grid; gap: var(--sp-3); }
+.film-list li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: var(--sp-3); color: var(--text-2); }
+.film-list li::before { content: counter(s); font: 700 1.35rem/1.1 var(--font-num); color: var(--accent); }
+.film-list b { color: var(--text); }
+@media (max-width: 560px) { .film { grid-template-columns: 1fr; } .film .fig-top svg { max-height: 240px; } }
+
+/* Home: reports */
+.empty { color: var(--text-2); }
+.form-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.form-row input { flex: 1 1 180px; max-width: 280px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Tennis Analytics home"><i class="mark" aria-hidden="true"></i><span>Tennis Analytics</span></a>
+  <a class="navlink" href="#new">New analysis</a>
+  <a class="navlink" href="#reports">My reports</a>
+  <button type="button" class="theme-btn" id="themeBtn" title="Switch light/dark" aria-label="Switch light/dark">&#9680;</button>
+</header>
+
+<div class="hero">
+  <h1>See what's costing you points</h1>
+  <p class="sub">Upload a match video. Each player gets their top 3 things to fix, with drills to practise.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#new">New analysis</a>
+    <a class="btn" href="report.html">See an example report</a>
+  </div>
+</div>
+
+<!-- New analysis (shown first for a visitor with no reports) -->
+<section class="block" id="new">
+  <h2>New analysis</h2>
+  <div class="steps">
+    <div class="card step active" id="uploadPanel">
+      <div class="step-head"><span class="step-num">1</span><h3>Choose your match video</h3><span class="badge">Now</span></div>
+      <div class="pick-row">
+        <span class="btn file-pick">Choose video<input type="file" id="videoFile" accept="video/*" aria-label="Choose video"></span>
+        <span id="fileName">No video chosen</span>
+      </div>
+      <div class="upload-row">
+        <button class="btn btn-primary" id="uploadBtn" disabled>Upload</button>
+        <span class="muted">Up to 60 minutes.</span>
+      </div>
+      <p class="wifi-note"><b>Wi-Fi</b><span>Upload over Wi-Fi: a 12-minute 4K video is about 1.5 GB.</span></p>
+      <p class="tip">Film from high up behind the baseline with the whole court in view (see <a href="#filmGuide">how to film your match</a>).</p>
+    </div>
+    <div class="card step upcoming" aria-disabled="true">
+      <div class="step-head"><span class="step-num">2</span><h3>Mark the court</h3><span class="badge">Next</span></div>
+      <p>Tap 7 points on a frame from your video: the court's corners, the near service line ends and the middle of the net.</p>
+    </div>
+    <div class="card step upcoming" aria-disabled="true">
+      <div class="step-head"><span class="step-num">3</span><h3>Analysing the match</h3><span class="badge">Then</span></div>
+      <p>A 15-minute match takes about 10 minutes. You can close this page: the report will appear under <a href="#reports">My reports</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How to film your match -->
+<section class="block" id="filmGuide">
+  <h2>How to film your match</h2>
+  <div class="card">
+    <div class="film">
+      <figure class="fig-top">
+        <svg viewBox="0 0 200 304" role="img" aria-label="Court seen from above. The phone is on the fence behind the near baseline, in the middle, looking at the whole court.">
+          <path d="M100 286 L4 236 M100 286 L196 236" class="svg-accent-stroke" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+          <rect x="59" y="20" width="82" height="238" class="svg-court"/>
+          <g class="svg-line" stroke-width="2" fill="none">
+            <rect x="59" y="20" width="82" height="238"/>
+            <path d="M59 75 H141 M59 203 H141 M100 75 V203"/>
+          </g>
+          <path d="M50 139 H150" class="svg-line" stroke-width="3.5"/>
+          <text x="154" y="142" class="svg-label">Net</text>
+          <path d="M8 286 H192" class="svg-line" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <text x="8" y="281" class="svg-label">Fence</text>
+          <rect x="92" y="279" width="16" height="12" rx="2.5" class="svg-accent"/>
+          <text x="112" y="301" class="svg-label">Phone, 8 ft up</text>
+        </svg>
+        <figcaption>Behind the baseline, in the middle, up high</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 320 180" role="img" aria-label="What the video should show: the whole court, with all 4 corners, the net and both service lines in view.">
+          <rect x="1" y="1" width="318" height="178" rx="8" fill="none" class="svg-line" stroke-width="1.5"/>
+          <path d="M40 165 L280 165 L205 30 L115 30 Z" class="svg-court"/>
+          <g class="svg-line" stroke-width="2" fill="none">
+            <path d="M40 165 L280 165 L205 30 L115 30 Z"/>
+            <path d="M73.3 105 H246.7 M106.7 45 H213.3 M160 105 V45"/>
+          </g>
+          <path d="M84 70 H236" class="svg-line" stroke-width="3.5"/>
+          <g class="svg-accent">
+            <circle cx="40" cy="165" r="5"/><circle cx="280" cy="165" r="5"/>
+            <circle cx="115" cy="30" r="5"/><circle cx="205" cy="30" r="5"/>
+          </g>
+          <text x="212" y="24" class="svg-label">All 4 corners</text>
+          <text x="240" y="66" class="svg-label">Net</text>
+        </svg>
+        <figcaption>What your video should look like</figcaption>
+      </figure>
+    </div>
+    <ol class="film-list">
+      <li><span>Hang the phone on the fence <b>behind one baseline</b>, in the middle, <b>about 8 ft up</b>. A phone tripod that hooks onto the fence works well.</span></li>
+      <li><span>Phone <b>sideways</b>, pointing at the far baseline.</span></li>
+      <li><span><b>All 4 corners</b> of the court and the <b>net</b> must be in the picture.</span></li>
+      <li><span>Film in <b>4K at 30 fps</b>.</span></li>
+      <li><span>Press record, then <b>don't touch the phone</b> until the match ends.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- My reports (remembered on this device) -->
+<section class="block" id="reports">
+  <h2>My reports</h2>
+  <div class="card"><p class="empty">No reports yet. Upload a match above and its report will appear here.</p></div>
+  <details class="card fold">
+    <summary>Open a report by its job code</summary>
+    <div class="fold-body">
+      <form class="form-row" id="openJobForm" onsubmit="event.preventDefault(); location.href='report.html';">
+        <input type="text" id="openJobId" aria-label="Job code" placeholder="e.g. 76a383379d90" autocomplete="off">
+        <button type="submit" class="btn">Open report</button>
+      </form>
+    </div>
+  </details>
+  <details class="card fold">
+    <summary>Continue an earlier upload</summary>
+    <div class="fold-body">
+      <label for="resumeJobId">If an upload finished but the page closed before you marked the court, enter its job code</label>
+      <div class="form-row">
+        <input type="text" id="resumeJobId" placeholder="e.g. 55f471269220" autocomplete="off">
+        <button type="button" class="btn">Continue</button>
+      </div>
+    </div>
+  </details>
+</section>
+</div>
+<script>
+document.getElementById("themeBtn").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+});
+document.getElementById("videoFile").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  document.getElementById("fileName").textContent = f ? f.name : "No video chosen";
+  document.getElementById("uploadBtn").disabled = !f;
+});
+</script>
+</body>
+</html>

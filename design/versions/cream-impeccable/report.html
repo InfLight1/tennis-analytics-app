@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Match Report</title>
+<meta name="description" content="Example match report: what is costing each player points and what to practise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
+<script>
+  try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<style>
+/* ── Design tokens: every decision lives here ─────────────────────────── */
+:root {
+  --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-display: clamp(2.25rem, 1.5rem + 3.6vw, 3.5rem);
+  --text-num: 2.25rem;
+  --leading-tight: 1.08;
+  --leading-snug: 1.3;
+  --leading-body: 1.55;
+  --tracking-display: -0.025em;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+  --gutter: 16px;
+  --col: 760px;
+  --tap: 48px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
+  --bar-w: 3px;
+  --ring-size: 112px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 220ms;
+
+  color-scheme: light;
+  --bg: #FBF8F1;
+  --surface: #FFFDF8;
+  --surface-2: #F2EDE2;
+  --line: #E3DCCE;
+  --line-strong: #CFC6B4;
+  --ink: #1D1A15;
+  --ink-2: #463F35;
+  --muted: #655E52;
+  --dim: #8A8275;
+  --accent: #2B6A3B;
+  --accent-strong: #215630;
+  --accent-soft: #E3EDDF;
+  --on-accent: #FFFFFF;
+  --bad: #A2443A;
+  --bad-soft: #F5E4DF;
+  /* chart segments: one hue per view, stepped in strength */
+  --won-1: #2B6A3B; --won-2: #5E9468; --won-3: #93BB98; --won-4: #C4DBC4;
+  --lost-1: #A2443A; --lost-2: #C2756A; --lost-3: #D9A399; --lost-4: #EBCBC3; --lost-5: #6E2E27; --lost-6: #463F35;
+  --shadow-1: 0 1px 2px rgba(70, 50, 20, 0.06), 0 10px 28px -14px rgba(70, 50, 20, 0.22);
+  --focus: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #191712; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
+    --ink: #F3EEE4; --ink-2: #D6CFC2; --muted: #B3AA9B; --dim: #8C8475;
+    --accent: #86C795; --accent-strong: #9FD6AB; --accent-soft: #233328; --on-accent: #10200F;
+    --bad: #E0907F; --bad-soft: #3A2622;
+    --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
+    --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #191712; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
+  --ink: #F3EEE4; --ink-2: #D6CFC2; --muted: #B3AA9B; --dim: #8C8475;
+  --accent: #86C795; --accent-strong: #9FD6AB; --accent-soft: #233328; --on-accent: #10200F;
+  --bad: #E0907F; --bad-soft: #3A2622;
+  --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
+  --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: var(--space-5); }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 var(--text-base)/var(--leading-body) var(--font-sans);
+  -webkit-font-smoothing: antialiased; caret-color: var(--accent); scrollbar-color: var(--line-strong) var(--bg); }
+::selection { background: var(--accent); color: var(--on-accent); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+h1, h2, h3 { margin: 0; font-weight: 500; text-wrap: balance; }
+h2 { font: 500 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
+h3 { font: 600 var(--text-lg)/var(--leading-snug) var(--font-sans); }
+p { margin: 0; text-wrap: pretty; }
+.muted { color: var(--muted); }
+.wrap { max-width: calc(var(--col) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+.topbar { border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; min-height: var(--tap); margin-right: auto;
+  color: var(--ink); text-decoration: none; font-weight: 650; font-size: var(--text-lg); letter-spacing: -0.01em; }
+.nav { display: flex; gap: var(--space-1); }
+.nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-3);
+  color: var(--ink-2); text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
+.nav a:hover { color: var(--ink); background: var(--surface-2); }
+.theme-btn { width: var(--tap); height: var(--tap); display: grid; place-items: center; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); border-radius: var(--radius-pill); cursor: pointer; }
+.theme-btn:hover { background: var(--surface-2); }
+.theme-btn .moon { display: none; }
+:root[data-theme="dark"] .theme-btn .sun { display: none; }
+:root[data-theme="dark"] .theme-btn .moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .sun { display: none; }
+  :root:not([data-theme="light"]) .theme-btn .moon { display: block; }
+}
+@media (max-width: 559px) {
+  .theme-btn { order: 2; }
+  .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
+}
+
+/* ── Page head + tabs ─────────────────────────────────────────────────── */
+.page-head { padding: var(--space-7) 0 var(--space-5); }
+.page-head .label { color: var(--muted); font-weight: 550; }
+.page-head h1 { margin-top: var(--space-1); font: 500 var(--text-display)/var(--leading-tight) var(--font-serif); letter-spacing: var(--tracking-display); }
+.page-head h1 .vs { color: var(--muted); font-style: italic; font-weight: 400; }
+.page-head .score { margin-top: var(--space-2); font-size: var(--text-lg); color: var(--ink-2); }
+.page-head .score b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+.tabs button { min-height: 56px; border: 0; background: transparent; cursor: pointer; color: var(--dim);
+  font: 500 var(--text-xl)/1 var(--font-serif); letter-spacing: -0.01em; position: relative; border-radius: 0;
+  transition: color var(--dur) var(--ease-out); }
+.tabs button:hover { color: var(--ink-2); }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: var(--bar-w); background: var(--accent); border-radius: 2px; }
+
+.first-fix { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-4) 0 0; padding: var(--space-3) var(--space-4);
+  min-height: 56px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); text-decoration: none;
+  transition: background var(--dur) var(--ease-out); }
+.first-fix:hover { background: color-mix(in oklab, var(--accent-soft), var(--accent) 12%); }
+.first-fix .ff-label { flex: none; font-weight: 650; color: var(--accent); }
+@media (max-width: 559px) { .first-fix { flex-wrap: wrap; row-gap: var(--space-1); } .first-fix .ff-label { width: 100%; font-size: var(--text-sm); } }
+.first-fix .ff-text { flex: 1; min-width: 0; font-weight: 550; }
+.first-fix .pts { flex: none; }
+.first-fix svg { flex: none; color: var(--accent); }
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.sec { padding: var(--space-7) 0; border-top: 1px solid var(--line); }
+.sec:first-child { border-top: 0; }
+.sec > h2 { margin-bottom: var(--space-5); }
+.sec-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+
+/* hero */
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+.tag { display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--space-3); border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); color: var(--ink-2); font-weight: 550; font-size: var(--text-sm); }
+.rings { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.ring-item { display: flex; align-items: center; gap: var(--space-4); }
+.ring { position: relative; width: var(--ring-size); height: var(--ring-size); flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .val { position: absolute; inset: 0; display: grid; place-items: center; font: 500 1.75rem/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.ring-lbl { font-weight: 650; }
+.ring-ctx { color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 559px) {
+  :root { --ring-size: 96px; }
+  .ring-item { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+}
+.minis { display: grid; grid-template-columns: repeat(3, 1fr); margin: var(--space-6) 0 0; padding: 0; border-block: 1px solid var(--line); }
+.mini { padding: var(--space-4) var(--space-3) var(--space-4) 0; }
+.mini + .mini { padding-left: var(--space-4); border-left: 1px solid var(--line); }
+.mini .mv { margin: 0; font: 500 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.mini .mv.todo { font: 600 var(--text-base)/2.25rem var(--font-sans); color: var(--muted); }
+.mini .ml { margin-top: var(--space-2); color: var(--ink-2); font-size: var(--text-sm); font-weight: 550; }
+.summary { margin-top: var(--space-6); font: 400 1.3125rem/1.5 var(--font-serif); color: var(--ink); max-width: 62ch; }
+
+/* lost/won switch */
+.seg { display: inline-flex; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-2); }
+.seg button { min-height: 42px; min-width: 76px; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink-2); font: 600 var(--text-base)/1 var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+.bar { display: flex; gap: 2px; height: 28px; border-radius: var(--radius-sm); overflow: hidden; }
+.bar span { min-width: 6px; }
+.legend { list-style: none; margin: var(--space-4) 0 0; padding: 0; }
+.legend li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+.legend li:first-child { border-top: 0; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.legend .n { margin-left: auto; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.legend .total { color: var(--muted); }
+
+/* fixes: vertical list, the open (or first) one carries the green bar */
+.fixes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+.fix { position: relative; display: grid; grid-template-columns: 2.5rem 1fr; gap: 0 var(--space-3); padding: var(--space-1) 0 var(--space-1) var(--space-5); }
+.fix::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--bar-w); border-radius: 2px; background: var(--line); transition: background var(--dur) var(--ease-out); }
+.fix.is-first::before, .fix:has(details[open])::before { background: var(--accent); }
+.rank { font: 500 2.5rem/1 var(--font-serif); color: var(--dim); font-variant-numeric: tabular-nums; }
+.fix.is-first .rank, .fix:has(details[open]) .rank { color: var(--accent); }
+.fix-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); }
+.fix-head h3 { text-wrap: pretty; font: 500 var(--text-xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.01em; flex: 1 1 14ch; }
+.pts { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
+  font-weight: 700; font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pts.lost { color: var(--bad); background: var(--bad-soft); }
+.pts.won { color: var(--accent); background: var(--accent-soft); }
+.try { margin-top: var(--space-3); color: var(--ink-2); max-width: 62ch; }
+.try b { color: var(--ink); font-weight: 650; }
+.moments { margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+.moments .t { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.fix-body { grid-column: 2; min-width: 0; }
+@media (max-width: 559px) {
+  .fix { grid-template-columns: 1fr; padding-left: var(--space-4); }
+  .rank { font-size: 2rem; margin-bottom: var(--space-2); }
+  .fix-body { grid-column: 1; }
+}
+details.more { margin-top: var(--space-3); }
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display: none; }
+details.more > summary { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap); font-weight: 650; color: var(--accent); }
+details summary svg { flex: none; transition: transform var(--dur) var(--ease-out); }
+details[open] > summary svg { transform: rotate(180deg); }
+.advice { display: grid; gap: var(--space-4); padding: var(--space-2) 0 var(--space-2); }
+.advice div { color: var(--ink-2); max-width: 62ch; }
+.advice b { display: block; color: var(--ink); font-weight: 650; margin-bottom: 2px; }
+
+/* keep doing */
+.keeps { list-style: none; margin: 0; padding: 0; }
+.keep { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+.keep:first-child { border-top: 0; padding-top: 0; }
+.keep h3 { flex: 1; text-wrap: pretty; font: 500 var(--text-lg)/var(--leading-snug) var(--font-serif); font-size: 1.3125rem; }
+.ai-note { margin-top: var(--space-6); color: var(--muted); font-size: var(--text-sm); max-width: 62ch; }
+
+/* folds */
+details.fold { border-top: 1px solid var(--line); }
+details.fold:last-of-type { border-bottom: 1px solid var(--line); }
+details.fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 64px;
+  font: 500 var(--text-xl)/1.2 var(--font-serif); color: var(--ink); }
+details.fold > summary:hover { color: var(--accent); }
+details.fold > summary svg { color: var(--muted); }
+.fold-body { padding: 0 0 var(--space-6); }
+.fold-body p + p { margin-top: var(--space-3); }
+.fold-body p { color: var(--ink-2); max-width: 66ch; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid var(--line); }
+.tile { padding: var(--space-4) var(--space-3) var(--space-4) 0; }
+.tile + .tile { padding-left: var(--space-4); border-left: 1px solid var(--line); }
+.tile .v { font: 500 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.tile .l { margin-top: var(--space-2); font-weight: 600; font-size: var(--text-sm); }
+.tile .c { color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+@media (max-width: 459px) {
+  .tiles { grid-template-columns: 1fr; }
+  .tile, .tile + .tile { padding: var(--space-3) 0; border-left: 0; display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline; gap: 0 var(--space-3); }
+  .tile + .tile { border-top: 1px solid var(--line); }
+  .tile .l { margin: 0; }
+  .tile .c { grid-column: 2; }
+  .tile .v { grid-row: span 2; }
+}
+.sub-h { margin: var(--space-7) 0 var(--space-4); font: 600 var(--text-lg)/1.3 var(--font-sans); }
+.early { list-style: none; margin: 0; padding: 0; }
+.early li { padding: var(--space-3) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+.early li:first-child { border-top: 0; }
+.playstyle { margin-top: var(--space-6); }
+
+#tip { position: fixed; z-index: 10; display: none; max-width: 260px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+  background: var(--ink); color: var(--bg); font-size: var(--text-sm); pointer-events: none; box-shadow: var(--shadow-1); }
+.end { height: var(--space-8); }
+
+@media (min-width: 768px) {
+  :root { --gutter: 24px; }
+  .page-head { padding-top: var(--space-8); }
+  .sec { padding: var(--space-8) 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Tennis Analytics, home">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="14" r="12.5" fill="var(--accent)"/>
+        <path d="M5.2 5.6c4.4 3.6 4.4 13.2 0 16.8M22.8 5.6c-4.4 3.6-4.4 13.2 0 16.8" fill="none" stroke="var(--bg)" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span>Tennis Analytics</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html#new">New analysis</a>
+      <a href="index.html#reports">My reports</a>
+    </nav>
+    <button type="button" class="theme-btn" id="themeBtn" aria-label="Switch light/dark" title="Switch light/dark">
+      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <header class="page-head">
+    <div class="label">Match report</div>
+    <h1 id="title"></h1>
+    <p class="score" id="subtitle"></p>
+  </header>
+  <div class="tabs" role="tablist" aria-label="Player" id="tabs"></div>
+  <div id="player" role="tabpanel"></div>
+  <details class="fold" id="coverageBox">
+    <summary>About this data <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="fold-body" id="coverage"></div>
+  </details>
+  <div class="end"></div>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = {"match":{"score":{"sets_won":{"player_1":0,"player_2":0},"completed_sets":[],"match_winner":null},"points_scored":19},"coverage":{"rallies_detected":54,"points_decided":19,"first_serve_faults":7,"unconfirmed_serve_faults":12,"rallies_undecided":16,"notes":["Point winner determined for 19 of 35 detected points (54.3%); the rest are left out of every number below.","12 missed serves couldn't be confirmed as first or second serves, so they aren't counted as double faults or lost points.","In/out calls for balls landing on the far half of the court are less precise (positions there can be off by up to about a metre), so depth placement on that side is not shown.","Where a player stands is only measured while they're at the end closest to the camera."]},"min_sample":{"occurrences":2,"chances":4},"players":{"player_1":{"name":"Player 1","stats":{"points_played":19,"points_won":8,"points_lost":11,"points_won_pct":42.1,"won_by":{"winners":1,"aces":1,"opponent_errors":6,"opponent_double_faults":0},"lost_by":{"own_errors":{"net":4,"long":2},"double_faults":1,"opponent_winners":4},"serve":{"serves_tracked":13,"serves_in":4,"serves_in_pct":30.8,"first_serves":12,"first_serve_faults":8,"first_serve_in_pct":33.3,"second_serves":1,"points_served":5,"unconfirmed_serve_faults":9,"double_faults":1,"aces":1,"service_points_won_pct":40.0,"second_serve_points":1,"second_serve_points_won_pct":0.0},"return":{"return_points":14,"return_points_won_pct":42.9},"rally_length":{"short":{"played":15,"won":6},"medium":{"played":3,"won":2},"long":{"played":1,"won":0}},"shot_mix":{"groundstroke":26,"serve":18,"volley":3},"volley_share_pct_unreliable":10.3,"position":{"hits_with_position":46,"median_depth_behind_baseline_cm":1,"net_share_pct":6.5}},"playstyle":{"tags":["Baseline player","Short points"],"summary":"Baseline player: stays back, typically hitting from right around the baseline; most points (79%) are over within 4 shots; misses most often into the net; lands 33.3% of first serves."},"ai_summary":"You're a solid baseline player who wins by making your opponent miss in long rallies—that's your best weapon. The main thing holding you back is hitting too many balls into the net and losing points quickly when you have the chance to attack. Keep rallying patiently, but work on hitting the ball higher over the net and taking your shot when it's there.","weaknesses":[{"id":"errors_net","kind":"weakness","tier":"headline","title":"Errors into the net","detail":"4 of 11 points lost were their own shot going into the net.","points":4,"occurrences":4,"chances":11,"low_sample":false,"rank":1,"top":true,"moments":[1,321],"advice":{"headline":"Hitting into the net cost you 4 points.","try_this":null,"match_strategy":"When you hit from the baseline, aim so the ball passes over the net by about a racket's length—high enough to clear it safely but still land in. On easy balls or winning chances, this gives you room to hit a bit harder without crashing into the net.","habit":"Before you swing, pick a spot on the court where you want the ball to land, and commit to hitting it there. After you hit into the net, take a breath and remind yourself: higher over, same speed.","practice_drill":"Hit 30 baseline groundstrokes from a basket at the baseline. Count how many land in the court; aim for 27 or more. Focus on clearing the net by at least a racket's length every time."}},{"id":"opponent_winners","kind":"weakness","tier":"headline","title":"Beaten by shots they couldn't return","detail":"4 of 11 points lost were opponent shots they didn't get back.","points":4,"occurrences":4,"chances":11,"low_sample":false,"rank":2,"top":true,"moments":[236,618,656],"advice":{"headline":"Your opponent hit 4 shots you couldn't reach or return.","try_this":null,"match_strategy":"When your opponent is near the net or has an easy ball, move forward a small step or two and stay lower, ready to react. If you're pushed deep, reset to the baseline and don't try to do too much on the next shot.","habit":"Watch where your opponent is standing and what they're setting up to do. If they're moving forward, start moving forward too instead of waiting at the baseline. React early.","practice_drill":"Play points where your opponent feeds you balls from the net or mid-court. Play 10 points and try to get a racket on at least 8 of them, even if you can't win the point. Focus on moving fast and staying in the point."}},{"id":"errors_long","kind":"weakness","tier":"headline","title":"Errors long (past the baseline)","detail":"2 of 11 points lost were their own shot going long (past the baseline).","points":2,"occurrences":2,"chances":11,"low_sample":false,"rank":3,"top":true,"moments":[117],"advice":{"headline":"You hit 2 balls long (past the baseline), which cost you points.","try_this":null,"match_strategy":"On high balls or when you're in the court, slow down your swing or step back a bit so you hit from further behind the baseline. This gives you more room to stay in the court.","habit":"When you see a high ball coming, take a breath and remind yourself: less speed, aim for the middle of the court. Don't try to crush it.","practice_drill":"Hit 20 balls fed from mid-court at shoulder height or higher. Aim for them to land between the service line and baseline; count how many do. Aim for 16 or more."}},{"id":"double_faults","kind":"weakness","tier":"headline","title":"Double faults","detail":"1 double faults in 5 service points; only 33.3% of first serves went in.","points":1,"occurrences":1,"chances":5,"low_sample":true,"moments":[706]},{"id":"rally_short","kind":"weakness","tier":"context","title":"Losing short points (4 shots or fewer)","detail":"Lost 9 of 15 short points (4 shots or fewer).","points":9,"occurrences":9,"chances":15,"low_sample":false,"rank":1,"top":false,"moments":[25,37,85,127,184,221,249,380,421,510],"advice":{"headline":"You lost 9 of 15 short points, so quick rallies are your weak spot.","try_this":null,"match_strategy":"In the first 2–3 shots of a point, don't try to win it yet. Hit the ball deep and to a corner, or aim down the middle to be safe. On your third or fourth shot, if your opponent gives you a weaker ball, step in and attack. Be patient early, aggressive later.","habit":"At the start of each point, tell yourself: first two shots are about staying in the rally, not winning. This gives your brain one job instead of trying to win everything.","practice_drill":"Play 20 short points (stop after 4 shots max). Practice playing the first two shots safe and deep, then attack on shot three if you can. Count how many you win; aim for 12 or more by staying patient."}},{"id":"serve_points","kind":"weakness","tier":"context","title":"Losing on serve","detail":"Won only 40.0% of service points (2 of 5).","points":3,"occurrences":3,"chances":5,"low_sample":false,"rank":2,"top":false,"moments":[85,127,221,249,380,421,441,510]},{"id":"first_serve_pct","kind":"weakness","tier":"context","title":"Missing first serves","detail":"Only 4 of 12 first serves went in (33.3%); lost 1 of 1 points played on a second serve.","points":1,"occurrences":8,"chances":12,"low_sample":false,"rank":3,"top":false,"moments":[349,435,479,505,551,590,626,651,699]},{"id":"rally_long","kind":"weakness","tier":"context","title":"Losing long rallies (9+ shots)","detail":"Lost 1 of 1 long rallies (9+ shots).","points":1,"occurrences":1,"chances":1,"low_sample":true,"moments":[441]}],"strengths":[{"id":"draws_errors","kind":"strength","tier":"headline","title":"Keeping the ball in play until the opponent misses","detail":"6 of 8 points won came from opponent errors in a rally.","points":6,"occurrences":6,"chances":8,"low_sample":false,"rank":1,"top":true,"moments":[25,127,282,380,441,510]},{"id":"winners","kind":"strength","tier":"headline","title":"Hitting shots the opponent can't return","detail":"1 of 8 points won were rally shots the opponent didn't get back.","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[37,85]},{"id":"aces","kind":"strength","tier":"headline","title":"Unreturned serves","detail":"1 of 8 points won were serves the opponent didn't return.","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[221,249,421]}],"id":"player_1"},"player_2":{"name":"Player 2","stats":{"points_played":19,"points_won":11,"points_lost":8,"points_won_pct":57.9,"won_by":{"winners":1,"aces":3,"opponent_errors":6,"opponent_double_faults":1},"lost_by":{"own_errors":{"net":4,"long":1,"wide":1},"double_faults":0,"opponent_winners":2},"serve":{"serves_tracked":19,"serves_in":14,"serves_in_pct":73.7,"first_serves":15,"first_serve_faults":5,"first_serve_in_pct":66.7,"second_serves":4,"points_served":14,"unconfirmed_serve_faults":3,"double_faults":0,"aces":3,"service_points_won_pct":57.1,"second_serve_points":5,"second_serve_points_won_pct":80.0},"return":{"return_points":5,"return_points_won_pct":60.0},"rally_length":{"short":{"played":15,"won":9},"medium":{"played":3,"won":1},"long":{"played":1,"won":1}},"shot_mix":{"serve":24,"groundstroke":11,"volley":8},"volley_share_pct_unreliable":42.1,"position":{"hits_with_position":0,"median_depth_behind_baseline_cm":null,"net_share_pct":null}},"playstyle":{"tags":["Short points"],"summary":"Short points: most points (79%) are over within 4 shots; misses most often into the net; lands 66.7% of first serves."},"ai_summary":"You're a great point-finisher who wins most short rallies and lands your first serve well—that's a real strength. You're also beating your opponent in rallies, which shows solid consistency. The issue is hitting 4 balls into the net; tighten that up and your game will be very hard to beat.","weaknesses":[{"id":"errors_net","kind":"weakness","tier":"headline","title":"Errors into the net","detail":"4 of 8 points lost were their own shot going into the net.","points":4,"occurrences":4,"chances":8,"low_sample":false,"rank":1,"top":true,"moments":[25,127,282,441,510],"advice":{"headline":"Hitting into the net cost you 4 points.","try_this":null,"match_strategy":"When you're attacking or taking a short ball, aim higher over the net—aim so the ball would pass by about a racket's length. You don't lose power this way; you just give yourself a safety margin.","habit":"Before you swing at an attacking shot, say to yourself: clear the net, then swing. This takes one second and reminds you where the ball needs to go.","practice_drill":"Hit 25 attacking groundstrokes (shorter balls or first-shot winners) from inside the baseline. Count how many land in; aim for 22 or more. Focus on clearing the net by a racket's length and landing inside the court."}},{"id":"opponent_winners","kind":"weakness","tier":"headline","title":"Beaten by shots they couldn't return","detail":"2 of 8 points lost were opponent shots they didn't get back.","points":2,"occurrences":2,"chances":8,"low_sample":false,"rank":2,"top":true,"moments":[37,85,221,249,421],"advice":{"headline":"Your opponent hit 2 unreturnable shots on you.","try_this":null,"match_strategy":"When you see your opponent has a chance to attack (especially after you hit a shorter ball), move forward and get lower, ready to react. If you're too far back, they have an easier target.","habit":"After you hit a short ball, step in one or two steps and split your feet, getting lower. Don't back away. This cuts down the angles they can hit.","practice_drill":"Play 15 points where you start inside the baseline with an easier ball and your opponent plays near or at the net. Try to cover at least 10 of their attacking shots with your racket, even if you lose the point. Speed and positioning are the only goals here."}},{"id":"errors_long","kind":"weakness","tier":"headline","title":"Errors long (past the baseline)","detail":"1 of 8 points lost were their own shot going long (past the baseline).","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[380]},{"id":"errors_wide","kind":"weakness","tier":"headline","title":"Errors wide (outside the sideline)","detail":"1 of 8 points lost were their own shot going wide (outside the sideline).","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":null}],"strengths":[{"id":"draws_errors","kind":"strength","tier":"headline","title":"Keeping the ball in play until the opponent misses","detail":"6 of 11 points won came from opponent errors in a rally.","points":6,"occurrences":6,"chances":11,"low_sample":false,"rank":1,"top":true,"moments":[1,61,117,321,485],"advice":{"headline":"You won 6 points by keeping the ball in play until your opponent missed—that's your best strength.","try_this":null,"match_strategy":"Use this strength on purpose. On big points or tie-breaks, if your opponent is playing aggressive, trade balls with them for an extra shot or two. Let them make the mistake. Don't feel like you have to attack every time.","habit":"When you're in a rally and your opponent is trying hard to win, stay calm and think: one more ball in court. Trust that mistake-making will happen if you stay patient.","practice_drill":"Play 10 rallies where you count how many times you can hit the ball in a row without trying to win the point. Aim for 5+ consecutive shots in 8 of the 10 rallies. This builds the feel for long, safe rallies."}},{"id":"aces","kind":"strength","tier":"headline","title":"Unreturned serves","detail":"3 of 11 points won were serves the opponent didn't return.","points":3,"occurrences":3,"chances":11,"low_sample":false,"rank":2,"top":true,"moments":[618,656],"advice":{"headline":"You hit 3 unreturned serves—that's winning you points directly.","try_this":null,"match_strategy":"Keep attacking with your serve. Place it wide on the deuce side or jam it up the middle on the ad side to keep them guessing. Mix it up so they can't pick a corner.","habit":"Before you serve, pick one target (wide or middle, or high or low). Commit to it and serve there. Don't change your mind at the last second.","practice_drill":"Serve 20 serves in a row. Pick 10 to go wide and 10 to go middle or body. Count how many land in the box; aim for 14 or more (at least 70%). This builds accuracy and rhythm."}},{"id":"winners","kind":"strength","tier":"headline","title":"Hitting shots the opponent can't return","detail":"1 of 11 points won were rally shots the opponent didn't get back.","points":1,"occurrences":1,"chances":11,"low_sample":true,"moments":[236]},{"id":"rally_short","kind":"strength","tier":"context","title":"Winning short points (4 shots or fewer)","detail":"Won 9 of 15 short points (4 shots or fewer).","points":9,"occurrences":9,"chances":15,"low_sample":false,"rank":1,"top":false,"moments":[25,37,85,127,184,221,249,380,421,510],"advice":{"headline":"You won 9 of 15 short points—that's a huge strength. Use it.","try_this":null,"match_strategy":"In close points or when you're ahead in the score, play the first couple of shots to your strength: hit shorter balls and finish them fast. Don't let long rallies happen when you don't have to.","habit":"When you have a shorter ball, take it early (a step inside the baseline) and look to put it away on the next shot. Trust your attack and commit to it.","practice_drill":"Play 20 points and deliberately aim to finish 15 of them in 4 shots or fewer. Count how many you win; aim for 12+. This trains you to spot your chances early and take them."}},{"id":"serve_points","kind":"strength","tier":"context","title":"Winning on serve","detail":"Won 57.1% of service points (8 of 14).","points":8,"occurrences":8,"chances":14,"low_sample":false,"rank":2,"top":false,"moments":[1,61,117,236,618,656]},{"id":"return_points","kind":"strength","tier":"context","title":"Winning on return","detail":"Won 60.0% of return points (3 of 5).","points":3,"occurrences":3,"chances":5,"low_sample":false,"rank":3,"top":false,"moments":null},{"id":"first_serve_pct","kind":"strength","tier":"context","title":"Reliable first serve","detail":"66.7% of first serves went in.","points":0,"occurrences":10,"chances":15,"low_sample":false,"rank":4,"top":false,"moments":[104,126,141,174,260,303,525]},{"id":"rally_long","kind":"strength","tier":"context","title":"Winning long rallies (9+ shots)","detail":"Won 1 of 1 long rallies (9+ shots).","points":1,"occurrences":1,"chances":1,"low_sample":true,"moments":[441]}],"id":"player_2"}}};
+
+document.getElementById("themeBtn").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+});
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (v) => (v === null || v === undefined ? "–" : `${Math.round(v)}%`);
+const CHEV = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+let current = "player_1", barView = "lost";
+
+function clock(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, ss = String(sec % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+}
+const MAX_MOMENTS = 5;
+function momentsLine(moments) {
+  if (!moments || !moments.length) return "";
+  const shown = moments.slice(0, MAX_MOMENTS).map((t) => `<span class="t">${clock(t)}</span>`).join(" · ");
+  const more = moments.length > MAX_MOMENTS ? ` and ${moments.length - MAX_MOMENTS} more` : "";
+  return `<p class="moments">Find these moments in your video: ${shown}${more}</p>`;
+}
+const firstSentence = (t) => (t || "").split(/(?<=[.!?])\s/)[0];
+const headlineOf = (p) => (p.advice && p.advice.headline) || p.title;
+
+// One fix, always the same shape: rank, headline, −N pts, one line (Try this / Why), times, fold.
+function fixCard(p, rank, first) {
+  const a = p.advice;
+  const pts = p.points ? `<span class="pts lost">−${p.points} pts</span>` : "";
+  const tryLine = a ? (a.try_this || firstSentence(a.match_strategy)) : "";
+  const line = tryLine ? `<b>Try this:</b> ${esc(tryLine)}` : `<b>Why:</b> ${esc(p.detail)}`;
+  const steps = !a ? [] : [["In matches", a.match_strategy], ["Habit to build", a.habit], ["Practice drill", a.practice_drill]].filter(([, t]) => t);
+  return `<li class="fix${first ? " is-first" : ""}" id="fix-${esc(p.id)}">
+    <div class="rank" aria-label="Number ${rank}">${rank}</div>
+    <div class="fix-body">
+      <div class="fix-head"><h3>${esc(headlineOf(p))}</h3>${pts}</div>
+      <p class="try">${line}</p>
+      ${momentsLine(p.moments)}
+      <details class="more"><summary>${a ? "How to practise it" : "Details"} ${CHEV}</summary>
+        <div class="advice">${steps.map(([h, t]) => `<div><b>${h}</b>${esc(t)}</div>`).join("")}<div><b>Why</b>${esc(p.detail)}</div></div>
+      </details>
+    </div>
+  </li>`;
+}
+
+function ring(value, color, label, ctx) {
+  const v = value === null || value === undefined ? null : Math.max(0, Math.min(100, value));
+  const C = 2 * Math.PI * 42;
+  const arc = !v ? "" : `<circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C * v / 100).toFixed(1)} ${C.toFixed(1)}"/>`;
+  return `<div class="ring-item"><div class="ring" role="img" aria-label="${esc(label)}: ${pct(v)}, ${esc(ctx)}">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-2)" stroke-width="10"/>${arc}</svg>
+      <div class="val">${pct(v)}</div></div>
+    <div><div class="ring-lbl">${esc(label)}</div><div class="ring-ctx">${esc(ctx)}</div></div></div>`;
+}
+
+function stackedBar(parts, total, verb, palette) {
+  const shown = parts.filter((x) => x.n > 0);
+  if (!total || !shown.length) return `<p class="muted">No points ${verb} yet.</p>`;
+  const bar = shown.map((x) => `<span style="flex:${x.n};background:var(--${palette}-${x.slot})" data-tip="${esc(x.label)}: ${x.n} of ${total} points ${verb} (${Math.round(100 * x.n / total)}%)"></span>`).join("");
+  const legend = shown.map((x) => `<li><i style="background:var(--${palette}-${x.slot})"></i>${esc(x.label)}<span class="n">${x.n}</span></li>`).join("");
+  return `<div class="bar" role="img" aria-label="${esc(shown.map((x) => `${x.label} ${x.n}`).join(", "))}">${bar}</div>
+    <ul class="legend">${legend}<li class="total">Total points ${verb}<span class="n">${total}</span></li></ul>`;
+}
+
+function render() {
+  const P = DATA.players, ids = Object.keys(P);
+  $("title").innerHTML = ids.map((id) => esc(P[id].name)).join(' <span class="vs">vs</span> ');
+  $("subtitle").innerHTML = `Points won: <b>${P[ids[0]].stats.points_won}–${P[ids[1]].stats.points_won}</b>`;
+  $("tabs").innerHTML = ids.map((id) => `<button type="button" role="tab" id="tab-${id}" data-id="${id}" aria-selected="${id === current}" tabindex="${id === current ? 0 : -1}">${esc(P[id].name)}</button>`).join("");
+  $("player").setAttribute("aria-labelledby", `tab-${current}`);
+  renderPlayer(P[current]);
+  $("coverage").innerHTML = DATA.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
+    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>`;
+}
+$("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button[role=tab]");
+  if (b && b.dataset.id !== current) { current = b.dataset.id; render(); $(`tab-${current}`).focus(); }
+});
+$("tabs").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const ids = Object.keys(DATA.players), i = ids.indexOf(current);
+  current = ids[(i + (e.key === "ArrowRight" ? 1 : ids.length - 1)) % ids.length];
+  render(); $(`tab-${current}`).focus();
+});
+
+function renderPlayer(pl) {
+  const s = pl.stats, sv = s.serve, rt = s.return;
+  const ordered = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
+  const fixes = ordered(pl.weaknesses), keeps = ordered(pl.strengths);
+  const early = [...pl.weaknesses, ...pl.strengths].filter((p) => p.low_sample);
+  const errs = s.lost_by.own_errors;
+  const lostParts = [
+    { label: "Into the net", n: errs.net || 0, slot: 1 },
+    { label: "Long", n: errs.long || 0, slot: 2 },
+    { label: "Wide", n: errs.wide || 0, slot: 3 },
+    { label: "Missed (direction unclear)", n: errs.unclassified || 0, slot: 4 },
+    { label: "Double faults", n: s.lost_by.double_faults, slot: 5 },
+    { label: "Opponent's shot not returned", n: s.lost_by.opponent_winners, slot: 6 },
+  ];
+  const wonParts = [
+    { label: "Their shot not returned", n: s.won_by.winners, slot: 1 },
+    { label: "Serve not returned", n: s.won_by.aces, slot: 2 },
+    { label: "Opponent missed", n: s.won_by.opponent_errors, slot: 3 },
+    { label: "Opponent double faults", n: s.won_by.opponent_double_faults, slot: 4 },
+  ];
+  const rally = s.avg_rally_shots != null ? `<div class="mv num">${s.avg_rally_shots}</div>` : `<div class="mv todo">[TODO]</div>`;
+  const top = fixes.slice(0, 3);
+  const n1 = top[0];
+
+  $("player").innerHTML = `
+    ${n1 ? `<a class="first-fix" href="#fixes">
+      <span class="ff-label">Your #1 fix</span>
+      <span class="ff-text">${esc(headlineOf(n1))}</span>
+      ${n1.points ? `<span class="pts lost">−${n1.points} pts</span>` : ""}
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+    </a>` : ""}
+
+    <section class="sec" aria-label="Overview">
+      <div class="tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+      <div class="rings">
+        ${ring(s.points_won_pct, "var(--accent)", "Points won", `${s.points_won} of ${s.points_played}`)}
+        ${ring(sv.serves_in_pct, "var(--ink-2)", "Serves in", `${sv.serves_in} of ${sv.serves_tracked}`)}
+      </div>
+      <div class="minis">
+        <div class="mini" title="Serves the opponent didn't return"><div class="mv num">${sv.aces}</div><div class="ml">Aces</div></div>
+        <div class="mini" title="At least this many: some serves aren't seen"><div class="mv num">${sv.double_faults}</div><div class="ml">Double faults</div></div>
+        <div class="mini">${rally}<div class="ml">Shots per rally</div></div>
+      </div>
+      ${pl.ai_summary ? `<p class="summary">${esc(pl.ai_summary)}</p>` : ""}
+    </section>
+
+    <section class="sec" aria-labelledby="barH">
+      <div class="sec-head"><h2 id="barH">How ${esc(pl.name)} ${barView} points</h2>
+        <div class="seg" role="group" aria-label="Show points lost or won">
+          <button type="button" data-view="lost" aria-pressed="${barView === "lost"}">Lost</button>
+          <button type="button" data-view="won" aria-pressed="${barView === "won"}">Won</button>
+        </div></div>
+      ${barView === "lost" ? stackedBar(lostParts, s.points_lost, "lost", "lost") : stackedBar(wonParts, s.points_won, "won", "won")}
+    </section>
+
+    <section class="sec" id="fixes" aria-labelledby="fixH">
+      <h2 id="fixH">${top.length ? `Top ${top.length} things to fix` : "Things to fix"}</h2>
+      ${top.length ? `<ol class="fixes">${top.map((p, i) => fixCard(p, i + 1, i === 0)).join("")}</ol>` : `<p class="muted">Not enough tracked points yet to rank anything.</p>`}
+    </section>
+
+    ${keeps.length ? `<section class="sec" aria-labelledby="keepH"><h2 id="keepH">Keep doing</h2>
+      <ul class="keeps">${keeps.slice(0, 3).map((p) => `<li class="keep"><h3>${esc(headlineOf(p))}</h3>${p.points ? `<span class="pts won">+${p.points} pts</span>` : ""}</li>`).join("")}</ul>
+      <p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>
+    </section>` : ""}
+
+    <details class="fold"><summary>More stats ${CHEV}</summary>
+      <div class="fold-body">
+        <div class="tiles">
+          <div class="tile"><div class="v">${pct(sv.first_serve_in_pct)}</div><div class="l">First serves in</div><div class="c">${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves}</div></div>
+          <div class="tile"><div class="v">${pct(sv.service_points_won_pct)}</div><div class="l">Won on serve</div><div class="c">of ${sv.points_served} points</div></div>
+          <div class="tile"><div class="v">${pct(rt.return_points_won_pct)}</div><div class="l">Won on return</div><div class="c">of ${rt.return_points} points</div></div>
+        </div>
+        ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3><ol class="fixes">${fixes.slice(3).map((p, i) => fixCard(p, i + 4, false)).join("")}</ol>` : ""}
+        ${early.length ? `<h3 class="sub-h">Early signs (too few to rank yet)</h3><ul class="early">${early.map((p) => `<li>${esc(p.detail)}</li>`).join("")}</ul>` : ""}
+        <p class="muted playstyle">${esc(pl.playstyle.summary)}</p>
+      </div>
+    </details>`;
+}
+$("player").addEventListener("click", (e) => {
+  const b = e.target.closest(".seg button");
+  if (b && b.dataset.view !== barView) { barView = b.dataset.view; renderPlayer(DATA.players[current]); document.querySelector(`.seg button[data-view="${barView}"]`).focus(); }
+});
+
+document.addEventListener("pointermove", (e) => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  const tip = $("tip");
+  if (!t) { tip.style.display = "none"; return; }
+  tip.textContent = t.dataset.tip;
+  tip.style.display = "block";
+  tip.style.left = Math.max(8, Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8)) + "px";
+  tip.style.top = (e.clientY - tip.offsetHeight - 12) + "px";
+});
+
+render();
+</script>
+</body>
+</html>
