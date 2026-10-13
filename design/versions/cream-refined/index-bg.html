@@ -39,7 +39,8 @@
   --hero-court-h: clamp(300px, 62vw, 560px);
   --hero-fade-h: 45%;
   --hero-overlap: 24px;
-  --hero-wide-h: clamp(520px, 36vw, 680px);
+  --hero-wide-h: 540px;
+  --hero-box: 1320px;
   --hero-fade-x: 30%;
   --hero-photo-w: 60%;
   --hero-focus: 50% 72%;
@@ -191,16 +192,23 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
   .hero-photo::after { display: none; }
   .hero-cap { position: static; grid-column: 2; color: var(--muted); text-shadow: none; font-weight: 400; }
 }
-/* Wide screens: the whole photo at its own 3:2 shape, flush right and as tall as the band;
-   only its left edge fades so the court stays centred in what you see. Copy is centred top-to-bottom on the left. */
+/* Wide screens: headline and photo share one centred box (--hero-box) so the pair sits in the middle of the page.
+   The photo keeps its 3:2 shape at the box's right edge and fades in from the left. Past the box width
+   (big monitors) its right edge fades too, so it never ends in a hard line on the page colour. */
 @media (min-width: 1320px) {
-  .hero.hero-bg { display: flex; align-items: center; min-height: var(--hero-wide-h); }
-  .hero-bg .hero-copy { max-width: calc(var(--hero-pad) + 500px); padding: var(--space-7) 0 var(--space-7) var(--hero-pad); }
-  .hero-photo { position: absolute; top: 0; right: 0; bottom: 0; height: auto; width: calc(var(--hero-wide-h) * 1.5); margin: 0; }
+  .hero.hero-bg { display: flex; align-items: center; min-height: var(--hero-wide-h);
+    --box-edge: max(0px, calc((100% - var(--hero-box)) / 2)); }
+  .hero-bg .hero-copy { max-width: calc(var(--box-edge) + var(--space-7) + 500px); padding: var(--space-7) 0 var(--space-7) calc(var(--box-edge) + var(--space-7)); }
+  .hero-photo { position: absolute; top: 0; bottom: 0; right: var(--box-edge); height: auto; width: calc(var(--hero-wide-h) * 1.5); margin: 0; clip-path: inset(0 0 0 2px); }
   .hero-photo img { object-position: 50% 50%; }
-  .hero-photo { -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x));
-    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x)); }
-  .hero-cap { left: auto; right: var(--space-5); max-width: 320px; text-align: right; }
+  .hero-photo { -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x));
+    mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x)); }
+  .hero-cap { left: auto; right: calc(var(--box-edge) + var(--space-5)); max-width: 320px; text-align: right; }
+}
+@media (min-width: 1360px) {
+  .hero-photo { clip-path: inset(2px); -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x), #000 88%, transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 0%, #000 10%, #000 88%, transparent calc(100% - 3px)); -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, transparent 3px, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x), #000 88%, transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 0%, #000 10%, #000 88%, transparent calc(100% - 3px)); mask-composite: intersect; }
+  .hero-cap { right: calc(var(--box-edge) + var(--hero-wide-h) * 0.2); bottom: calc(var(--hero-wide-h) * 0.14); }
 }
 
 
