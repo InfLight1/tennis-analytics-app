@@ -34,6 +34,8 @@
   --gutter: 16px;
   --col: 760px;
   --tap: 48px;
+  --hero-wide: 1160px;
+  --hero-ratio-phone: 16 / 9;
   /* shape */
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
   --bar-w: 3px;
@@ -156,6 +158,17 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
 .hero .actions { margin-top: var(--space-6); display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .hero .newhere { margin-top: var(--space-4); color: var(--muted); }
 @media (max-width: 420px) { .hero .actions .btn { flex: 1 1 100%; } }
+/* Hero picture: a short strip under the buttons on phones; beside the copy on wide screens. */
+.hero-img { margin: var(--space-6) 0 0; }
+.hero-img img { display: block; width: 100%; height: auto; aspect-ratio: var(--hero-ratio-phone); object-fit: cover; object-position: 50% 70%;
+  border-radius: var(--radius-lg); background: var(--surface-2); }
+.hero-img figcaption { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-sm); }
+@media (min-width: 900px) {
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); align-items: center;
+    margin-inline: calc(50% - min(var(--hero-wide) / 2, 50vw - var(--gutter))); }
+  .hero-img { margin: 0; }
+  .hero-img img { aspect-ratio: 3 / 2; }
+}
 
 /* ── Sections ─────────────────────────────────────────────────────────── */
 section.block { padding: var(--space-7) 0; border-top: 1px solid var(--line); }
@@ -257,6 +270,7 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
 
 <main class="wrap">
   <div class="hero">
+    <div class="hero-copy">
     <h1>Turn match data into <span class="kw">match wins</span></h1>
     <p class="sub">See what's costing you points. Upload a match video and each player gets their top 3 things to fix, with drills to practise.</p>
     <div class="actions">
@@ -267,6 +281,13 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
       <a class="btn" href="report.html">See an example report</a>
     </div>
     <p class="newhere">New here? Start with <a href="#filmGuide">how to film your match</a>.</p>
+    </div>
+    <figure class="hero-img">
+      <img src="assets/hero-court-800.webp" srcset="assets/hero-court-800.webp 800w, assets/hero-court-1600.webp 1600w"
+        sizes="(min-width: 900px) 560px, 100vw" width="1600" height="1067" fetchpriority="high"
+        alt="An empty tennis court seen from high up behind one baseline, with the whole court and the net in view.">
+      <figcaption>Film from here: high up behind one baseline, the whole court in view.</figcaption>
+    </figure>
   </div>
 
   <!-- New analysis: step 1 active, 2 and 3 upcoming -->
