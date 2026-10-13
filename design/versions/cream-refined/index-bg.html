@@ -39,7 +39,8 @@
   --hero-court-h: clamp(300px, 62vw, 560px);
   --hero-fade-h: 45%;
   --hero-overlap: 24px;
-  --hero-wide-h: 600px;
+  --hero-wide-h: clamp(520px, 36vw, 680px);
+  --hero-fade-x: 30%;
   --hero-photo-w: 60%;
   --hero-focus: 50% 72%;
   --hero-filter: none;
@@ -180,12 +181,25 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
 .hero-photo::after { content: ""; position: absolute; inset: auto 0 0; height: 35%; z-index: 1; background: linear-gradient(to top, rgba(0,0,0,.45), transparent); }
 .hero-cap { position: absolute; z-index: 2; bottom: var(--space-4); left: var(--hero-pad); right: var(--gutter);
   margin: 0; color: #fff; font-size: var(--text-sm); font-weight: 550; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-@media (min-width: 900px) {
-  .hero.hero-bg { min-height: var(--hero-wide-h); }
-  .hero-bg .hero-copy { max-width: calc(var(--hero-pad) + 540px); padding-top: var(--space-9); padding-right: 0; }
-  .hero-photo { position: absolute; inset: 0 0 0 auto; width: var(--hero-photo-w); height: auto; margin: 0; }
-  .hero-photo { -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.45) 26%, #000 50%);
-    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.45) 26%, #000 50%); }
+/* In-between laptops: the whole photo beside the copy, as a framed 3:2 picture (no fade). */
+@media (min-width: 900px) and (max-width: 1319px) {
+  .hero.hero-bg { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: var(--space-2) var(--space-7);
+    --hero-pad: max(var(--gutter), calc((100% - 1100px) / 2)); padding: var(--space-8) var(--hero-pad) var(--space-6); }
+  .hero-bg .hero-copy { padding: 0; grid-row: span 2; }
+  .hero-photo { height: auto; aspect-ratio: 3 / 2; margin: 0; border-radius: var(--radius-lg); overflow: hidden;
+    -webkit-mask-image: none; mask-image: none; }
+  .hero-photo::after { display: none; }
+  .hero-cap { position: static; grid-column: 2; color: var(--muted); text-shadow: none; font-weight: 400; }
+}
+/* Wide screens: the whole photo at its own 3:2 shape, flush right and as tall as the band;
+   only its left edge fades so the court stays centred in what you see. Copy is centred top-to-bottom on the left. */
+@media (min-width: 1320px) {
+  .hero.hero-bg { display: flex; align-items: center; min-height: var(--hero-wide-h); }
+  .hero-bg .hero-copy { max-width: calc(var(--hero-pad) + 500px); padding: var(--space-7) 0 var(--space-7) var(--hero-pad); }
+  .hero-photo { position: absolute; top: 0; right: 0; bottom: 0; height: auto; width: calc(var(--hero-wide-h) * 1.5); margin: 0; }
+  .hero-photo img { object-position: 50% 50%; }
+  .hero-photo { -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x));
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.5) calc(var(--hero-fade-x) * 0.55), #000 var(--hero-fade-x)); }
   .hero-cap { left: auto; right: var(--space-5); max-width: 320px; text-align: right; }
 }
 
