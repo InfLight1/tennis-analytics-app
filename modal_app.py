@@ -935,14 +935,19 @@ def run_full_job_remote(job_id: str, ball_model_name: str, player_model_name: st
 # ---------------------------------------------------------------------------
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=600, min_containers=1,
               secrets=[modal.Secret.from_name("app-passcode")])
+@modal.concurrent(max_inputs=20)   # the page sends several upload pieces at once (2026-10-12)
 @modal.asgi_app()
 def web_app():
     import asyncio
     import hmac
+    import shutil
+    import tempfile
+    import threading
+    import time
     import uuid
 
     import cv2
-    from fastapi import BackgroundTasks, FastAPI, File, Form, UploadFile
+    from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse, Response
 
@@ -1077,32 +1082,83 @@ def web_app():
         have = sorted(int(n.split(".")[0]) for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
         return JSONResponse({"job_id": job_id, "parts": have})
 
+    # Upload speed fix (2026-10-12): uploads ran at ~0.3 MB/s on a fast
+    # connection. Each piece used to be parsed as a form and then wait for
+    # a full volume.commit() before the browser could send the next one.
+    # Now the page sends the raw bytes, several pieces at once, and commits
+    # run in one background thread (several pieces per commit). /complete
+    # waits for that thread before joining the pieces.
+    commit_lock = threading.Lock()
+    commit_state = {"running": False, "again": False}
+
+    def _commit_soon():
+        with commit_lock:
+            if commit_state["running"]:
+                commit_state["again"] = True
+                return
+            commit_state["running"] = True
+
+        def run():
+            while True:
+                t0 = time.time()
+                try:
+                    volume.commit()
+                    print(f"[upload] volume commit took {time.time() - t0:.1f}s")
+                except Exception as e:
+                    print(f"[upload] volume commit FAILED: {e}")
+                with commit_lock:
+                    if not commit_state["again"]:
+                        commit_state["running"] = False
+                        return
+                    commit_state["again"] = False
+
+        threading.Thread(target=run, daemon=True).start()
+
+    async def _wait_for_commits(limit_s: float = 300):
+        start = time.time()
+        while commit_state["running"] and time.time() - start < limit_s:
+            await asyncio.sleep(0.2)
+
     @fastapi_app.put("/api/upload/{job_id}/part/{index}")
-    async def upload_part(job_id: str, index: int, file: UploadFile = File(...)):
+    async def upload_part(job_id: str, index: int, request: Request):
         d = _parts_dir(job_id)
         if not os.path.isdir(d):
             volume.reload()
         if not os.path.isdir(d):
             return JSONResponse({"error": f"Unknown upload {job_id}"}, status_code=404)
-        tmp, final = f"{d}/{index:06d}.tmp", f"{d}/{index:06d}.part"
-        with open(tmp, "wb") as f:
-            while True:
-                chunk = await file.read(4 * 1024 * 1024)
-                if not chunk:
-                    break
+        t0 = time.time()
+        # Receive into local disk first, so no volume file sits open for the
+        # whole transfer; then copy in and rename (a half-written piece
+        # never counts as stored).
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            local = f.name
+            async for chunk in request.stream():
                 f.write(chunk)
-        os.replace(tmp, final)              # a half-written piece never counts as stored
-        volume.commit()
-        return JSONResponse({"index": index, "bytes": os.path.getsize(final)})
+        received_s = time.time() - t0
+        tmp, final = f"{d}/{index:06d}.tmp", f"{d}/{index:06d}.part"
+        await asyncio.to_thread(shutil.copyfile, local, tmp)
+        os.remove(local)
+        os.replace(tmp, final)
+        size = os.path.getsize(final)
+        print(f"[job {job_id}] piece {index}: {size / (1024 * 1024):.0f} MB received in {received_s:.1f}s, "
+              f"stored in {time.time() - t0 - received_s:.1f}s")
+        _commit_soon()
+        return JSONResponse({"index": index, "bytes": size})
 
     @fastapi_app.post("/api/upload/{job_id}/complete")
-    def upload_complete(job_id: str):
-        volume.reload()
+    async def upload_complete(job_id: str):
+        await _wait_for_commits()
+        return await asyncio.to_thread(_join_upload, job_id)
+
+    def _join_upload(job_id: str):
         p = _job_paths(job_id)
         d = _parts_dir(job_id)
         meta = _read_json(f"{p['job_dir']}/input/upload.json", {})
-        parts = sorted(n for n in os.listdir(d) if n.endswith(".part"))
         expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
+        parts = sorted(n for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
+        if len(parts) != expected:          # some pieces may have landed on another container
+            volume.reload()
+            parts = sorted(n for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
         if len(parts) != expected:
             return JSONResponse({"error": f"Have {len(parts)} of {expected} pieces -- resume the upload."},
                                 status_code=409)

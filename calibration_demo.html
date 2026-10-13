@@ -198,7 +198,6 @@ let jobId = null;
 let clickedPoints = {};   // label -> [x, y] in ORIGINAL frame pixel space
 let canvasScale = 1;      // displayed-canvas-px / original-frame-px
 let pollTimer = null;
-let currentUploadXhr = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -226,13 +225,16 @@ function formatBytes(bytes) {
 // pieces it already has and sends only the rest. XMLHttpRequest (not
 // fetch) for upload-progress events and distinct error types.
 const CHUNK_SIZE = 16 * 1024 * 1024;
+const PARALLEL = 4;  // pieces in flight at once (one at a time was ~0.3 MB/s)
 const MAX_TRIES = 5;
 let upload = null;   // { file, jobId, cancelled }
+const liveXhrs = new Set();
 
 function sendPart(jobId, index, blob, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    currentUploadXhr = xhr;
+    liveXhrs.add(xhr);
+    xhr.addEventListener("loadend", () => liveXhrs.delete(xhr));
     xhr.open("PUT", `${backendUrl()}/api/upload/${jobId}/part/${index}`, true);
     passcodeHeader(xhr);
     xhr.upload.addEventListener("progress", (e) => { if (e.lengthComputable) onProgress(e.loaded); });
@@ -241,9 +243,8 @@ function sendPart(jobId, index, blob, onProgress) {
     xhr.addEventListener("error", () => reject(new Error("network error")));
     xhr.addEventListener("timeout", () => reject(new Error("timed out")));
     xhr.addEventListener("abort", () => reject(new Error("cancelled")));
-    const form = new FormData();
-    form.append("file", blob, `part${index}`);
-    xhr.send(form);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.send(blob);
   });
 }
 
@@ -270,7 +271,9 @@ async function runUpload() {
     }
     const have = new Set((await (await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`)).json()).parts);
     let done = [...have].reduce((sum, i) => sum + Math.min(CHUNK_SIZE, file.size - i * CHUNK_SIZE), 0);
-    const show = (inflight) => {
+    const inflightBytes = new Map();   // piece index -> bytes sent so far
+    const show = () => {
+      const inflight = [...inflightBytes.values()].reduce((a, b) => a + b, 0);
       const sent = done + inflight;
       const pct = Math.round((sent / file.size) * 100);
       $("uploadProgressBar").style.width = pct + "%";
@@ -278,26 +281,42 @@ async function runUpload() {
       $("uploadDetail").textContent = `${formatBytes(sent)} / ${formatBytes(file.size)} sent (${pct}%, ~${rate.toFixed(1)} MB/s)`;
     };
     $("uploadStatus").textContent = have.size ? `Resuming: ${have.size} of ${n} pieces already on the server.` : "Uploading...";
-    show(0);
-    for (let i = 0; i < n; i++) {
-      if (have.has(i)) continue;
+    show();
+    const todo = [];
+    for (let i = 0; i < n; i++) if (!have.has(i)) todo.push(i);
+    const sendOne = async (i) => {
       const blob = file.slice(i * CHUNK_SIZE, Math.min((i + 1) * CHUNK_SIZE, file.size));
       for (let attempt = 1; ; attempt++) {
         if (upload.cancelled) throw new Error("cancelled");
         try {
-          await sendPart(upload.jobId, i, blob, show);
+          await sendPart(upload.jobId, i, blob, (b) => { inflightBytes.set(i, b); show(); });
           break;
         } catch (err) {
-          if (err.message === "cancelled" || attempt >= MAX_TRIES) throw err;
+          inflightBytes.delete(i);
+          if (err.message === "cancelled" || upload.cancelled || attempt >= MAX_TRIES) throw err;
           const wait = Math.min(2000 * 2 ** (attempt - 1), 30000);
           $("uploadStatus").textContent = `Piece ${i + 1}/${n}: ${err.message}, retrying in ${wait / 1000}s (attempt ${attempt + 1}/${MAX_TRIES})...`;
           await sleep(wait);
           $("uploadStatus").textContent = "Uploading...";
         }
       }
+      inflightBytes.delete(i);
       done += blob.size;
       sentThisSession += blob.size;
-      show(0);
+      show();
+    };
+    const worker = async () => {
+      while (todo.length) {
+        if (upload.cancelled) throw new Error("cancelled");
+        await sendOne(todo.shift());
+      }
+    };
+    try {
+      await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker));
+    } catch (err) {
+      upload.cancelled = true;              // stop the other pieces too; Resume picks up from the server's list
+      for (const x of liveXhrs) x.abort();
+      throw err;
     }
     $("uploadStatus").textContent = "Finishing the upload…";
     const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST" });
@@ -369,13 +388,12 @@ $("resumeUploadBtn").addEventListener("click", () => {
 
 $("cancelUploadBtn").addEventListener("click", () => {
   if (upload) upload.cancelled = true;
-  if (currentUploadXhr) currentUploadXhr.abort();
+  for (const x of liveXhrs) x.abort();
 });
 
 function finishUpload() {
   $("uploadBtn").disabled = !$("videoFile").files[0];
   $("cancelUploadBtn").classList.add("hidden");
-  currentUploadXhr = null;
 }
 
 // ── Resume: skip upload entirely for a job_id whose video is already on
