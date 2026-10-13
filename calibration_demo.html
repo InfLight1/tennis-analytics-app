@@ -93,7 +93,7 @@
   .svg-accent { fill: var(--accent); }
   .svg-accent-stroke { stroke: var(--accent); }
   .svg-label { fill: var(--text-2); font: 600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  @media (max-width: 520px) { .fg-pics { grid-template-columns: 1fr; } .fg-pic-top { display: none; } }   /* phone: one picture keeps the guide to one screen */
+  @media (max-width: 520px) { .fg-pics { grid-template-columns: 1fr; } .fg-pic-view { display: none; } .fg-pic-top svg { max-height: 240px; } }   /* phone: one picture (where the phone goes) keeps the guide to one screen */
 
   details.advanced { margin-top: 28px; }
   details.advanced summary { cursor: pointer; color: var(--muted); font-size: 0.95rem; }
@@ -154,7 +154,7 @@
         </svg>
         <figcaption>Behind the baseline, in the middle, up high</figcaption>
       </figure>
-      <figure class="fg-pic">
+      <figure class="fg-pic fg-pic-view">
         <svg viewBox="0 0 320 180" role="img" aria-label="What the video should show: the whole court, with all 4 corners, the net and both service lines in view.">
           <rect x="1" y="1" width="318" height="178" rx="8" fill="none" class="svg-line" stroke-width="1.5"/>
           <path d="M40 165 L280 165 L205 30 L115 30 Z" class="svg-court"/>
