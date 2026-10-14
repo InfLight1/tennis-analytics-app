@@ -232,7 +232,8 @@ app = modal.App("tennis-perf-app")
 # --- CPU image: no GPU needed, lighter build, faster cold starts ---
 cpu_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .apt_install("libgl1", "libglib2.0-0")  # opencv runtime deps even without GPU use
+    .apt_install("libgl1", "libglib2.0-0",  # opencv runtime deps even without GPU use
+                 "ffmpeg")                   # turns in-app recordings into a normal video file
     .pip_install(
         "numpy==2.4.6",
         "pandas==3.0.4",
@@ -246,6 +247,7 @@ cpu_image = (
         "fastapi==0.115.6",
         "python-multipart==0.0.20",
         "anthropic==1.11.0",   # insights.py (Week 2 #8): one Claude Haiku 4.5 call per job
+        "boto3>=1.35",         # direct-to-storage uploads (Cloudflare R2, S3-compatible), off until the r2 secret exists
     )
     # Added LAST so editing pipeline code doesn't invalidate the pip layers above.
     .add_local_dir(
@@ -257,6 +259,7 @@ cpu_image = (
     # The web pages, served by web_app so a phone can just open a link.
     .add_local_file("report.html", "/root/web/report.html")
     .add_local_file("calibration_demo.html", "/root/web/calibration_demo.html")
+    .add_local_file("camera_test.html", "/root/web/camera_test.html")
     # passcode.js, manifest + icons (install-on-phone). Served at the site root.
     .add_local_dir("web_assets", remote_path="/root/web/assets")
 )
@@ -929,6 +932,144 @@ def run_full_job_remote(job_id: str, ball_model_name: str, player_model_name: st
 
 
 # ---------------------------------------------------------------------------
+# "Record match" (2026-10-14): the page films the match itself and uploads
+# ~4 s pieces while play goes on (same PUT /api/upload/{job}/part/{i} as file
+# uploads), and the court is marked on a still from the camera at the start.
+# When the player presses Stop, finish_recording_remote joins the pieces,
+# rewrites the browser's recording (fragmented MP4 on iPhone, WebM on
+# Android) into a normal video file so OpenCV gets a real frame count for
+# chunked detection, and starts processing straight away if the court is
+# already marked. Everything after that is the normal pipeline.
+# ---------------------------------------------------------------------------
+BALL_MODEL_NAME, PLAYER_MODEL_NAME = "tennis_ball_best.pt", "yolov8n.pt"   # fixed server-side
+
+
+def _part_names(parts_dir: str) -> list:
+    return sorted(n for n in os.listdir(parts_dir) if n.endswith(".part")) if os.path.isdir(parts_dir) else []
+
+
+def _join_parts(parts_dir: str, out_path: str, names=None) -> int:
+    """Joins the numbered pieces in parts_dir (or just `names`) into out_path, in order; returns its size."""
+    with open(out_path, "wb") as out:
+        for n in (_part_names(parts_dir) if names is None else names):
+            with open(f"{parts_dir}/{n}", "rb") as f:
+                while True:
+                    b = f.read(16 * 1024 * 1024)
+                    if not b:
+                        break
+                    out.write(b)
+    return os.path.getsize(out_path)
+
+
+def _remove_parts(parts_dir: str):
+    for n in os.listdir(parts_dir):
+        os.remove(f"{parts_dir}/{n}")
+    os.rmdir(parts_dir)
+
+
+def _to_video(src: str, dst: str):
+    """Rewrites a browser recording into a normal video file without re-encoding (quick):
+    MP4 first, Matroska if the codec doesn't fit in MP4 (OpenCV reads either, whatever
+    the name). Returns (frames, fps); (0, 0) if it can't be read."""
+    import subprocess
+    import cv2
+    for fmt in (["-movflags", "+faststart", "-f", "mp4"], ["-f", "matroska"]):
+        r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-fflags", "+genpts",
+                            *_src_args(src), "-map", "0:v:0", "-c", "copy", *fmt, dst],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            cap = cv2.VideoCapture(dst)
+            frames, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
+            cap.release()
+            if frames > 0 and fps:
+                return frames, fps
+        print(f"ffmpeg {fmt[-1]} for {os.path.basename(src)} failed: {r.stderr.strip()[-500:]}")
+    return 0, 0
+
+
+def _src_args(src: str) -> list:
+    """ffmpeg input arguments: a concat list (several recorded parts) or a single file."""
+    return ["-f", "concat", "-safe", "0", "-i", src] if src.endswith(".txt") else ["-i", src]
+
+
+def assemble_recording(parts_dir: str, work_dir: str, out_path: str, pieces: int, segments) -> tuple:
+    """Pieces 0..pieces-1 -> one video at out_path. `segments` = the first piece of each
+    recorded part (a new part starts after "Continue recording", whose pieces begin with a
+    fresh file header), so each part is joined and converted on its own, then the parts
+    are put end to end. A part that can't be read (e.g. cut off mid-piece) is skipped if
+    another part works. Returns (frames, fps, parts_used)."""
+    names = _part_names(parts_dir)
+    starts = sorted({int(x) for x in (segments or []) if 0 <= int(x) < pieces} | {0})
+    bounds = list(zip(starts, starts[1:] + [pieces]))
+    made = []
+    for k, (a, b) in enumerate(bounds):
+        raw, seg = f"{work_dir}/part{k}.rec", f"{work_dir}/part{k}.video"
+        _join_parts(parts_dir, raw, names[a:b])
+        frames, fps = _to_video(raw, seg)
+        os.remove(raw)
+        if frames:
+            made.append((seg, frames, fps))
+        else:
+            print(f"recorded part {k} (pieces {a}-{b - 1}) could not be read; skipped")
+    if not made:
+        return 0, 0, 0
+    if len(made) == 1:
+        seg, frames, fps = made[0]
+        os.replace(seg, out_path)
+    else:
+        lst = f"{work_dir}/parts.txt"
+        with open(lst, "w") as f:
+            f.writelines(f"file '{m[0]}'\n" for m in made)
+        frames, fps = _to_video(lst, out_path)
+        for m in made:
+            os.remove(m[0])
+        os.remove(lst)
+    return frames, fps, len(made)
+
+
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600)
+def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
+    import time
+
+    p = _job_paths(job_id)
+    d = f"{p['job_dir']}/input/parts"
+    try:
+        # Pieces may still be saving from other web containers: wait up to 2 min for all of them.
+        for _ in range(60):
+            volume.reload()
+            if len(_part_names(d)) >= pieces:
+                break
+            time.sleep(2)
+        have = len(_part_names(d))
+        if have != pieces:
+            raise RuntimeError(f"only {have} of {pieces} pieces arrived")
+        got = sum(os.path.getsize(f"{d}/{n}") for n in _part_names(d))
+        if size and got != size:
+            raise RuntimeError(f"recording is {got} bytes, expected {size}")
+        frames, fps, used = assemble_recording(d, f"{p['job_dir']}/input", p["video_path"], pieces, segments)
+        if not frames:
+            raise RuntimeError("the recording could not be read as a video")
+        _remove_parts(d)
+        minutes = frames / fps / 60
+        print(f"[job {job_id}] recording ready: {got / (1024 * 1024):.0f} MB, {pieces} pieces, {used} part(s), "
+              f"{frames:.0f} frames at {fps:.1f} fps ({minutes:.1f} min)")
+        if minutes > MAX_VIDEO_MINUTES + 1:
+            os.remove(p["video_path"])
+            _write_status(job_id, stage="error", message=f"This recording is {minutes:.0f} minutes long. "
+                          f"The limit is {MAX_VIDEO_MINUTES} minutes.")
+            return
+        volume.commit()
+        if os.path.exists(p["matrix_path"]):          # court marked at the start: go
+            _write_status(job_id, stage="queued", message="Recording received. Processing queued...")
+            run_full_job_remote.spawn(job_id, BALL_MODEL_NAME, PLAYER_MODEL_NAME)
+        else:
+            _write_status(job_id, stage="uploaded", message="Video uploaded, ready to calibrate.")
+    except Exception as e:
+        _write_status(job_id, stage="error", message=f"Couldn't prepare the recording: {e}")
+        raise
+
+
+# ---------------------------------------------------------------------------
 # Demo web UI backend -- FastAPI app served as a Modal web endpoint.
 # See the module docstring's "DEMO WEB UI" section for the full flow.
 # Deploy with `modal deploy modal_app.py`; the printed URL is BACKEND_URL
@@ -950,7 +1091,7 @@ def web_app():
     import cv2
     from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse, Response
+    from fastapi.responses import FileResponse, JSONResponse, Response
 
     mods = _import_pipeline()
     calibration = mods["calibration"]
@@ -1161,28 +1302,18 @@ def web_app():
         d = _parts_dir(job_id)
         meta = _read_json(f"{p['job_dir']}/input/upload.json", {})
         expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
-        parts = sorted(n for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
+        parts = _part_names(d)
         if len(parts) != expected:          # some pieces may have landed on another container
             volume.reload()
-            parts = sorted(n for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
+            parts = _part_names(d)
         if len(parts) != expected:
             return JSONResponse({"error": f"Have {len(parts)} of {expected} pieces -- resume the upload."},
                                 status_code=409)
-        with open(p["video_path"], "wb") as out:
-            for n in parts:
-                with open(f"{d}/{n}", "rb") as f:
-                    while True:
-                        b = f.read(16 * 1024 * 1024)
-                        if not b:
-                            break
-                        out.write(b)
-        size = os.path.getsize(p["video_path"])
+        size = _join_parts(d, p["video_path"])
         if size != meta.get("size"):
             return JSONResponse({"error": f"Size mismatch: got {size} bytes, expected {meta.get('size')}"},
                                 status_code=409)
-        for n in os.listdir(d):
-            os.remove(f"{d}/{n}")
-        os.rmdir(d)
+        _remove_parts(d)
         print(f"[job {job_id}] chunked upload complete: {size / (1024 * 1024):.0f} MB in {len(parts)} pieces")
         too_long = _reject_if_too_long(job_id, p["video_path"])
         if too_long:
@@ -1194,6 +1325,54 @@ def web_app():
             "point_labels": calibration.EXTENDED_POINT_LABELS,
             "instructions": calibration.CLICK_INSTRUCTIONS,
         })
+
+    # ── Record match (2026-10-14): see finish_recording_remote ──────────────
+    @fastapi_app.post("/api/record/init")
+    def record_init(mime: str = Form("")):
+        job_id = uuid.uuid4().hex[:12]
+        os.makedirs(_parts_dir(job_id), exist_ok=True)
+        with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
+            json.dump({"mode": "record", "mime": mime[:80]}, f)
+        _write_status(job_id, stage="recording", message="Recording...")   # commits
+        return JSONResponse({"job_id": job_id})
+
+    def _calib_frame_path(job_id: str) -> str:
+        return f"{_job_paths(job_id)['job_dir']}/input/calib_frame.jpg"
+
+    @fastapi_app.post("/api/record/{job_id}/frame")
+    async def record_frame(job_id: str, file: UploadFile = File(...)):
+        """A still from the camera at the start: the court is marked on it while play goes on."""
+        if not os.path.isdir(_parts_dir(job_id)):
+            volume.reload()
+        if not os.path.isdir(_parts_dir(job_id)):
+            return JSONResponse({"error": f"Unknown recording {job_id}"}, status_code=404)
+        data = await file.read()
+        if len(data) > 20 * 1024 * 1024:
+            return JSONResponse({"error": "Picture too large"}, status_code=413)
+        with open(_calib_frame_path(job_id), "wb") as f:
+            f.write(data)
+        volume.commit()
+        return JSONResponse({
+            "job_id": job_id,
+            "point_labels": calibration.EXTENDED_POINT_LABELS,
+            "instructions": calibration.CLICK_INSTRUCTIONS,
+        })
+
+    @fastapi_app.post("/api/record/{job_id}/finish")
+    async def record_finish(job_id: str, pieces: int = Form(...), size: int = Form(...), segments: str = Form("[0]")):
+        """Stop pressed and every piece sent: join, convert and (if the court is marked) start."""
+        await _wait_for_commits()
+        if not os.path.isdir(_parts_dir(job_id)):
+            volume.reload()
+        if not os.path.isdir(_parts_dir(job_id)):
+            return JSONResponse({"error": f"Unknown recording {job_id}"}, status_code=404)
+        _write_status(job_id, stage="preparing", message="Putting the recording together...")
+        try:
+            starts = [int(x) for x in json.loads(segments)][:500]
+        except (ValueError, TypeError):
+            starts = [0]
+        finish_recording_remote.spawn(job_id, pieces, size, starts)
+        return JSONResponse({"job_id": job_id, "status": "preparing"})
 
     @fastapi_app.get("/api/point-labels")
     def point_labels():
@@ -1209,6 +1388,8 @@ def web_app():
     def get_calibration_frame(job_id: str):
         volume.reload()
         p = _job_paths(job_id)
+        if os.path.exists(_calib_frame_path(job_id)):        # recorded in the app: the still from the start
+            return FileResponse(_calib_frame_path(job_id), media_type="image/jpeg")
         frame = calibration.extract_calibration_frame(p["video_path"])
         ok, buf = cv2.imencode(".jpg", frame)
         if not ok:
@@ -1225,7 +1406,7 @@ def web_app():
         player1_name: str = Form(""),
         player2_name: str = Form(""),
     ):
-        ball_model_name, player_model_name = "tennis_ball_best.pt", "yolov8n.pt"   # fixed server-side
+        ball_model_name, player_model_name = BALL_MODEL_NAME, PLAYER_MODEL_NAME
         volume.reload()
         p = _job_paths(job_id)
         os.makedirs(p["job_dir"], exist_ok=True)
@@ -1253,15 +1434,22 @@ def web_app():
                     status_code=400,
                 )
 
-        _write_status(job_id, stage="calibrating", message="Building perspective transform...")
+        # Still recording (marked on the camera still, no video yet): the matrix only
+        # needs the 7 points; the still stands in for the video's first frame.
+        recording = not os.path.exists(p["video_path"]) and os.path.exists(_calib_frame_path(job_id))
+        if not recording:
+            _write_status(job_id, stage="calibrating", message="Building perspective transform...")
         calibration.build_perspective_transform(
             clicked_points_px=clicked_points_px,
-            video_path=p["video_path"],
+            video_path=_calib_frame_path(job_id) if recording else p["video_path"],
             matrix_path=p["matrix_path"],
             birdeye_check_path=p["birdeye_check_path"],
             display=False,
         )
         volume.commit()
+        if recording:
+            _write_status(job_id, stage="recording", message="Court marked. Recording...")
+            return JSONResponse({"job_id": job_id, "status": "recording"})
 
         _write_status(job_id, stage="queued", message="Calibrated. Processing queued...")
         run_full_job_remote.spawn(job_id, ball_model_name, player_model_name)
@@ -1290,7 +1478,14 @@ def web_app():
         return FileResponse("/root/web/report.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
+    @fastapi_app.get("/camera-test")
+    def camera_test_page():
+        """What this phone can record in the browser (resolution, format, MB per minute)."""
+        return FileResponse("/root/web/camera_test.html", media_type="text/html",
+                            headers={"Cache-Control": "no-store"})
+
     _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css",
+               "recorder.js": "text/javascript", "record_match.js": "text/javascript",
                "manifest.webmanifest": "application/manifest+json",
                "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",
                **{f"{n}-{w}.webp": "image/webp" for n in ("hero-court", "band-phone", "band-ball") for w in (800, 1600)}}

@@ -336,6 +336,33 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 #uploadDetail { font-size: var(--text-sm); color: var(--muted); margin-top: var(--space-2); }
 #uploadStatus { margin-top: var(--space-2); color: var(--ink-2); }
 #uploadStatus.error, #statusLine.error { color: var(--bad); }
+.mode-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; max-width: 440px; padding: 3px; margin-bottom: var(--space-5); border-radius: var(--radius-pill); background: var(--surface-2); }
+.mode-switch button { min-height: 44px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-pill); background: transparent; text-align: center;
+  color: var(--ink-2); font: 600 var(--text-base)/1.15 var(--font-sans); cursor: pointer; }
+.mode-switch button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.record-intro { color: var(--ink); max-width: 56ch; }
+.record-tips { margin: var(--space-3) 0 var(--space-5); padding-left: 1.2em; color: var(--ink-2); max-width: 60ch; }
+.record-tips li + li { margin-top: var(--space-1); }
+.rec-preview { display: block; width: 100%; max-width: 640px; margin-top: var(--space-4); border-radius: var(--radius-md); background: #000; }
+#useViewBtn { margin-top: var(--space-4); }
+#recStatus { margin-top: var(--space-3); color: var(--ink-2); }
+#recStatus.error { color: var(--bad); }
+/* Full-screen recording view: near-black to save battery on phone screens. */
+.rec-overlay { position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: #050806; color: #E6EEE5; }
+.rec-inner { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--gutter) var(--space-7); text-align: center; }
+.rec-kicker { margin: 0; color: var(--accent); font-weight: 650; }
+.rec-inner h2 { margin-top: var(--space-1); color: #F4F8F2; }
+.rec-live { display: block; width: 100%; margin: var(--space-4) 0 var(--space-1); border-radius: var(--radius-md); background: #000; }
+.rec-live.off { display: none; }
+.rec-timer { margin-top: var(--space-5); font: 500 clamp(3.5rem, 2rem + 8vw, 5.5rem)/1 var(--font-serif); color: #F4F8F2; }
+.rec-overlay.live .rec-timer::before { content: ""; display: inline-block; width: .28em; height: .28em; margin: 0 .25em .12em 0; border-radius: 50%; background: #E0907F; animation: rec-blink 1.6s infinite; }
+@keyframes rec-blink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .rec-overlay.live .rec-timer::before { animation: none; } }
+.rec-sent { min-height: 3em; margin-top: var(--space-3); color: #C3D3C3; }
+.rec-actions { display: grid; gap: var(--space-3); margin-top: var(--space-5); }
+.rec-main { width: 100%; min-height: 56px; font-size: var(--text-lg); }
+.rec-stop { background: transparent; color: #F4F8F2; border-color: rgba(244,248,242,.6); }
+.rec-note { margin-top: var(--space-5); color: #9AAE9C; font-size: var(--text-sm); }
 .pending { margin-bottom: var(--space-4); padding: 12px 14px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); }
 .link-btn { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600;
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -415,8 +442,13 @@ body.photo-hero .topbar { margin-bottom: -64px; }
     <h2 id="newH">New analysis</h2>
     <ol class="steps">
       <li class="step is-active" data-step="1" aria-current="step">
-        <h3 class="step-title"><span class="step-n active" id="badge1">1</span>Choose your match video</h3>
+        <h3 class="step-title"><span class="step-n active" id="badge1">1</span>Add your match</h3>
         <div class="step-body" id="uploadPanel">
+          <div class="mode-switch hidden" id="modeSwitch" role="group" aria-label="How to add your match">
+            <button type="button" id="modeUpload" aria-pressed="true">Upload video</button>
+            <button type="button" id="modeRecord" aria-pressed="false">Record match</button>
+          </div>
+          <div id="uploadMode">
           <div id="pendingUpload" class="pending hidden" role="status">
             <p id="pendingText"></p>
             <button type="button" class="link-btn" id="discardPendingBtn">Start a new upload instead</button>
@@ -437,6 +469,26 @@ body.photo-hero .topbar { margin-bottom: -64px; }
           <div id="uploadStatus" role="status"></div>
           <p id="awakeNote" class="awake-note hidden"></p>
           <p class="tip">Film from high up behind the baseline with the whole court in view (see <a href="#filmGuide" data-open-guide>how to film your match</a>). Up to 60 minutes.</p>
+          </div>
+          <!-- Record match: film in the page, upload while playing (record_match.js) -->
+          <div id="recordMode" class="hidden">
+            <div id="recordResume" class="pending hidden" role="status">
+              <p id="recordResumeText"></p>
+              <div class="row"><button type="button" class="btn btn-primary" id="recordSendBtn">Send it now</button>
+                <button type="button" class="link-btn" id="recordDiscardBtn">Discard this recording</button></div>
+            </div>
+            <p class="record-intro">Film the match with this phone. It uploads while you play, so your report is ready a few minutes after the last point.</p>
+            <ul class="record-tips">
+              <li>Phone sideways, high on the fence behind one baseline, whole court in view.</li>
+              <li>Use mobile data or court Wi-Fi. For long matches, plug in a battery pack.</li>
+              <li>You mark the court first, then press Start when the first point begins. Up to 60 minutes.</li>
+            </ul>
+            <button type="button" class="btn btn-primary" id="openCameraBtn">Open camera</button>
+            <video id="recPreview" class="rec-preview hidden" muted playsinline></video>
+            <p id="recQuality" class="estimate"></p>
+            <button type="button" class="btn btn-primary hidden" id="useViewBtn">Use this view and mark the court</button>
+            <div id="recStatus" role="status"></div>
+          </div>
         </div>
         <p class="step-done-note">✓ Video uploaded.</p>
       </li>
@@ -570,10 +622,28 @@ body.photo-hero .topbar { margin-bottom: -64px; }
   </section>
 </main>
 
+<div id="recOverlay" class="rec-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="recTitle">
+  <div class="rec-inner">
+    <p class="rec-kicker" id="recKicker">Court marked</p>
+    <h2 id="recTitle">Ready to record</h2>
+    <video id="recLive" class="rec-live" muted playsinline></video>
+    <button type="button" class="link-btn" id="toggleLiveBtn">Hide the camera picture (saves battery)</button>
+    <div class="rec-timer num" id="recTimer">0:00</div>
+    <div class="rec-sent" id="recSent" role="status"></div>
+    <div class="rec-actions">
+      <button type="button" class="btn btn-primary rec-main" id="recStartBtn">Start recording</button>
+      <button type="button" class="btn btn-primary rec-main hidden" id="recContinueBtn">Continue recording</button>
+      <button type="button" class="btn rec-main rec-stop hidden" id="recStopBtn">Stop: the match is over</button>
+    </div>
+    <p class="rec-note" id="recNote">Press Start when the first point begins. Keep this page open; the screen stays on.</p>
+  </div>
+</div>
+
 <footer id="sitefoot"></footer>
 
 <script src="site.js"></script>
 <script src="passcode.js"></script>
+<script src="recorder.js"></script>
 <script>
 // ── EXTENDED_POINT_LABELS / CLICK_INSTRUCTIONS mirror calibration.py's
 // schema, but the authoritative copy is fetched from /api/upload's
@@ -686,7 +756,7 @@ async function keepAwake(on) {
 }
 
 window.addEventListener("beforeunload", (e) => {
-  if (upload && upload.running) { e.preventDefault(); e.returnValue = ""; }
+  if ((upload && upload.running) || (window.RecordMatch && RecordMatch.busy())) { e.preventDefault(); e.returnValue = ""; }
 });
 
 // After a dropped connection: carry on by itself once back online or back on the page.
@@ -1341,6 +1411,12 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
     const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    if (data.status === "recording") {          // Record match: court marked, now film
+      Site.rememberReport(jobId, `${$("player1Name").value.trim() || "Player 1"} vs ${$("player2Name").value.trim() || "Player 2"}`);
+      renderReports();
+      RecordMatch.courtMarked();
+      return;
+    }
 
     setStage($("badge2"), "done");
     setStage($("badge3"), "active");
@@ -1356,9 +1432,12 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
 });
 
 // ── Step 3: Processing status polling ────────────────────────────────
-const STAGE_ORDER = ["uploaded", "calibrating", "queued", "detecting", "analyzing", "done"];
+const UPLOAD_STAGES = ["uploaded", "calibrating", "queued", "detecting", "analyzing", "done"];
+const RECORD_STAGES = ["recording", "preparing", "queued", "detecting", "analyzing", "done"];   // Record match
+let STAGE_ORDER = UPLOAD_STAGES;
 const STAGE_LABEL = {
   uploaded: "Uploaded", calibrating: "Court marked", queued: "Waiting to start",
+  recording: "Recorded", preparing: "Putting the video together",
   detecting: "Finding the ball and players", analyzing: "Working out the points",
   done: "Report ready", error: "Error",
 };
@@ -1433,7 +1512,7 @@ function renderReports() {
     try {
       const st = await (await fetch(`${backendUrl()}/api/status/${encodeURIComponent(r.job)}`)).json();
       const [text, cls] = st.report_ready || st.stage === "done" ? ["Ready", "ready"] : st.stage === "error" ? ["Failed", "failed"]
-        : st.stage === "unknown" ? ["Not found", "failed"] : ["Processing…", ""];
+        : st.stage === "unknown" ? ["Not found", "failed"] : st.stage === "recording" ? ["Recording", ""] : ["Processing…", ""];
       pill.textContent = text;
       pill.className = `pill ${cls}`;
     } catch (e) { pill.textContent = "Offline"; }
@@ -1470,5 +1549,6 @@ renderReports();
   }
 })();
 </script>
+<script src="record_match.js"></script>
 </body>
 </html>
