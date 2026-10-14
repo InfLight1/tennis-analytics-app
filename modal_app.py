@@ -1292,11 +1292,12 @@ def web_app():
 
     _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css",
                "manifest.webmanifest": "application/manifest+json",
-               "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png"}
+               "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",
+               **{f"{n}-{w}.webp": "image/webp" for n in ("hero-court", "band-phone", "band-ball") for w in (800, 1600)}}
 
     @fastapi_app.get("/{name}")
     def web_asset(name: str):
-        """passcode.js, the install manifest and app icons, at the site root."""
+        """passcode.js, the install manifest, app icons and page photos, at the site root."""
         if name not in _assets:
             return JSONResponse({"error": "not found"}, status_code=404)
         return FileResponse(f"/root/web/assets/{name}", media_type=_assets[name],

@@ -3,116 +3,290 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Match Report</title>
+<title>Match Report · Advantage AI</title>
+<meta name="description" content="Match report: what is costing each player points and what to practise.">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1c7a4a">
+<meta name="theme-color" content="#15261C">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
 <style>
-  header.page { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 8px; }
-  .tabs { display: flex; gap: 6px; margin: 16px 0 4px; background: var(--surface-2); padding: 4px; border-radius: 12px; }
-  .tabs button { flex: 1; border: none; background: transparent; padding: 10px; font-weight: 700; font-size: 1.05rem; color: var(--text-2); }
-  .tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px #0002; }
-  .style-tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
-  .tag { font-size: 0.9rem; padding: 4px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+/* ── Design tokens: every decision lives here ─────────────────────────── */
+:root {
+  --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-display: clamp(2.25rem, 1.5rem + 3.6vw, 3.5rem);
+  --text-num: 2.25rem;
+  --leading-tight: 1.08;
+  --leading-snug: 1.3;
+  --leading-body: 1.55;
+  --tracking-display: -0.025em;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+  --gutter: 16px;
+  --col: 760px;
+  --tap: 48px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
+  --bar-w: 3px;
+  --ring-size: 168px;
+  --ring-size-phone: 136px;
+  --ring-num: 2.75rem;
+  --panel-pad: var(--space-6);
+  --panel-gap: var(--space-5);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 220ms;
 
-  /* Hero: two big rings, then how points were lost. */
-  .hero { margin-top: 14px; }
-  .rings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center; }
-  .ring { position: relative; width: 100%; max-width: 170px; margin: 0 auto; }
-  .ring svg { display: block; width: 100%; height: auto; transform: rotate(-90deg); }
-  .ring .val { position: absolute; inset: 0; display: grid; place-content: center; font-size: 2.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .ring-lbl { font-weight: 700; font-size: 1.1rem; margin-top: 6px; }
-  .ring-ctx { color: var(--text-2); font-size: 0.95rem; }
-  .summary { font-size: 1.05rem; margin: 16px 0 0; }
-  .minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; text-align: center; }
-  .mini { background: var(--surface-2); border-radius: 12px; padding: 10px 6px; }
-  .mini .num { font-size: 1.45rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
-  .mini .lbl { font-size: 0.85rem; color: var(--text-2); }
-  .moments { grid-column: 2; font-size: 0.95rem; color: var(--text-2); }
-  .moments b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
-  .seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
-  .seg button { border: none; background: transparent; min-height: 36px; padding: 4px 14px; font-weight: 700; color: var(--text-2); }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px #0002; }
-  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  --focus: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
+}
+/* Permanent palette: one dark court-green set (no light/dark switch). */
+:root {
+  color-scheme: dark;
+  --bg: #15261C; --surface: #1C3226; --surface-2: #243D2F; --line: #31503D; --line-strong: #46684F;
+  --ink: #F1F6EF; --ink-2: #DFEADD; --muted: #C3D3C3; --dim: #9AAE9C;
+  --accent: #8ED19D; --accent-strong: #A6DFB2; --accent-soft: #24452F; --on-accent: #10200F;
+  --bad: #E0907F; --bad-soft: #3A2622;
+  --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
+  --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+}
 
-  /* Pattern cards: headline + one "Try this" line; details behind a tap. */
-  .pattern { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start; }
-  .rank { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.15rem; }
-  .weak .rank { background: var(--bad-soft); color: var(--bad); }
-  .pts { font-weight: 800; font-size: 1rem; white-space: nowrap; }
-  .weak .pts { color: var(--bad); }
-  .strong .pts { color: var(--accent); }
-  .ptitle { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-  .try { grid-column: 2; font-size: 1.05rem; }
-  .try b { color: var(--accent); }
-  .more { grid-column: 1 / -1; }
-  .more summary { cursor: pointer; font-size: 0.95rem; color: var(--accent); font-weight: 600; padding: 8px 0 2px; list-style: none; }
-  .more summary::-webkit-details-marker { display: none; }
-  .more summary::after { content: " ▾"; }
-  .more[open] summary::after { content: " ▴"; }
-  .advice { border-top: 1px dashed var(--border); margin-top: 6px; padding-top: 4px; font-size: 1rem; }
-  .advice b { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 10px; }
-  .keep { display: flex; gap: 12px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--border); }
-  .keep:first-child { border-top: none; padding-top: 0; }
-  .keep:last-child { padding-bottom: 0; }
-  .keep .pts { margin-left: auto; }
-  .keep .try { margin-top: 4px; color: var(--text-2); }
-  .ai-note { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+/* ── Base ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: var(--space-5); }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 var(--text-base)/var(--leading-body) var(--font-sans);
+  -webkit-font-smoothing: antialiased; caret-color: var(--accent); scrollbar-color: var(--line-strong) var(--bg); }
+::selection { background: var(--accent); color: var(--on-accent); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+h1, h2, h3 { margin: 0; font-weight: 500; text-wrap: balance; }
+h2 { font: 500 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
+h3 { font: 600 var(--text-lg)/var(--leading-snug) var(--font-sans); }
+p { margin: 0; text-wrap: pretty; }
+.muted { color: var(--muted); }
+.wrap { max-width: calc(var(--col) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+.num { font-variant-numeric: tabular-nums; }
 
-  /* Folded "More stats". */
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
-  .tile { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
-  .tile .num { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .tile .lbl { font-size: 0.95rem; font-weight: 600; }
-  .tile .ctx { font-size: 0.85rem; color: var(--muted); }
-  .sub-h { margin: 20px 0 6px; }
-  details.fold > summary { cursor: pointer; font-weight: 700; font-size: 1.05rem; }
-  .coverage { font-size: 0.9rem; color: var(--text-2); }
-  .coverage p { margin: 8px 0 0; }
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+.topbar { border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
+.brand-ai { color: var(--accent); }
+.brand { display: inline-flex; align-items: center; gap: 10px; min-height: var(--tap); margin-right: auto;
+  color: var(--ink); text-decoration: none; font-weight: 650; font-size: var(--text-lg); letter-spacing: -0.01em; }
+.nav { display: flex; gap: var(--space-1); }
+.nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-3);
+  color: var(--ink-2); text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
+.nav a:hover { color: var(--ink); background: var(--surface-2); }
+@media (max-width: 559px) {
+    .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
+}
 
-  .bar { display: flex; height: 34px; border-radius: 8px; overflow: hidden; gap: 2px; background: var(--surface); margin: 12px 0 10px; }
-  .bar span { display: block; height: 100%; min-width: 4px; position: relative; cursor: default; }
-  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px 18px; font-size: 0.95rem; }
-  .legend div { display: flex; align-items: center; gap: 8px; }
-  .legend i { width: 14px; height: 14px; border-radius: 3px; flex: none; }
-  .legend .n { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
-  #tip {
-    position: fixed; pointer-events: none; background: var(--text); color: var(--bg); font-size: 0.9rem;
-    padding: 6px 9px; border-radius: 6px; display: none; z-index: 10; max-width: 260px;
-  }
-  .names { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 10px; }
-  .names label { font-size: 0.85rem; color: var(--text-2); }
-  @media (max-width: 520px) {
-    .names { grid-template-columns: 1fr; }
-    .ring .val { font-size: 1.9rem; }
-  }
+/* ── Page head + tabs ─────────────────────────────────────────────────── */
+.page-head { padding: var(--space-7) 0 var(--space-5); }
+.page-head .label { color: var(--muted); font-weight: 550; }
+.page-head h1 { margin-top: var(--space-1); font: 500 var(--text-display)/var(--leading-tight) var(--font-serif); letter-spacing: var(--tracking-display); }
+.page-head h1 .vs { color: var(--muted); font-style: italic; font-weight: 400; }
+.page-head .score { margin-top: var(--space-2); font-size: var(--text-lg); color: var(--ink-2); }
+.page-head .score b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+.tabs button { min-height: 56px; border: 0; background: transparent; cursor: pointer; color: var(--dim);
+  font: 500 var(--text-xl)/1 var(--font-serif); letter-spacing: -0.01em; position: relative; border-radius: 0;
+  transition: color var(--dur) var(--ease-out); }
+.tabs button:hover { color: var(--ink-2); }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: var(--bar-w); background: var(--accent); border-radius: 2px; }
+
+.first-fix { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2) var(--space-4); align-items: start;
+  margin: var(--space-5) 0 0; padding: var(--space-5) var(--space-5) var(--space-5) calc(var(--space-5) + var(--bar-w));
+  position: relative; border-radius: var(--radius-lg); background: var(--accent-soft); color: var(--ink); text-decoration: none;
+  transition: background var(--dur) var(--ease-out); }
+.first-fix::before { content: ""; position: absolute; left: 0; top: var(--space-4); bottom: var(--space-4); width: 4px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.first-fix:hover { background: color-mix(in oklab, var(--accent-soft), var(--accent) 12%); }
+.first-fix .ff-label { grid-column: 1 / -1; font-weight: 650; color: var(--accent); letter-spacing: 0.01em; }
+.first-fix .ff-text { font: 500 var(--text-2xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.015em; text-wrap: pretty; }
+.first-fix .pts { font-size: var(--text-base); min-height: 34px; padding: 0 14px; margin-top: 4px; }
+.first-fix .ff-go { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); font-weight: 650; color: var(--accent); }
+.first-fix .ff-go svg { flex: none; }
+@media (max-width: 559px) {
+  .first-fix { grid-template-columns: 1fr; padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + var(--bar-w)); }
+  .first-fix .ff-text { font-size: var(--text-xl); }
+  .first-fix .pts { justify-self: start; margin-top: 0; }
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.sec { margin-top: var(--panel-gap); padding: var(--panel-pad); background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-1); scroll-margin-top: var(--space-4); }
+@media (max-width: 559px) { .sec { padding: var(--space-5) var(--space-4); } }
+.sec > h2 { margin-bottom: var(--space-5); }
+.sec-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+
+/* hero */
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+.tag { display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--space-3); border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); color: var(--ink-2); font-weight: 550; font-size: var(--text-sm); }
+.rings { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+.ring-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); }
+.ring { position: relative; width: var(--ring-size); height: var(--ring-size); flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .val { position: absolute; inset: 0; display: grid; place-items: center; font: 500 var(--ring-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.ring-lbl { font-weight: 650; font-size: var(--text-lg); }
+.ring-ctx { color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 559px) {
+  :root { --ring-size: var(--ring-size-phone); --ring-num: 2.25rem; }
+  .rings { gap: var(--space-3); }
+}
+.minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin: var(--space-6) 0 0; padding: 0; }
+.mini { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-md); }
+.mini .mv { margin: 0; font: 500 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.mini .mv.todo { font: 600 var(--text-base)/2.25rem var(--font-sans); color: var(--muted); }
+.mini .ml { margin-top: var(--space-2); color: var(--ink-2); font-size: var(--text-sm); font-weight: 550; }
+.summary { margin-top: var(--space-6); font: 400 1.3125rem/1.5 var(--font-serif); color: var(--ink); max-width: 62ch; }
+
+/* lost/won switch */
+.seg { display: inline-flex; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-2); }
+.seg button { min-height: 42px; min-width: 76px; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink-2); font: 600 var(--text-base)/1 var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+.bar { display: flex; gap: 2px; height: 28px; border-radius: var(--radius-sm); overflow: hidden; }
+.bar span { min-width: 6px; }
+.legend { list-style: none; margin: var(--space-4) 0 0; padding: 0; }
+.legend li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+.legend li:first-child { border-top: 0; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.legend .n { margin-left: auto; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.legend .total { color: var(--muted); }
+
+/* fixes: vertical list, the open (or first) one carries the green bar */
+.fixes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+.fix { position: relative; display: grid; grid-template-columns: 2.5rem 1fr; gap: 0 var(--space-3); padding: var(--space-1) 0 var(--space-1) var(--space-5); }
+.fix::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--bar-w); border-radius: 2px; background: var(--line); transition: background var(--dur) var(--ease-out); }
+.fix.is-first::before, .fix:has(details[open])::before { background: var(--accent); }
+.rank { font: 500 2.5rem/1 var(--font-serif); color: var(--dim); font-variant-numeric: tabular-nums; }
+.fix.is-first .rank, .fix:has(details[open]) .rank { color: var(--accent); }
+.fix-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); }
+.fix-head h3 { text-wrap: pretty; font: 500 var(--text-xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.01em; flex: 1 1 14ch; }
+.pts { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
+  font-weight: 700; font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pts.lost { color: var(--bad); background: var(--bad-soft); }
+.pts.won { color: var(--accent); background: var(--accent-soft); }
+.try { margin-top: var(--space-3); color: var(--ink-2); max-width: 62ch; }
+.try b { color: var(--ink); font-weight: 650; }
+.moments { margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+.moments .t { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.fix-body { grid-column: 2; min-width: 0; }
+@media (max-width: 559px) {
+  .fix { grid-template-columns: 1fr; padding-left: var(--space-4); }
+  .rank { font-size: 2rem; margin-bottom: var(--space-2); }
+  .fix-body { grid-column: 1; }
+}
+details.more { margin-top: var(--space-3); }
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display: none; }
+details.more > summary { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap); font-weight: 650; color: var(--accent); }
+details summary svg { flex: none; transition: transform var(--dur) var(--ease-out); }
+details[open] > summary svg { transform: rotate(180deg); }
+.advice { display: grid; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--surface-2); border-radius: var(--radius-md); }
+.advice div { color: var(--ink-2); max-width: 62ch; }
+.advice b { display: block; color: var(--ink); font-weight: 650; margin-bottom: 2px; }
+
+/* keep doing */
+.keeps { list-style: none; margin: 0; padding: 0; }
+.keep { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+.keep:first-child { border-top: 0; padding-top: 0; }
+.keep h3 { flex: 1; text-wrap: pretty; font: 500 var(--text-lg)/var(--leading-snug) var(--font-serif); font-size: 1.3125rem; }
+.ai-note { margin-top: var(--space-6); color: var(--muted); font-size: var(--text-sm); max-width: 62ch; }
+
+/* folds */
+details.fold { margin-top: var(--space-3); padding: 0 var(--panel-pad); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+#player > details.fold { margin-top: var(--panel-gap); }
+@media (max-width: 559px) { details.fold { padding: 0 var(--space-4); } }
+details.fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 64px;
+  font: 500 var(--text-xl)/1.2 var(--font-serif); color: var(--ink); }
+details.fold > summary:hover { color: var(--accent); }
+details.fold > summary svg { color: var(--muted); }
+.fold-body { padding: 0 0 var(--space-6); }
+.fold-body p + p { margin-top: var(--space-3); }
+.fold-body p { color: var(--ink-2); max-width: 66ch; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.tile { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-md); }
+.tile .v { font: 500 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.tile .l { margin-top: var(--space-2); font-weight: 600; font-size: var(--text-sm); }
+.tile .c { color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+@media (max-width: 459px) {
+  .tiles { grid-template-columns: 1fr; }
+  .tile { padding: var(--space-3) var(--space-4); display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline; gap: 0 var(--space-3); }
+  .tile .l { margin: 0; }
+  .tile .c { grid-column: 2; }
+  .tile .v { grid-row: span 2; }
+}
+.sub-h { margin: var(--space-7) 0 var(--space-4); font: 600 var(--text-lg)/1.3 var(--font-sans); }
+.early { list-style: none; margin: 0; padding: 0; }
+.early li { padding: var(--space-3) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+.early li:first-child { border-top: 0; }
+.playstyle { margin-top: var(--space-6); }
+
+#tip { position: fixed; z-index: 10; display: none; max-width: 260px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+  background: var(--ink); color: var(--bg); font-size: var(--text-sm); pointer-events: none; box-shadow: var(--shadow-1); }
+.end { height: var(--space-8); }
+
+@media (min-width: 768px) {
+  :root { --gutter: 24px; }
+  .page-head { padding-top: var(--space-8); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+
+
+/* Live-report extras: edit names, loading and error states. */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+#namesForm { margin-top: var(--space-4); padding: var(--space-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-3); align-items: end; }
+#namesForm label { display: block; font-size: var(--text-sm); color: var(--ink-2); margin-bottom: var(--space-2); }
+#namesForm input { width: 100%; font: inherit; min-height: var(--tap); padding: 0 var(--space-3); border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); }
+@media (max-width: 559px) { #namesForm { grid-template-columns: 1fr; } }
+#error { margin-top: var(--space-5); padding: var(--space-5); border-radius: var(--radius-lg); background: var(--bad-soft); color: var(--bad); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--tap); padding: 0 var(--space-5);
+  border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 var(--text-base)/1 var(--font-sans); cursor: pointer; }
+.btn:hover { background: var(--surface-2); }
 </style>
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
-<div class="wrap">
-  <header id="topbar" data-page="report"></header>
-  <header class="page">
-    <div>
-      <div class="muted">Match report</div>
-      <h1 id="title">Loading…</h1>
-      <div class="sub" id="subtitle"></div>
-    </div>
-    <button id="editNamesBtn" class="hidden">Edit names</button>
-  </header>
+<header id="topbar" data-page="report"></header>
 
-  <form id="namesForm" class="card names hidden">
+<main class="wrap">
+  <header class="page-head">
+    <div>
+      <div class="label">Match report</div>
+      <h1 id="title">Loading…</h1>
+      <p class="score" id="subtitle"></p>
+    </div>
+    <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
+  </header>
+  <form id="namesForm" class="hidden">
     <div><label for="n1">Player who starts at the near end (closest to the camera)</label><input id="n1" maxlength="40"></div>
     <div><label for="n2">Player who starts at the far end</label><input id="n2" maxlength="40"></div>
-    <button type="submit">Save</button>
+    <button type="submit" class="btn">Save</button>
   </form>
+  <div id="error" class="hidden" role="alert"></div>
+  <div class="tabs hidden" role="tablist" aria-label="Player" id="tabs"></div>
+  <div id="player" role="tabpanel"></div>
+  <details class="fold hidden" id="coverageBox">
+    <summary>About this data <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="fold-body" id="coverage"></div>
+  </details>
+  <div class="end"></div>
+</main>
 
-  <div id="error" class="card error hidden"></div>
-  <nav class="tabs hidden" id="tabs" role="tablist"></nav>
-  <main id="player"></main>
-  <details class="card fold hidden" id="coverageBox"><summary>About this data</summary><div class="coverage" id="coverage"></div></details>
-</div>
+<footer id="sitefoot"></footer>
 <div id="tip" role="tooltip"></div>
 
 <script src="site.js"></script>
@@ -122,10 +296,25 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const JOB = params.get("job");
 const BACKEND = (params.get("backend") || "").replace(/\/$/, "");   // empty = this site
-let profile = null, current = "player_1", barView = "lost";
-
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pct = (v) => (v === null || v === undefined ? "–" : `${Math.round(v)}%`);
+const CHEV = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+let profile = null, DATA = null, HAS_INSIGHTS = false, current = "player_1", barView = "lost";
+
+// The page draws from one shape: each pattern carries its AI advice (matched by pattern id),
+// each player carries the AI one-paragraph summary.
+function shape(pf) {
+  const out = { coverage: pf.coverage, min_sample: pf.min_sample, players: {} };
+  for (const [pid, pl] of Object.entries(pf.players)) {
+    const ins = pf.insights && pf.insights.players && pf.insights.players[pid];
+    const byId = {};
+    (ins?.insights || []).forEach((i) => { byId[i.pattern_id] = i; });
+    const withAdvice = (p) => ({ ...p, advice: byId[p.id] || null });
+    out.players[pid] = { ...pl, id: pid, ai_summary: ins?.game_summary,
+      weaknesses: pl.weaknesses.map(withAdvice), strengths: pl.strengths.map(withAdvice) };
+  }
+  return out;
+}
 
 async function load() {
   try {
@@ -137,7 +326,10 @@ async function load() {
     if (params.get("insights")) {             // local testing: separate insights file
       try { profile.insights = await (await fetch(params.get("insights"))).json(); } catch (e) {}
     }
+    HAS_INSIGHTS = !!profile.insights;
+    DATA = shape(profile);
     if (JOB && JOB !== "76a383379d90") $("editNamesBtn").classList.remove("hidden");   // the example report is read only
+    $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     render();
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
   } catch (e) {
@@ -147,96 +339,88 @@ async function load() {
   }
 }
 
-function render() {
-  const P = profile.players;
-  const ids = Object.keys(P);
-  $("title").textContent = ids.map((id) => P[id].name).join(" vs ");
-  $("subtitle").textContent = `Points won: ${P[ids[0]].stats.points_won}–${P[ids[1]].stats.points_won}`;
-  $("tabs").innerHTML = ids.map((id) =>
-    `<button role="tab" data-id="${id}" aria-selected="${id === current}">${esc(P[id].name)}</button>`).join("");
-  $("tabs").classList.remove("hidden");
-  $("tabs").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { current = b.dataset.id; render(); }));
-  $("n1").value = P.player_1?.name || ""; $("n2").value = P.player_2?.name || "";
-  renderPlayer(P[current]);
-  $("coverage").innerHTML = profile.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
-    `<p>Patterns need at least ${profile.min_sample.occurrences} occurrences out of ${profile.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>`;
-  $("coverageBox").classList.remove("hidden");
-}
-
-function adviceFor(pid) {
-  const ins = profile.insights && profile.insights.players && profile.insights.players[pid];
-  const byId = {};
-  (ins?.insights || []).forEach((i) => { byId[i.pattern_id] = i; });
-  return { summary: ins?.game_summary, byId };
-}
-
-// One fix: headline + points + a single "Try this" line; the rest behind a tap.
-// Insights older than VERSION 4 have no try_this: fall back to the match strategy.
-function fixCard(p, advice, rank) {
-  const a = advice.byId[p.id];
-  const pts = p.points ? `<span class="pts">−${p.points} pts</span>` : "";
-  const tryLine = a?.try_this || (a?.match_strategy || "").split(/(?<=[.!?])\s/)[0];
-  const steps = !a ? [] : [["In matches", a.match_strategy], ["Habit to build", a.habit], ["Practice drill", a.practice_drill]]
-    .filter(([, t]) => t);
-  return `<div class="card pattern weak">
-    <div class="rank">${rank}</div>
-    <div class="ptitle"><h3>${esc(a?.headline || p.title)}</h3>${pts}</div>
-    <div class="try">${tryLine ? `<b>Try this:</b> ${esc(tryLine)}` : esc(p.detail)}</div>
-    ${momentsLine(p.moments)}
-    <details class="more"><summary>${a ? "How to practise it" : "Details"}</summary><div class="advice">
-      ${steps.map(([h, t]) => `<b>${h}</b>${esc(t)}`).join("")}
-      <b>Why</b>${esc(p.detail)}</div></details>
-  </div>`;
-}
-
-// Video times (seconds) as m:ss, or h:mm:ss past an hour.
 function clock(sec) {
   const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, ss = String(sec % 60).padStart(2, "0");
   return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
-// "Watch in your video: 0:25 · 2:07 · …" -- where each counted point starts.
 const MAX_MOMENTS = 5;
 function momentsLine(moments) {
   if (!moments || !moments.length) return "";
-  const shown = moments.slice(0, MAX_MOMENTS).map((t) => `<b>${clock(t)}</b>`).join(" · ");
+  const shown = moments.slice(0, MAX_MOMENTS).map((t) => `<span class="t">${clock(t)}</span>`).join(" · ");
   const more = moments.length > MAX_MOMENTS ? ` and ${moments.length - MAX_MOMENTS} more` : "";
-  return `<div class="moments">▶ Watch in your video: ${shown}${more}</div>`;
+  return `<p class="moments">Find these moments in your video: ${shown}${more}</p>`;
+}
+const firstSentence = (t) => (t || "").split(/(?<=[.!?])\s/)[0];
+const headlineOf = (p) => (p.advice && p.advice.headline) || p.title;
+
+// One fix, always the same shape: rank, headline, −N pts, one line (Try this / Why), times, fold.
+function fixCard(p, rank, first) {
+  const a = p.advice;
+  const pts = p.points ? `<span class="pts lost">−${p.points} pts</span>` : "";
+  const tryLine = a ? (a.try_this || firstSentence(a.match_strategy)) : "";
+  const line = tryLine ? `<b>Try this:</b> ${esc(tryLine)}` : `<b>Why:</b> ${esc(p.detail)}`;
+  const steps = !a ? [] : [["In matches", a.match_strategy], ["Habit to build", a.habit], ["Practice drill", a.practice_drill]].filter(([, t]) => t);
+  return `<li class="fix${first ? " is-first" : ""}" id="fix-${esc(p.id)}">
+    <div class="rank" aria-label="Number ${rank}">${rank}</div>
+    <div class="fix-body">
+      <div class="fix-head"><h3>${esc(headlineOf(p))}</h3>${pts}</div>
+      <p class="try">${line}</p>
+      ${momentsLine(p.moments)}
+      <details class="more"><summary>${a ? "How to practise it" : "Details"} ${CHEV}</summary>
+        <div class="advice">${steps.map(([h, t]) => `<div><b>${h}</b>${esc(t)}</div>`).join("")}<div><b>Why</b>${esc(p.detail)}</div></div>
+      </details>
+    </div>
+  </li>`;
 }
 
-// Donut ring: share of a whole, value printed in the middle.
 function ring(value, color, label, ctx) {
   const v = value === null || value === undefined ? null : Math.max(0, Math.min(100, value));
   const C = 2 * Math.PI * 42;
-  const arc = v === null || v === 0 ? "" : `<circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="12"
-      stroke-linecap="round" stroke-dasharray="${(C * v / 100).toFixed(1)} ${C.toFixed(1)}"/>`;
-  return `<div><div class="ring" role="img" aria-label="${esc(label)}: ${pct(v)}">
-      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-2)" stroke-width="12"/>${arc}</svg>
+  const arc = !v ? "" : `<circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C * v / 100).toFixed(1)} ${C.toFixed(1)}"/>`;
+  return `<div class="ring-item"><div class="ring" role="img" aria-label="${esc(label)}: ${pct(v)}, ${esc(ctx)}">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-2)" stroke-width="10"/>${arc}</svg>
       <div class="val">${pct(v)}</div></div>
-    <div class="ring-lbl">${esc(label)}</div><div class="ring-ctx">${esc(ctx)}</div></div>`;
+    <div><div class="ring-lbl">${esc(label)}</div><div class="ring-ctx">${esc(ctx)}</div></div></div>`;
 }
 
-// Stacked bar: segments in fixed slot order; 2px surface gaps; hover tooltip; legend with counts.
-function stackedBar(parts, total, verb) {
+function stackedBar(parts, total, verb, palette) {
   const shown = parts.filter((x) => x.n > 0);
-  if (!total || !shown.length) return `<div class="muted">No points ${verb} yet.</div>`;
-  const bar = shown.map((x) => `<span style="flex:${x.n};background:var(--s${x.slot})"
-      data-tip="${esc(x.label)}: ${x.n} of ${total} points ${verb} (${Math.round(100 * x.n / total)}%)"></span>`).join("");
-  const legend = shown.map((x) => `<div><i style="background:var(--s${x.slot})"></i>${esc(x.label)}<span class="n">${x.n}</span></div>`).join("");
-  return `<div class="bar" role="img" aria-label="${esc(shown.map((x) => `${x.label} ${x.n}`).join(", "))}">${bar}</div><div class="legend">${legend}</div>`;
+  if (!total || !shown.length) return `<p class="muted">No points ${verb} yet.</p>`;
+  const bar = shown.map((x) => `<span style="flex:${x.n};background:var(--${palette}-${x.slot})" data-tip="${esc(x.label)}: ${x.n} of ${total} points ${verb} (${Math.round(100 * x.n / total)}%)"></span>`).join("");
+  const legend = shown.map((x) => `<li><i style="background:var(--${palette}-${x.slot})"></i>${esc(x.label)}<span class="n">${x.n}</span></li>`).join("");
+  return `<div class="bar" role="img" aria-label="${esc(shown.map((x) => `${x.label} ${x.n}`).join(", "))}">${bar}</div>
+    <ul class="legend">${legend}<li class="total">Total points ${verb}<span class="n">${total}</span></li></ul>`;
 }
+
+function render() {
+  const P = DATA.players, ids = Object.keys(P);
+  $("tabs").classList.remove("hidden");
+  $("title").innerHTML = ids.map((id) => esc(P[id].name)).join(' <span class="vs">vs</span> ');
+  $("subtitle").innerHTML = `Points won: <b>${P[ids[0]].stats.points_won}–${P[ids[1]].stats.points_won}</b>`;
+  $("tabs").innerHTML = ids.map((id) => `<button type="button" role="tab" id="tab-${id}" data-id="${id}" aria-selected="${id === current}" tabindex="${id === current ? 0 : -1}">${esc(P[id].name)}</button>`).join("");
+  $("player").setAttribute("aria-labelledby", `tab-${current}`);
+  renderPlayer(P[current]);
+  $("coverageBox").classList.remove("hidden");
+  $("coverage").innerHTML = DATA.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
+    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>`;
+}
+$("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button[role=tab]");
+  if (b && b.dataset.id !== current) { current = b.dataset.id; render(); $(`tab-${current}`).focus(); }
+});
+$("tabs").addEventListener("keydown", (e) => {
+  if (!DATA || (e.key !== "ArrowRight" && e.key !== "ArrowLeft")) return;
+  const ids = Object.keys(DATA.players), i = ids.indexOf(current);
+  current = ids[(i + (e.key === "ArrowRight" ? 1 : ids.length - 1)) % ids.length];
+  render(); $(`tab-${current}`).focus();
+});
 
 function renderPlayer(pl) {
   const s = pl.stats, sv = s.serve, rt = s.return;
-  const advice = adviceFor(pl.id);
-  // Points-ranked patterns first, then serve/return/rally-length context ones.
-  const ordered = (list) => {
-    const ok = list.filter((p) => !p.low_sample);
-    return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")];
-  };
+  const ordered = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
   const fixes = ordered(pl.weaknesses), keeps = ordered(pl.strengths);
   const early = [...pl.weaknesses, ...pl.strengths].filter((p) => p.low_sample);
   const errs = s.lost_by.own_errors;
-
   const lostParts = [
     { label: "Into the net", n: errs.net || 0, slot: 1 },
     { label: "Long", n: errs.long || 0, slot: 2 },
@@ -251,71 +435,82 @@ function renderPlayer(pl) {
     { label: "Opponent missed", n: s.won_by.opponent_errors, slot: 3 },
     { label: "Opponent double faults", n: s.won_by.opponent_double_faults, slot: 4 },
   ];
-  // Rally length: average shots per point (older reports: share of short points).
   const rl = s.rally_length, played = rl.short.played + rl.medium.played + rl.long.played;
-  const rally = s.avg_rally_shots != null ? s.avg_rally_shots : pct(played ? 100 * rl.short.played / played : null);
+  // Same fallback as the live report: no shot count yet -> share of short points.
+  const rally = `<div class="mv num">${s.avg_rally_shots != null ? s.avg_rally_shots : pct(played ? 100 * rl.short.played / played : null)}</div>`;
   const rallyLbl = s.avg_rally_shots != null ? "Shots per rally" : "Short points";
+  const top = fixes.slice(0, 3);
+  const n1 = top[0];
 
-  $("player").onclick = (e) => {
-    const b = e.target.closest(".seg button");
-    if (b && b.dataset.view !== barView) { barView = b.dataset.view; renderPlayer(pl); }
-  };
   $("player").innerHTML = `
-    <section class="card hero">
-      <div class="style-tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+    ${n1 ? `<a class="first-fix" href="#fixes">
+      <span class="ff-label">Your #1 fix</span>
+      <span class="ff-text">${esc(headlineOf(n1))}</span>
+      ${n1.points ? `<span class="pts lost">−${n1.points} pts</span>` : ""}
+      <span class="ff-go">See how to fix it <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
+    </a>` : ""}
+
+    <section class="sec" aria-label="Overview">
+      <div class="tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
       <div class="rings">
         ${ring(s.points_won_pct, "var(--accent)", "Points won", `${s.points_won} of ${s.points_played}`)}
-        ${ring(sv.serves_in_pct, "var(--s1)", "Serves in", `${sv.serves_in} of ${sv.serves_tracked}`)}
+        ${ring(sv.serves_in_pct, "var(--ink-2)", "Serves in", `${sv.serves_in} of ${sv.serves_tracked}`)}
       </div>
       <div class="minis">
-        <div class="mini" title="Serves the opponent didn't return"><div class="num">${sv.aces}</div><div class="lbl">Aces</div></div>
-        <div class="mini" title="At least this many: some serves aren't seen"><div class="num">${sv.double_faults}</div><div class="lbl">Double faults</div></div>
-        <div class="mini"><div class="num">${rally}</div><div class="lbl">${rallyLbl}</div></div>
+        <div class="mini" title="Serves the opponent didn't return"><div class="mv num">${sv.aces}</div><div class="ml">Aces</div></div>
+        <div class="mini" title="At least this many: some serves aren't seen"><div class="mv num">${sv.double_faults}</div><div class="ml">Double faults</div></div>
+        <div class="mini">${rally}<div class="ml">${rallyLbl}</div></div>
       </div>
-      ${advice.summary ? `<p class="summary">${esc(advice.summary)}</p>` : ""}
+      ${pl.ai_summary ? `<p class="summary">${esc(pl.ai_summary)}</p>` : ""}
     </section>
-    <section class="card">
-      <div class="card-head"><h3>How ${esc(pl.name)} ${barView} points</h3>
+
+    <section class="sec" aria-labelledby="barH">
+      <div class="sec-head"><h2 id="barH">How ${esc(pl.name)} ${barView} points</h2>
         <div class="seg" role="group" aria-label="Show points lost or won">
           <button type="button" data-view="lost" aria-pressed="${barView === "lost"}">Lost</button>
           <button type="button" data-view="won" aria-pressed="${barView === "won"}">Won</button>
         </div></div>
-      ${barView === "lost" ? stackedBar(lostParts, s.points_lost, "lost") : stackedBar(wonParts, s.points_won, "won")}
+      ${barView === "lost" ? stackedBar(lostParts, s.points_lost, "lost", "lost") : stackedBar(wonParts, s.points_won, "won", "won")}
     </section>
 
-    <h2>${fixes.length ? `Top ${Math.min(3, fixes.length)} things to fix` : "Things to fix"}</h2>
-    ${fixes.length ? fixes.slice(0, 3).map((p, i) => fixCard(p, advice, i + 1)).join("")
-                   : `<div class="muted">Not enough tracked points yet to rank anything.</div>`}
+    <section class="sec" id="fixes" aria-labelledby="fixH">
+      <h2 id="fixH">${top.length ? `Top ${top.length} things to fix` : "Things to fix"}</h2>
+      ${top.length ? `<ol class="fixes">${top.map((p, i) => fixCard(p, i + 1, i === 0)).join("")}</ol>` : `<p class="muted">Not enough tracked points yet to rank anything.</p>`}
+    </section>
 
-    ${keeps.length ? `<h2>Keep doing</h2><div class="card strong">${keeps.slice(0, 3).map((p) => {
-        const a = advice.byId[p.id];
-        return `<div class="keep"><div><h3>${esc(a?.headline || p.title)}</h3>${a?.try_this ? `<div class="try">${esc(a.try_this)}</div>` : ""}</div>${p.points ? `<span class="pts">+${p.points} pts</span>` : ""}</div>`;
-      }).join("")}</div>` : ""}
-    ${profile.insights ? `<div class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</div>` : ""}
+    ${keeps.length ? `<section class="sec" aria-labelledby="keepH"><h2 id="keepH">Keep doing</h2>
+      <ul class="keeps">${keeps.slice(0, 3).map((p) => `<li class="keep"><h3>${esc(headlineOf(p))}</h3>${p.points ? `<span class="pts won">+${p.points} pts</span>` : ""}</li>`).join("")}</ul>
+      ${HAS_INSIGHTS ? `<p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>` : ""}
+    </section>` : ""}
 
-    <details class="card fold"><summary>More stats</summary>
-      <div class="tiles">
-        <div class="tile"><div class="num">${pct(sv.first_serve_in_pct)}</div><div class="lbl">First serves in</div><div class="ctx">${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves}</div></div>
-        <div class="tile"><div class="num">${pct(sv.service_points_won_pct)}</div><div class="lbl">Won on serve</div><div class="ctx">of ${sv.points_served} points</div></div>
-        <div class="tile"><div class="num">${pct(rt.return_points_won_pct)}</div><div class="lbl">Won on return</div><div class="ctx">of ${rt.return_points} points</div></div>
+    <details class="fold"><summary>More stats ${CHEV}</summary>
+      <div class="fold-body">
+        <div class="tiles">
+          <div class="tile"><div class="v">${pct(sv.first_serve_in_pct)}</div><div class="l">First serves in</div><div class="c">${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves}</div></div>
+          <div class="tile"><div class="v">${pct(sv.service_points_won_pct)}</div><div class="l">Won on serve</div><div class="c">of ${sv.points_served} points</div></div>
+          <div class="tile"><div class="v">${pct(rt.return_points_won_pct)}</div><div class="l">Won on return</div><div class="c">of ${rt.return_points} points</div></div>
+        </div>
+        ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3><ol class="fixes">${fixes.slice(3).map((p, i) => fixCard(p, i + 4, false)).join("")}</ol>` : ""}
+        ${early.length ? `<h3 class="sub-h">Early signs (too few to rank yet)</h3><ul class="early">${early.map((p) => `<li>${esc(p.detail)}</li>`).join("")}</ul>` : ""}
+        <p class="muted playstyle">${esc(pl.playstyle.summary)}</p>
       </div>
-      ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3>${fixes.slice(3).map((p, i) => fixCard(p, advice, i + 4)).join("")}` : ""}
-      ${early.length ? `<h3 class="sub-h">Early signs (too few to rank yet)</h3>${early.map((p) => `<p style="margin:6px 0 0">${esc(p.detail)}</p>`).join("")}` : ""}
-      <p class="muted" style="margin-top:16px">${esc(pl.playstyle.summary)}</p>
-    </details>
-  `;
+    </details>`;
 }
+$("player").addEventListener("click", (e) => {
+  const b = e.target.closest(".seg button");
+  if (b && b.dataset.view !== barView) { barView = b.dataset.view; renderPlayer(DATA.players[current]); document.querySelector(`.seg button[data-view="${barView}"]`).focus(); }
+});
 
-// ── hover/tap tooltip for chart segments ────────────────────────────────
 document.addEventListener("pointermove", (e) => {
   const t = e.target.closest && e.target.closest("[data-tip]");
   const tip = $("tip");
   if (!t) { tip.style.display = "none"; return; }
   tip.textContent = t.dataset.tip;
   tip.style.display = "block";
-  tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + "px";
+  tip.style.left = Math.max(8, Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8)) + "px";
   tip.style.top = (e.clientY - tip.offsetHeight - 12) + "px";
 });
+
 
 // ── rename players (job mode) ───────────────────────────────────────────
 $("editNamesBtn").addEventListener("click", () => $("namesForm").classList.toggle("hidden"));
@@ -329,6 +524,7 @@ $("namesForm").addEventListener("submit", async (e) => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const names = (await res.json()).names;
     for (const [pid, pl] of Object.entries(profile.players)) pl.name = names[pid] || (pid === "player_1" ? "Player 1" : "Player 2");
+    DATA = shape(profile);
     $("namesForm").classList.add("hidden");
     render();
     Site.rememberReport(JOB, $("title").textContent);
