@@ -48,6 +48,9 @@
   --panel-pad-x: var(--space-6);
   --green-bg: #1F3A2A; --green-surface: #27493A; --green-court: #2F5A43; --green-accent: #A8DDB4;
   --foot-bg: #141C16;
+  --film-focus: 70% 45%;
+  --cta-h: 440px;
+  --cta-focus: 62% 55%;
   --hero-under-ratio: 2 / 1;
   --hero-wide-h: 540px;
   --hero-box: 1320px;
@@ -348,6 +351,30 @@ section.block.band-green { margin-top: var(--space-8); padding: var(--space-8) c
 .site-foot .foot-name { font: 500 var(--text-xl)/1.2 var(--font-serif); color: #fff; }
 .site-foot .foot-name span { color: var(--green-accent); }
 .site-foot p { margin: 0; color: #D9DED6; }
+
+/* ── Photo bands (A: filming guide over the phone-on-fence photo, B: closing call to action over the ball-on-line photo) */
+.band-photo { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.band-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+section.block.band-green { position: relative; isolation: isolate; }
+.band-green .band-photo img { object-position: var(--film-focus); }
+.band-green .band-photo::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(24,46,33,.93) 0%, rgba(24,46,33,.88) 55%, rgba(24,46,33,.72) 100%); }
+section.block.cta-band { position: relative; isolation: isolate; margin-top: var(--space-8); border-top: 0;
+  padding: var(--space-9) calc(50vw - 50%); min-height: var(--cta-h); display: flex; align-items: center; color: #fff; }
+.cta-band .band-photo img { object-position: var(--cta-focus); }
+.cta-band .band-photo::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(10,14,9,.82) 0%, rgba(10,14,9,.6) 42%, rgba(10,14,9,.1) 75%, rgba(10,14,9,0) 100%); }
+.cta-band .cta-in { max-width: 460px; }
+.cta-band h2 { color: #fff; }
+.cta-band h2 .kw { color: var(--hero-full-kw); }
+.cta-band p { margin-top: var(--space-3); color: rgba(255,255,255,.92); }
+.cta-band .btn { margin-top: var(--space-5); }
+.cta-band + .site-foot, main:has(.cta-band) + .site-foot { margin-top: 0; }
+@media (max-width: 759px) {
+  section.block.cta-band { align-items: flex-start; --cta-h: 600px; --cta-focus: 64% 50%; background: var(--foot-bg); }
+  .cta-band .band-photo { inset: auto 0 0 0; height: 58%; clip-path: inset(3px 0 0); }
+  .cta-band .band-photo::after { background: linear-gradient(to bottom, var(--foot-bg) 0%, rgba(20,28,22,.35) 35%, rgba(20,28,22,0) 60%); }
+}
 </style>
 </head>
 <body class="photo-hero">
@@ -443,6 +470,7 @@ section.block.band-green { margin-top: var(--space-8); padding: var(--space-8) c
 
   <!-- How to film -->
   <section class="block band band-green" id="filmGuide" aria-labelledby="filmH">
+    <div class="band-photo" aria-hidden="true"><img src="assets/band-phone-800.webp" srcset="assets/band-phone-800.webp 800w, assets/band-phone-1600.webp 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt=""></div>
     <h2 id="filmH">How to film your match</h2>
     <p class="lede">Where to put the phone, in 5 steps.</p>
     <div class="figs">
@@ -520,6 +548,16 @@ section.block.band-green { margin-top: var(--space-8); padding: var(--space-8) c
         <div id="resumeStatus" class="muted" role="status" style="margin-top:8px"></div>
       </div>
     </details>
+  </section>
+
+  <!-- Closing call to action -->
+  <section class="block band cta-band" aria-labelledby="ctaH">
+    <div class="band-photo" aria-hidden="true"><img src="assets/band-ball-800.webp" srcset="assets/band-ball-800.webp 800w, assets/band-ball-1600.webp 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt=""></div>
+    <div class="cta-in">
+      <h2 id="ctaH">Every point <span class="kw">counts</span></h2>
+      <p>See what a report looks like: each player's top 3 things to fix, ranked by the points they cost.</p>
+      <a class="btn btn-primary" href="report.html">See an example report</a>
+    </div>
   </section>
 </main>
 
