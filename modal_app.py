@@ -252,7 +252,7 @@ cpu_image = (
         "Code",
         remote_path="/root/Code",
         ignore=["__pycache__", "*.pyc", "*.csv", "*.json", "*.txt", "*.jpg",
-                "*.png", "*.npy", "*.pt", "*.md", "archive"],
+                "*.png", "*.npy", "*.pt", "*.md", "legacy"],
     )
     # The web pages, served by web_app so a phone can just open a link.
     .add_local_file("report.html", "/root/web/report.html")
@@ -292,7 +292,7 @@ gpu_image = (
         "Code",
         remote_path="/root/Code",
         ignore=["__pycache__", "*.pyc", "*.csv", "*.json", "*.txt", "*.jpg",
-                "*.png", "*.npy", "*.pt", "*.md", "archive"],
+                "*.png", "*.npy", "*.pt", "*.md", "legacy"],
     )
 )
 
