@@ -37,6 +37,7 @@
 ## Layout rules
 - Home order (new visitor): photo hero, New analysis (3 steps), How to film (green band with photo), My reports, closing "Every point counts" band, footer. Returning visitors with reports see My reports first.
 - The green bar marks the current upload step; finished steps show a check; upcoming steps stay readable.
+- Step 1 "Add your match" has a two-way switch (Upload video | Record match; shown only where the browser can record). Record match: camera preview → mark the court on a still → full-screen near-black recording view (big timer with a red dot, "sent / behind" line, one main button; the camera picture hides itself while filming to save battery).
 - Report order: "Your #1 fix" card, overview (big rings, quick stats, AI summary), lost/won bar, top 3 fixes, keep doing, More stats, About this data. Each section is its own panel.
 - Same header bar and footer banner on every page. On Home the header floats over the photo.
 - Photos (AI-generated, 3 of 5 slots used): hero court from behind the baseline, phone sideways on the fence, ball on the baseline. WebP 800px for phones, 1600px for big screens.

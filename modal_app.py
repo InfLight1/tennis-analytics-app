@@ -961,6 +961,79 @@ def _join_parts(parts_dir: str, out_path: str, names=None) -> int:
     return os.path.getsize(out_path)
 
 
+# ---------------------------------------------------------------------------
+# Direct-to-storage uploads (2026-10-14): when the Modal secret "r2" holds real
+# Cloudflare R2 keys, the browser PUTs each piece straight to R2 with a
+# presigned URL (skipping the ~1-1.5 MB/s per-connection cap of the web app),
+# and the server pulls the pieces into the job folder when the upload or
+# recording finishes. Until then the secret is a placeholder (R2_ENABLED=0)
+# and everything goes through the web app as before. A job can mix both: the
+# page falls back to the web app if R2 keeps failing, and the pull merges.
+# R2 deletes leftover pieces after a day (bucket lifecycle rule).
+# ---------------------------------------------------------------------------
+R2_SECRET = modal.Secret.from_name("r2")
+R2_KEYS = ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET")
+_r2_cache = {}
+
+
+def _r2():
+    """(client, bucket) when R2 is set up, else None."""
+    vals = [os.environ.get(k, "").strip() for k in R2_KEYS]
+    if not all(vals) or os.environ.get("R2_ENABLED", "1").strip() == "0":
+        return None
+    if "c" not in _r2_cache:
+        import boto3
+        from botocore.config import Config
+        acct, key, secret, bucket = vals
+        _r2_cache["c"] = (boto3.client("s3", endpoint_url=f"https://{acct}.r2.cloudflarestorage.com",
+                                       aws_access_key_id=key, aws_secret_access_key=secret, region_name="auto",
+                                       config=Config(signature_version="s3v4", retries={"max_attempts": 5})), bucket)
+    return _r2_cache["c"]
+
+
+def _r2_key(job_id: str, index: int) -> str:
+    return f"uploads/{job_id}/{index:06d}.part"
+
+
+def _r2_part_keys(job_id: str) -> dict:
+    """{piece index: object key} for this job's pieces in R2."""
+    r2 = _r2()
+    if not r2:
+        return {}
+    client, bucket = r2
+    out = {}
+    for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=f"uploads/{job_id}/"):
+        for o in page.get("Contents", []):
+            name = o["Key"].rsplit("/", 1)[-1]
+            if name.endswith(".part"):
+                out[int(name.split(".")[0])] = o["Key"]
+    return out
+
+
+def _pull_r2_parts(job_id: str, parts_dir: str) -> int:
+    """Copies this job's R2 pieces into parts_dir (pieces already there win), then deletes
+    them from R2. Returns how many were copied."""
+    r2 = _r2()
+    if not r2:
+        return 0
+    client, bucket = r2
+    keys = _r2_part_keys(job_id)
+    os.makedirs(parts_dir, exist_ok=True)
+    copied = 0
+    for i, key in sorted(keys.items()):
+        final = f"{parts_dir}/{i:06d}.part"
+        if not os.path.exists(final):
+            client.download_file(bucket, key, final + ".tmp")
+            os.replace(final + ".tmp", final)
+            copied += 1
+    batch = [{"Key": k} for k in keys.values()]
+    for n in range(0, len(batch), 1000):
+        client.delete_objects(Bucket=bucket, Delete={"Objects": batch[n:n + 1000], "Quiet": True})
+    if copied:
+        print(f"[job {job_id}] pulled {copied} piece(s) from R2")
+    return copied
+
+
 def _remove_parts(parts_dir: str):
     for n in os.listdir(parts_dir):
         os.remove(f"{parts_dir}/{n}")
@@ -1027,7 +1100,7 @@ def assemble_recording(parts_dir: str, work_dir: str, out_path: str, pieces: int
     return frames, fps, len(made)
 
 
-@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600)
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600, secrets=[R2_SECRET])
 def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
     import time
 
@@ -1037,6 +1110,7 @@ def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
         # Pieces may still be saving from other web containers: wait up to 2 min for all of them.
         for _ in range(60):
             volume.reload()
+            _pull_r2_parts(job_id, d)
             if len(_part_names(d)) >= pieces:
                 break
             time.sleep(2)
@@ -1076,7 +1150,7 @@ def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
 # for calibration_demo.html.
 # ---------------------------------------------------------------------------
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=600, min_containers=1,
-              secrets=[modal.Secret.from_name("app-passcode")])
+              secrets=[modal.Secret.from_name("app-passcode"), R2_SECRET])
 @modal.concurrent(max_inputs=20)   # the page sends several upload pieces at once (2026-10-12)
 @modal.asgi_app()
 def web_app():
@@ -1219,15 +1293,31 @@ def web_app():
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"size": size, "chunk_size": chunk_size}, f)
         volume.commit()
-        return JSONResponse({"job_id": job_id})
+        return JSONResponse({"job_id": job_id, "r2": bool(_r2())})
 
     @fastapi_app.get("/api/upload/{job_id}/parts")
     def upload_parts(job_id: str):
         """Which pieces are already stored -- the browser resumes from here."""
         volume.reload()
         d = _parts_dir(job_id)
-        have = sorted(int(n.split(".")[0]) for n in os.listdir(d) if n.endswith(".part")) if os.path.isdir(d) else []
-        return JSONResponse({"job_id": job_id, "parts": have})
+        have = {int(n.split(".")[0]) for n in _part_names(d)} | set(_r2_part_keys(job_id))
+        return JSONResponse({"job_id": job_id, "parts": sorted(have)})
+
+    @fastapi_app.get("/api/upload/{job_id}/r2-urls")
+    def r2_urls(job_id: str, start: int = 0, count: int = 50):
+        """Presigned URLs for pieces start..start+count-1: the browser PUTs them straight to R2."""
+        r2 = _r2()
+        if not r2:
+            return JSONResponse({"r2": False, "error": "direct-to-storage is off"}, status_code=404)
+        if not os.path.isdir(_parts_dir(job_id)):
+            volume.reload()
+        if not os.path.isdir(_parts_dir(job_id)):
+            return JSONResponse({"error": f"Unknown upload {job_id}"}, status_code=404)
+        client, bucket = r2
+        urls = {i: client.generate_presigned_url("put_object", Params={"Bucket": bucket, "Key": _r2_key(job_id, i)},
+                                                 ExpiresIn=6 * 3600)
+                for i in range(max(start, 0), max(start, 0) + max(1, min(count, 200)))}
+        return JSONResponse({"r2": True, "urls": urls})
 
     # Upload speed fix (2026-10-12): uploads ran at ~0.3 MB/s on a fast
     # connection. Each piece used to be parsed as a form and then wait for
@@ -1302,6 +1392,7 @@ def web_app():
         d = _parts_dir(job_id)
         meta = _read_json(f"{p['job_dir']}/input/upload.json", {})
         expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
+        _pull_r2_parts(job_id, d)
         parts = _part_names(d)
         if len(parts) != expected:          # some pieces may have landed on another container
             volume.reload()
@@ -1334,7 +1425,7 @@ def web_app():
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"mode": "record", "mime": mime[:80]}, f)
         _write_status(job_id, stage="recording", message="Recording...")   # commits
-        return JSONResponse({"job_id": job_id})
+        return JSONResponse({"job_id": job_id, "r2": bool(_r2())})
 
     def _calib_frame_path(job_id: str) -> str:
         return f"{_job_paths(job_id)['job_dir']}/input/calib_frame.jpg"

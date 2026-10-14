@@ -83,7 +83,7 @@
   };
   function save() {
     if (!S.job) return;
-    store.set(REC_KEY, { jobId: S.job, pieces: S.pieces, size: S.size, segments: S.segments, sentCount: S.sentCount, sentBytes: S.sentBytes,
+    store.set(REC_KEY, { jobId: S.job, r2: !!S.r2, pieces: S.pieces, size: S.size, segments: S.segments, sentCount: S.sentCount, sentBytes: S.sentBytes,
       elapsed: S.elapsed + (S.recording ? Date.now() - S.segStart : 0), stopped: S.stopped, at: new Date().toISOString() });
   }
   const busy = () => !!S.job && (S.recording || (S.stopped && !S.finishing) || S.queue.length > 0 || S.active > 0);
@@ -375,17 +375,19 @@
     try {
       const v = $("recPreview");
       const still = await Recorder.still(v);
-      const init = new FormData();
-      init.append("mime", Recorder.pickType() || "");
-      let res = await fetch(`${backendUrl()}/api/record/init`, { method: "POST", body: init });
+      const initForm = new FormData();
+      initForm.append("mime", Recorder.pickType() || "");
+      let res = await fetch(`${backendUrl()}/api/record/init`, { method: "POST", body: initForm });
       if (!res.ok) throw new Error(`could not start (HTTP ${res.status})`);
-      const job = (await res.json()).job_id;
+      const init = await res.json();
+      const job = init.job_id;
+      useR2(job, init.r2);
       const form = new FormData();
       form.append("file", still, "court.jpg");
       res = await fetch(`${backendUrl()}/api/record/${job}/frame`, { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      Object.assign(S, { job, width: v.videoWidth, height: v.videoHeight, pieces: 0, size: 0, segments: [], elapsed: 0,
+      Object.assign(S, { job, r2: !!init.r2, width: v.videoWidth, height: v.videoHeight, pieces: 0, size: 0, segments: [], elapsed: 0,
         sentCount: 0, sentBytes: 0, stopped: false, finishing: false });
       S.run = { stop: false };
       save();
@@ -453,7 +455,8 @@
   }
 
   function resumeSending(p, waiting) {
-    Object.assign(S, { job: p.jobId, pieces: p.pieces, size: p.size, segments: p.segments || [0], elapsed: p.elapsed || 0,
+    useR2(p.jobId, !!p.r2);
+    Object.assign(S, { job: p.jobId, r2: !!p.r2, pieces: p.pieces, size: p.size, segments: p.segments || [0], elapsed: p.elapsed || 0,
       sentCount: p.sentCount || 0, stopped: true, recording: false, finishing: false });
     S.sentBytes = p.sentBytes || 0;
     S.run = { stop: false };

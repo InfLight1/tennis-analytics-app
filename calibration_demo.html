@@ -796,18 +796,36 @@ $("discardPendingBtn").addEventListener("click", () => {
   $("videoFile").dispatchEvent(new Event("change"));
 });
 
-function sendPart(jobId, index, blob, onProgress) {
+// Direct-to-storage (2026-10-14): when the server says so (init answers r2: true), pieces go
+// straight to cloud storage with presigned URLs, which is much faster on good Wi-Fi. After a few
+// failures there, the rest of that job goes through the app server instead (the server collects
+// pieces from both). Used by file uploads and Record match.
+const R2_GIVE_UP = 3;
+const r2Jobs = new Map();            // jobId -> failures so far
+const r2Urls = new Map();            // "job:index" -> presigned URL
+function useR2(jobId, on) { if (on) r2Jobs.set(jobId, 0); else r2Jobs.delete(jobId); }
+async function r2Url(jobId, index) {
+  const k = `${jobId}:${index}`;
+  if (!r2Urls.has(k)) {
+    const res = await fetch(`${backendUrl()}/api/upload/${jobId}/r2-urls?start=${index}&count=50`);
+    if (!res.ok) throw new Error(`no storage link (HTTP ${res.status})`);
+    for (const [i, url] of Object.entries((await res.json()).urls)) r2Urls.set(`${jobId}:${i}`, url);
+  }
+  return r2Urls.get(k);
+}
+
+function putBlob(url, blob, onProgress, toApp) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     liveXhrs.add(xhr);
     xhr.addEventListener("loadend", () => liveXhrs.delete(xhr));
-    xhr.open("PUT", `${backendUrl()}/api/upload/${jobId}/part/${index}`, true);
-    passcodeHeader(xhr);
+    xhr.open("PUT", url, true);
+    if (toApp) passcodeHeader(xhr);
     xhr.upload.addEventListener("progress", (e) => { if (e.lengthComputable) onProgress(e.loaded); });
     xhr.addEventListener("load", () => {
       if (xhr.status >= 200 && xhr.status < 300) return resolve();
       const err = new Error(`server returned HTTP ${xhr.status}`);
-      err.expired = xhr.status === 404;          // the server no longer knows this upload
+      err.expired = toApp && xhr.status === 404;  // the server no longer knows this upload
       reject(err);
     });
     xhr.addEventListener("error", () => reject(new Error("network error")));
@@ -816,6 +834,22 @@ function sendPart(jobId, index, blob, onProgress) {
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.send(blob);
   });
+}
+
+async function sendPart(jobId, index, blob, onProgress) {
+  if (r2Jobs.has(jobId) && r2Jobs.get(jobId) < R2_GIVE_UP && navigator.onLine) {
+    try {
+      await putBlob(await r2Url(jobId, index), blob, onProgress, false);
+      r2Jobs.set(jobId, 0);
+      return;
+    } catch (err) {
+      if (err.message === "cancelled") throw err;
+      r2Urls.delete(`${jobId}:${index}`);         // a stale link is fetched again next time
+      r2Jobs.set(jobId, r2Jobs.get(jobId) + 1);
+      if (r2Jobs.get(jobId) >= R2_GIVE_UP) console.warn(`[upload ${jobId}] storage keeps failing (${err.message}); using the app server`);
+    }
+  }
+  return putBlob(`${backendUrl()}/api/upload/${jobId}/part/${index}`, blob, onProgress, true);
 }
 
 // Phones (iPhone especially) can stop letting the page read a chosen video, e.g. after
@@ -868,8 +902,10 @@ async function runUpload() {
       form.append("chunk_size", CHUNK_SIZE);
       const res = await fetch(`${backendUrl()}/api/upload/init`, { method: "POST", body: form });
       if (!res.ok) throw new Error(`could not start the upload (HTTP ${res.status})`);
-      upload.jobId = (await res.json()).job_id;
-      store.set(PENDING_KEY, { jobId: upload.jobId, name: file.name, size: file.size, sent: 0, at: new Date().toISOString() });
+      const init = await res.json();
+      upload.jobId = init.job_id;
+      useR2(upload.jobId, init.r2);
+      store.set(PENDING_KEY, { jobId: upload.jobId, name: file.name, size: file.size, sent: 0, r2: !!init.r2, at: new Date().toISOString() });
     }
     const partsRes = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`);
     if (!partsRes.ok) throw new Error(`could not reach the server (HTTP ${partsRes.status})`);
@@ -1031,6 +1067,7 @@ $("uploadBtn").addEventListener("click", async () => {
     }
   }
   upload = { file, jobId: p ? p.jobId : null, running: false, paused: false, failed: false };
+  if (p && p.r2) useR2(p.jobId, true);
   runUpload();
 });
 
