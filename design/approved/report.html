@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
-<script>
-  try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
-</script>
 <style>
 /* ── Design tokens: every decision lives here ─────────────────────────── */
 :root {
@@ -43,44 +40,33 @@
   --dur: 220ms;
 
   color-scheme: light;
-  --bg: #F5F0E4;
-  --surface: #FFFDF8;
-  --surface-2: #F2EDE2;
-  --line: #E3DCCE;
-  --line-strong: #CFC6B4;
-  --ink: #1D1A15;
-  --ink-2: #2F2A23;
-  --muted: #4A443A;
-  --dim: #6A6356;
-  --accent: #2B6A3B;
+  --bg: #E8EFE6;
+  --surface: #FBFCFA;
+  --surface-2: #E0E9DD;
+  --line: #CBD8C7;
+  --line-strong: #A9BCA5;
+  --ink: #122016;
+  --ink-2: #213226;
+  --muted: #3A4C3E;
+  --dim: #58695B;
+  --accent: #23683A;
   --accent-strong: #215630;
-  --accent-soft: #E3EDDF;
+  --accent-soft: #D7E8D5;
   --on-accent: #FFFFFF;
   --bad: #A2443A;
   --bad-soft: #F5E4DF;
   /* chart segments: one hue per view, stepped in strength */
   --won-1: #2B6A3B; --won-2: #5E9468; --won-3: #93BB98; --won-4: #C4DBC4;
   --lost-1: #A2443A; --lost-2: #C2756A; --lost-3: #D9A399; --lost-4: #EBCBC3; --lost-5: #6E2E27; --lost-6: #463F35;
-  --shadow-1: 0 1px 2px rgba(70, 50, 20, 0.06), 0 10px 28px -14px rgba(70, 50, 20, 0.22);
+  --shadow-1: 0 1px 2px rgba(18, 40, 24, 0.06), 0 10px 28px -14px rgba(18, 40, 24, 0.25);
   --focus: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #151410; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
-    --ink: #F3EEE4; --ink-2: #EAE4D8; --muted: #D0C8BA; --dim: #ADA595;
-    --accent: #86C795; --accent-strong: #9FD6AB; --accent-soft: #233328; --on-accent: #10200F;
-    --bad: #E0907F; --bad-soft: #3A2622;
-    --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
-    --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
-  }
-}
-:root[data-theme="dark"] {
+/* Permanent palette: one dark court-green set (no light/dark switch). */
+:root {
   color-scheme: dark;
-  --bg: #151410; --surface: #221F19; --surface-2: #2B2720; --line: #38332A; --line-strong: #4C463B;
-  --ink: #F3EEE4; --ink-2: #EAE4D8; --muted: #D0C8BA; --dim: #ADA595;
-  --accent: #86C795; --accent-strong: #9FD6AB; --accent-soft: #233328; --on-accent: #10200F;
+  --bg: #15261C; --surface: #1C3226; --surface-2: #243D2F; --line: #31503D; --line-strong: #46684F;
+  --ink: #F1F6EF; --ink-2: #DFEADD; --muted: #C3D3C3; --dim: #9AAE9C;
+  --accent: #8ED19D; --accent-strong: #A6DFB2; --accent-soft: #24452F; --on-accent: #10200F;
   --bad: #E0907F; --bad-soft: #3A2622;
   --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
   --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
@@ -114,19 +100,8 @@ p { margin: 0; text-wrap: pretty; }
 .nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-3);
   color: var(--ink-2); text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
 .nav a:hover { color: var(--ink); background: var(--surface-2); }
-.theme-btn { width: var(--tap); height: var(--tap); display: grid; place-items: center; border: 1px solid var(--line);
-  background: transparent; color: var(--ink); border-radius: var(--radius-pill); cursor: pointer; }
-.theme-btn:hover { background: var(--surface-2); }
-.theme-btn .moon { display: none; }
-:root[data-theme="dark"] .theme-btn .sun { display: none; }
-:root[data-theme="dark"] .theme-btn .moon { display: block; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-btn .sun { display: none; }
-  :root:not([data-theme="light"]) .theme-btn .moon { display: block; }
-}
 @media (max-width: 559px) {
-  .theme-btn { order: 2; }
-  .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
+    .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
 }
 
 /* ── Page head + tabs ─────────────────────────────────────────────────── */
@@ -283,27 +258,63 @@ details.fold > summary svg { color: var(--muted); }
   .page-head { padding-top: var(--space-8); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+
+/* ── Brand banner: one header and one footer on every page ──────────────────────────────
+   Header = frosted dark-green bar with a hairline green glow underneath; on Home it floats over the photo
+   (the photo shows faintly through), elsewhere it sits on plain green. Same height, logo and links everywhere. */
+.topbar { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgba(168,221,180,.14);
+  background: rgba(13,27,19,.66); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); }
+.topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
+.brand { display: inline-flex; align-items: center; gap: 11px; color: #F4F8F2; text-decoration: none; }
+.brand .emblem { flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+.brand .wm { font: 500 1.375rem/1 var(--font-serif); letter-spacing: -0.012em; color: #F4F8F2; }
+.brand .wm-ai { margin-left: -3px; padding: 4px 7px 3px; border: 1px solid rgba(168,221,180,.5); border-radius: 6px;
+  background: rgba(168,221,180,.08); font: 650 .6875rem/1 var(--font-sans); letter-spacing: .14em; color: #A8DDB4; }
+.topbar .nav a { color: rgba(244,248,242,.86); }
+.topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+.topbar .nav a[aria-current="page"] { color: #fff; box-shadow: inset 0 -2px 0 #A8DDB4; }
+@media (max-width: 559px) { .topbar { position: relative; } }
+body.photo-hero .topbar { margin-bottom: calc(-1 * var(--topbar-h)); background: rgba(13,27,19,.42); }
+
+/* Footer banner: brand lockup, tagline, links; a faint court drawing for texture. */
+.brand-foot { position: relative; overflow: hidden; margin-top: 0; padding: var(--space-8) 0 var(--space-7);
+  background: radial-gradient(ellipse 70% 120% at 15% 0%, rgba(168,221,180,.12), transparent 60%), #0D1912;
+  border-top: 1px solid rgba(168,221,180,.14); color: #E6EEE5; }
+.brand-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
+.brand-foot .wrap { position: relative; z-index: 1; }
+.bf-court { position: absolute; right: max(-60px, calc(50% - 560px)); bottom: -24px; width: 420px; height: auto; color: #A8DDB4; opacity: .09; }
+.bf-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-6); }
+.brand-lg { gap: 14px; }
+.brand-lg .wm { font-size: 2rem; }
+.brand-lg .wm-ai { font-size: .8125rem; padding: 5px 9px 4px; margin-left: -2px; }
+.bf-tag { margin: 0; font: 400 1.25rem/1.3 var(--font-serif); color: #DCE8DA; }
+.bf-tag em { font-style: italic; color: #A8DDB4; }
+.bf-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid rgba(168,221,180,.14); }
+.bf-nav a { display: inline-flex; align-items: center; min-height: var(--tap); color: #F1F6EF; text-decoration: none; font-weight: 550; }
+.bf-nav a:hover { color: #A8DDB4; }
+.bf-note { margin: var(--space-2) 0 0; color: #B9CBB9; font-size: .9375rem; }
 </style>
 </head>
 <body>
 
 <header class="topbar">
   <div class="wrap">
-    <a class="brand" href="index.html" aria-label="Advantage AI, home">
-      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-        <circle cx="14" cy="14" r="12.5" fill="var(--accent)"/>
-        <path d="M5.2 5.6c4.4 3.6 4.4 13.2 0 16.8M22.8 5.6c-4.4 3.6-4.4 13.2 0 16.8" fill="none" stroke="var(--bg)" stroke-width="1.8" stroke-linecap="round"/>
+    <a class="brand" href="home.html" aria-label="Advantage AI, home">
+      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="emb-h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8657"/><stop offset="1" stop-color="#143424"/></linearGradient></defs>
+        <rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#emb-h)" stroke="rgba(190,235,200,.38)"/>
+        <circle cx="16" cy="16" r="8.6" fill="#D4EC7E"/>
+        <path d="M9.4 10.4c3.1 2.3 3.1 8.9 0 11.2M22.6 10.4c-3.1 2.3-3.1 8.9 0 11.2" fill="none" stroke="#1A4330" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 7.2a12 12 0 0 1 6-3.6" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>
       </svg>
-      <span>Advantage <span class="brand-ai">AI</span></span>
+      <span class="wm">Advantage</span><span class="wm-ai">AI</span>
     </a>
     <nav class="nav" aria-label="Main">
-      <a href="index.html#new">New analysis</a>
-      <a href="index.html#reports">My reports</a>
+      <a href="home.html#new">New analysis</a>
+      <a href="home.html#reports">My reports</a>
     </nav>
-    <button type="button" class="theme-btn" id="themeBtn" aria-label="Switch light/dark" title="Switch light/dark">
-      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-    </button>
   </div>
 </header>
 
@@ -321,17 +332,35 @@ details.fold > summary svg { color: var(--muted); }
   </details>
   <div class="end"></div>
 </main>
+<footer class="brand-foot">
+  <svg class="bf-court" viewBox="0 0 360 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M40 190 L320 190 L250 20 L110 20 Z"/><path d="M68 122 H292 M96 54 H264 M180 122 V54"/><path d="M84 88 H276" stroke-width="2.4"/>
+      <path d="M54 156 H306" stroke-dasharray="2 4"/></g></svg>
+  <div class="wrap">
+    <div class="bf-top">
+      <a class="brand brand-lg" href="home.html" aria-label="Advantage AI, home">
+        <svg class="emblem" width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="emb-f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8657"/><stop offset="1" stop-color="#143424"/></linearGradient></defs>
+        <rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#emb-f)" stroke="rgba(190,235,200,.38)"/>
+        <circle cx="16" cy="16" r="8.6" fill="#D4EC7E"/>
+        <path d="M9.4 10.4c3.1 2.3 3.1 8.9 0 11.2M22.6 10.4c-3.1 2.3-3.1 8.9 0 11.2" fill="none" stroke="#1A4330" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 7.2a12 12 0 0 1 6-3.6" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+        <span class="wm">Advantage</span><span class="wm-ai">AI</span>
+      </a>
+      <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
+    </div>
+    <nav class="bf-nav" aria-label="Footer">
+      <a href="home.html#new">New analysis</a><a href="home.html#reports">My reports</a><a href="report.html">Example report</a>
+    </nav>
+    <p class="bf-note">Made for players. Built to work alongside your coach, not replace one.</p>
+  </div>
+</footer>
 <div id="tip" role="tooltip"></div>
 
 <script>
 const DATA = {"match":{"score":{"sets_won":{"player_1":0,"player_2":0},"completed_sets":[],"match_winner":null},"points_scored":19},"coverage":{"rallies_detected":54,"points_decided":19,"first_serve_faults":7,"unconfirmed_serve_faults":12,"rallies_undecided":16,"notes":["Point winner determined for 19 of 35 detected points (54.3%); the rest are left out of every number below.","12 missed serves couldn't be confirmed as first or second serves, so they aren't counted as double faults or lost points.","In/out calls for balls landing on the far half of the court are less precise (positions there can be off by up to about a metre), so depth placement on that side is not shown.","Where a player stands is only measured while they're at the end closest to the camera."]},"min_sample":{"occurrences":2,"chances":4},"players":{"player_1":{"name":"Player 1","stats":{"points_played":19,"points_won":8,"points_lost":11,"points_won_pct":42.1,"won_by":{"winners":1,"aces":1,"opponent_errors":6,"opponent_double_faults":0},"lost_by":{"own_errors":{"net":4,"long":2},"double_faults":1,"opponent_winners":4},"serve":{"serves_tracked":13,"serves_in":4,"serves_in_pct":30.8,"first_serves":12,"first_serve_faults":8,"first_serve_in_pct":33.3,"second_serves":1,"points_served":5,"unconfirmed_serve_faults":9,"double_faults":1,"aces":1,"service_points_won_pct":40.0,"second_serve_points":1,"second_serve_points_won_pct":0.0},"return":{"return_points":14,"return_points_won_pct":42.9},"rally_length":{"short":{"played":15,"won":6},"medium":{"played":3,"won":2},"long":{"played":1,"won":0}},"shot_mix":{"groundstroke":26,"serve":18,"volley":3},"volley_share_pct_unreliable":10.3,"position":{"hits_with_position":46,"median_depth_behind_baseline_cm":1,"net_share_pct":6.5}},"playstyle":{"tags":["Baseline player","Short points"],"summary":"Baseline player: stays back, typically hitting from right around the baseline; most points (79%) are over within 4 shots; misses most often into the net; lands 33.3% of first serves."},"ai_summary":"You're a solid baseline player who wins by making your opponent miss in long rallies—that's your best weapon. The main thing holding you back is hitting too many balls into the net and losing points quickly when you have the chance to attack. Keep rallying patiently, but work on hitting the ball higher over the net and taking your shot when it's there.","weaknesses":[{"id":"errors_net","kind":"weakness","tier":"headline","title":"Errors into the net","detail":"4 of 11 points lost were their own shot going into the net.","points":4,"occurrences":4,"chances":11,"low_sample":false,"rank":1,"top":true,"moments":[1,321],"advice":{"headline":"Hitting into the net cost you 4 points.","try_this":null,"match_strategy":"When you hit from the baseline, aim so the ball passes over the net by about a racket's length—high enough to clear it safely but still land in. On easy balls or winning chances, this gives you room to hit a bit harder without crashing into the net.","habit":"Before you swing, pick a spot on the court where you want the ball to land, and commit to hitting it there. After you hit into the net, take a breath and remind yourself: higher over, same speed.","practice_drill":"Hit 30 baseline groundstrokes from a basket at the baseline. Count how many land in the court; aim for 27 or more. Focus on clearing the net by at least a racket's length every time."}},{"id":"opponent_winners","kind":"weakness","tier":"headline","title":"Beaten by shots they couldn't return","detail":"4 of 11 points lost were opponent shots they didn't get back.","points":4,"occurrences":4,"chances":11,"low_sample":false,"rank":2,"top":true,"moments":[236,618,656],"advice":{"headline":"Your opponent hit 4 shots you couldn't reach or return.","try_this":null,"match_strategy":"When your opponent is near the net or has an easy ball, move forward a small step or two and stay lower, ready to react. If you're pushed deep, reset to the baseline and don't try to do too much on the next shot.","habit":"Watch where your opponent is standing and what they're setting up to do. If they're moving forward, start moving forward too instead of waiting at the baseline. React early.","practice_drill":"Play points where your opponent feeds you balls from the net or mid-court. Play 10 points and try to get a racket on at least 8 of them, even if you can't win the point. Focus on moving fast and staying in the point."}},{"id":"errors_long","kind":"weakness","tier":"headline","title":"Errors long (past the baseline)","detail":"2 of 11 points lost were their own shot going long (past the baseline).","points":2,"occurrences":2,"chances":11,"low_sample":false,"rank":3,"top":true,"moments":[117],"advice":{"headline":"You hit 2 balls long (past the baseline), which cost you points.","try_this":null,"match_strategy":"On high balls or when you're in the court, slow down your swing or step back a bit so you hit from further behind the baseline. This gives you more room to stay in the court.","habit":"When you see a high ball coming, take a breath and remind yourself: less speed, aim for the middle of the court. Don't try to crush it.","practice_drill":"Hit 20 balls fed from mid-court at shoulder height or higher. Aim for them to land between the service line and baseline; count how many do. Aim for 16 or more."}},{"id":"double_faults","kind":"weakness","tier":"headline","title":"Double faults","detail":"1 double faults in 5 service points; only 33.3% of first serves went in.","points":1,"occurrences":1,"chances":5,"low_sample":true,"moments":[706]},{"id":"rally_short","kind":"weakness","tier":"context","title":"Losing short points (4 shots or fewer)","detail":"Lost 9 of 15 short points (4 shots or fewer).","points":9,"occurrences":9,"chances":15,"low_sample":false,"rank":1,"top":false,"moments":[25,37,85,127,184,221,249,380,421,510],"advice":{"headline":"You lost 9 of 15 short points, so quick rallies are your weak spot.","try_this":null,"match_strategy":"In the first 2–3 shots of a point, don't try to win it yet. Hit the ball deep and to a corner, or aim down the middle to be safe. On your third or fourth shot, if your opponent gives you a weaker ball, step in and attack. Be patient early, aggressive later.","habit":"At the start of each point, tell yourself: first two shots are about staying in the rally, not winning. This gives your brain one job instead of trying to win everything.","practice_drill":"Play 20 short points (stop after 4 shots max). Practice playing the first two shots safe and deep, then attack on shot three if you can. Count how many you win; aim for 12 or more by staying patient."}},{"id":"serve_points","kind":"weakness","tier":"context","title":"Losing on serve","detail":"Won only 40.0% of service points (2 of 5).","points":3,"occurrences":3,"chances":5,"low_sample":false,"rank":2,"top":false,"moments":[85,127,221,249,380,421,441,510]},{"id":"first_serve_pct","kind":"weakness","tier":"context","title":"Missing first serves","detail":"Only 4 of 12 first serves went in (33.3%); lost 1 of 1 points played on a second serve.","points":1,"occurrences":8,"chances":12,"low_sample":false,"rank":3,"top":false,"moments":[349,435,479,505,551,590,626,651,699]},{"id":"rally_long","kind":"weakness","tier":"context","title":"Losing long rallies (9+ shots)","detail":"Lost 1 of 1 long rallies (9+ shots).","points":1,"occurrences":1,"chances":1,"low_sample":true,"moments":[441]}],"strengths":[{"id":"draws_errors","kind":"strength","tier":"headline","title":"Keeping the ball in play until the opponent misses","detail":"6 of 8 points won came from opponent errors in a rally.","points":6,"occurrences":6,"chances":8,"low_sample":false,"rank":1,"top":true,"moments":[25,127,282,380,441,510]},{"id":"winners","kind":"strength","tier":"headline","title":"Hitting shots the opponent can't return","detail":"1 of 8 points won were rally shots the opponent didn't get back.","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[37,85]},{"id":"aces","kind":"strength","tier":"headline","title":"Unreturned serves","detail":"1 of 8 points won were serves the opponent didn't return.","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[221,249,421]}],"id":"player_1"},"player_2":{"name":"Player 2","stats":{"points_played":19,"points_won":11,"points_lost":8,"points_won_pct":57.9,"won_by":{"winners":1,"aces":3,"opponent_errors":6,"opponent_double_faults":1},"lost_by":{"own_errors":{"net":4,"long":1,"wide":1},"double_faults":0,"opponent_winners":2},"serve":{"serves_tracked":19,"serves_in":14,"serves_in_pct":73.7,"first_serves":15,"first_serve_faults":5,"first_serve_in_pct":66.7,"second_serves":4,"points_served":14,"unconfirmed_serve_faults":3,"double_faults":0,"aces":3,"service_points_won_pct":57.1,"second_serve_points":5,"second_serve_points_won_pct":80.0},"return":{"return_points":5,"return_points_won_pct":60.0},"rally_length":{"short":{"played":15,"won":9},"medium":{"played":3,"won":1},"long":{"played":1,"won":1}},"shot_mix":{"serve":24,"groundstroke":11,"volley":8},"volley_share_pct_unreliable":42.1,"position":{"hits_with_position":0,"median_depth_behind_baseline_cm":null,"net_share_pct":null}},"playstyle":{"tags":["Short points"],"summary":"Short points: most points (79%) are over within 4 shots; misses most often into the net; lands 66.7% of first serves."},"ai_summary":"You're a great point-finisher who wins most short rallies and lands your first serve well—that's a real strength. You're also beating your opponent in rallies, which shows solid consistency. The issue is hitting 4 balls into the net; tighten that up and your game will be very hard to beat.","weaknesses":[{"id":"errors_net","kind":"weakness","tier":"headline","title":"Errors into the net","detail":"4 of 8 points lost were their own shot going into the net.","points":4,"occurrences":4,"chances":8,"low_sample":false,"rank":1,"top":true,"moments":[25,127,282,441,510],"advice":{"headline":"Hitting into the net cost you 4 points.","try_this":null,"match_strategy":"When you're attacking or taking a short ball, aim higher over the net—aim so the ball would pass by about a racket's length. You don't lose power this way; you just give yourself a safety margin.","habit":"Before you swing at an attacking shot, say to yourself: clear the net, then swing. This takes one second and reminds you where the ball needs to go.","practice_drill":"Hit 25 attacking groundstrokes (shorter balls or first-shot winners) from inside the baseline. Count how many land in; aim for 22 or more. Focus on clearing the net by a racket's length and landing inside the court."}},{"id":"opponent_winners","kind":"weakness","tier":"headline","title":"Beaten by shots they couldn't return","detail":"2 of 8 points lost were opponent shots they didn't get back.","points":2,"occurrences":2,"chances":8,"low_sample":false,"rank":2,"top":true,"moments":[37,85,221,249,421],"advice":{"headline":"Your opponent hit 2 unreturnable shots on you.","try_this":null,"match_strategy":"When you see your opponent has a chance to attack (especially after you hit a shorter ball), move forward and get lower, ready to react. If you're too far back, they have an easier target.","habit":"After you hit a short ball, step in one or two steps and split your feet, getting lower. Don't back away. This cuts down the angles they can hit.","practice_drill":"Play 15 points where you start inside the baseline with an easier ball and your opponent plays near or at the net. Try to cover at least 10 of their attacking shots with your racket, even if you lose the point. Speed and positioning are the only goals here."}},{"id":"errors_long","kind":"weakness","tier":"headline","title":"Errors long (past the baseline)","detail":"1 of 8 points lost were their own shot going long (past the baseline).","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":[380]},{"id":"errors_wide","kind":"weakness","tier":"headline","title":"Errors wide (outside the sideline)","detail":"1 of 8 points lost were their own shot going wide (outside the sideline).","points":1,"occurrences":1,"chances":8,"low_sample":true,"moments":null}],"strengths":[{"id":"draws_errors","kind":"strength","tier":"headline","title":"Keeping the ball in play until the opponent misses","detail":"6 of 11 points won came from opponent errors in a rally.","points":6,"occurrences":6,"chances":11,"low_sample":false,"rank":1,"top":true,"moments":[1,61,117,321,485],"advice":{"headline":"You won 6 points by keeping the ball in play until your opponent missed—that's your best strength.","try_this":null,"match_strategy":"Use this strength on purpose. On big points or tie-breaks, if your opponent is playing aggressive, trade balls with them for an extra shot or two. Let them make the mistake. Don't feel like you have to attack every time.","habit":"When you're in a rally and your opponent is trying hard to win, stay calm and think: one more ball in court. Trust that mistake-making will happen if you stay patient.","practice_drill":"Play 10 rallies where you count how many times you can hit the ball in a row without trying to win the point. Aim for 5+ consecutive shots in 8 of the 10 rallies. This builds the feel for long, safe rallies."}},{"id":"aces","kind":"strength","tier":"headline","title":"Unreturned serves","detail":"3 of 11 points won were serves the opponent didn't return.","points":3,"occurrences":3,"chances":11,"low_sample":false,"rank":2,"top":true,"moments":[618,656],"advice":{"headline":"You hit 3 unreturned serves—that's winning you points directly.","try_this":null,"match_strategy":"Keep attacking with your serve. Place it wide on the deuce side or jam it up the middle on the ad side to keep them guessing. Mix it up so they can't pick a corner.","habit":"Before you serve, pick one target (wide or middle, or high or low). Commit to it and serve there. Don't change your mind at the last second.","practice_drill":"Serve 20 serves in a row. Pick 10 to go wide and 10 to go middle or body. Count how many land in the box; aim for 14 or more (at least 70%). This builds accuracy and rhythm."}},{"id":"winners","kind":"strength","tier":"headline","title":"Hitting shots the opponent can't return","detail":"1 of 11 points won were rally shots the opponent didn't get back.","points":1,"occurrences":1,"chances":11,"low_sample":true,"moments":[236]},{"id":"rally_short","kind":"strength","tier":"context","title":"Winning short points (4 shots or fewer)","detail":"Won 9 of 15 short points (4 shots or fewer).","points":9,"occurrences":9,"chances":15,"low_sample":false,"rank":1,"top":false,"moments":[25,37,85,127,184,221,249,380,421,510],"advice":{"headline":"You won 9 of 15 short points—that's a huge strength. Use it.","try_this":null,"match_strategy":"In close points or when you're ahead in the score, play the first couple of shots to your strength: hit shorter balls and finish them fast. Don't let long rallies happen when you don't have to.","habit":"When you have a shorter ball, take it early (a step inside the baseline) and look to put it away on the next shot. Trust your attack and commit to it.","practice_drill":"Play 20 points and deliberately aim to finish 15 of them in 4 shots or fewer. Count how many you win; aim for 12+. This trains you to spot your chances early and take them."}},{"id":"serve_points","kind":"strength","tier":"context","title":"Winning on serve","detail":"Won 57.1% of service points (8 of 14).","points":8,"occurrences":8,"chances":14,"low_sample":false,"rank":2,"top":false,"moments":[1,61,117,236,618,656]},{"id":"return_points","kind":"strength","tier":"context","title":"Winning on return","detail":"Won 60.0% of return points (3 of 5).","points":3,"occurrences":3,"chances":5,"low_sample":false,"rank":3,"top":false,"moments":null},{"id":"first_serve_pct","kind":"strength","tier":"context","title":"Reliable first serve","detail":"66.7% of first serves went in.","points":0,"occurrences":10,"chances":15,"low_sample":false,"rank":4,"top":false,"moments":[104,126,141,174,260,303,525]},{"id":"rally_long","kind":"strength","tier":"context","title":"Winning long rallies (9+ shots)","detail":"Won 1 of 1 long rallies (9+ shots).","points":1,"occurrences":1,"chances":1,"low_sample":true,"moments":[441]}],"id":"player_2"}}};
 
-document.getElementById("themeBtn").addEventListener("click", () => {
-  const root = document.documentElement;
-  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-  try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
-});
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

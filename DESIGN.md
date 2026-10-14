@@ -2,7 +2,7 @@
 
 **Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins".
 **Look:** one permanent dark court-green palette (no light/dark switch), photo-led hero, calm panels, tennis-green accent.
-**Came from:** references "Escape Tab Hell" (warm editorial, one active item at a time) and "Northpeak" (full-bleed landscape behind the title); see `design/references.md`. Versions and history are in `design/versions/`; the approved pages are `design/versions/cream-refined/index-green.html` and `report-green.html`.
+**Came from:** references "Escape Tab Hell" (warm editorial, one active item at a time) and "Northpeak" (full-bleed landscape behind the title); see `design/references.md`. The approved design pages (static, sample data) are `design/approved/home.html` and `report.html`; the 6 earlier comparison versions are in git history (commit 19f1242).
 
 ## Where the design lives
 - `calibration_demo.html` (Home) and `report.html` (Report): each page's `<style>` holds its layout and the colour tokens on `:root`.

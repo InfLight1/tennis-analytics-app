@@ -1,19 +1,10 @@
-# Design workflow (unique-frontend)
+# Design workflow (unique-frontend): status
 
-## Step 0 summary (2026-10-13)
-- **What:** upload a singles match video, get a per-player report: what is costing points and what to practise. Two screens: Home (`calibration_demo.html`: my reports, filming guide, upload, mark the court, analysing) and Report (`report.html`: player tabs, rings, quick stats, top 3 fixes, keep doing, more stats).
-- **For:** tennis players (both players equally); judged for CAC on Design = UX and how intuitive it is.
-- **Feel wanted:** minimal; usability and function first, looks second.
-- **Hard rules:** keep every feature and flow; real data only; no competitor names; nothing mentions the parent; code freeze Oct 19 (bug fixes only after).
-- **Stack:** plain HTML + `web_assets/site.css` (tokens, light/dark) + `site.js`, served by Modal. Restyle = mostly the token file plus small markup changes. No build step.
-- **Current look:** dark, green accent, rounded cards, rings. Works and is clear; reads as a generic dark dashboard. Home stacks a lot before the main action.
+Done 2026-10-13. Final rules: `DESIGN.md`. Approved static pages: `design/approved/`. References: `design/references.md`.
 
-## Progress
-- [x] 0. Understand the project
-- Usability changes approved (10-13): all 8 (see design/BRIEF.md). #5 checked: the number mismatch was my local preview mixing an old AI-tip file with newer stats; live app regenerates tips when stats change, so no code change. #6 same cause; cards still get one shape when a fix has no tip.
-- [x] 1. Pick references (files in design/references/, prompts in design/references.md). User picked (10-13): Hedging Overview (green highlight, not orange), Escape Tab Hell, Etched Peaks (wildcard). Accent stays tennis green in all three. Light/dark follows the phone's setting. Usability fixes: user wants the list first, before any change.
-- [x] 2. Build versions (10-13; all 6 load, no sideways scroll at 375/1280, no console errors). Next: user picks 1-2 favourites at http://localhost:8765/design/versions/index.html (preview `static-site`). Known: "Shots per rally" shows [TODO] in mocks (live data lacks it; the real page shows "Short points" instead), step-2 one-liner wording is new. 3 looks x 2 skills = 6 (deadline), in design/versions/<slug>-<skill>/ (index.html + report.html); comparison page design/versions/index.html. Shared brief design/BRIEF.md, data design/content.json.
-- [x] 3. Narrow and freeze (10-13): DESIGN.md written; design moved into calibration_demo.html + report.html (+ web_assets/site.css, site.js). Earlier notes: 10-13: user picked cream (Escape Tab Hell) impeccable + taste. Refined version in design/versions/cream-refined/ = impeccable fonts + bigger rings + bigger #1 fix card + taste's white panels on a darker cream page; "Short points" fallback as in the live report. Waiting on the user's audit. Then into DESIGN.md + tokens
-- [x] 4. Images (3 of 5 slots used). 10-13: name Advantage AI + tagline in. User picked hero idea 1 (the filming view). Generated 2 (+1 retry: B came out as sky only, B retry too low/close); A used, as webp 800/1600 in design/versions/cream-refined/assets/ (PNGs local only). Strip under the buttons on phones, beside the copy at >=900px. Other 4 image slots: not planned (minimal). Home = index-bg.html (user 10-13): photo under the tagline on every screen (16:9 on phones, 2:1 up to 960px wide on bigger screens), dark photo brightness .88; upload steps highlight follows progress (done/active/upcoming); upcoming text ink-2; body text 1.15rem from New analysis down. 10-13 later: higher text contrast on all pages; Home candidate index-photo.html = full-photo hero (NORTHPEAK reference) + panels/green band/footer + 2 band photos (A phone sideways on fence behind How to film, B ball on baseline in closing 'Every point counts' band). Images used: 3 of 5 slots. Ball took 3 tries (2 came back as lakes). Then green theme (index-green.html + report-green.html); user 10-13: no light/dark switch, one permanent dark court-green palette, slightly lighter (bg #15261C). This is the current candidate to move into the real app.
-- [ ] 5. Tweak bar (not built: user is close to the freeze; tokens are in each page's :root, see DESIGN.md)
-- [ ] 6. 21st.dev components (optional)
+- [x] 0–1. Project read; references picked (Escape Tab Hell, plus Northpeak for the hero).
+- [x] 2. 6 versions built and compared (removed after the pick; in git history, commit 19f1242).
+- [x] 3. Narrowed, frozen into `DESIGN.md`, moved into `calibration_demo.html` + `report.html` (+ `web_assets/site.css`, `site.js`).
+- [x] 4. Images: 3 of 5 slots (hero court, phone on fence, ball on line), WebP in `web_assets/`.
+- [ ] 5. Tweak bar: skipped (close to the Oct 19 freeze). Tokens sit in each page's `:root`.
+- [ ] 6. 21st.dev components: not needed.

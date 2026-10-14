@@ -29,7 +29,7 @@ offline_report*/
 *.csv
 !ground_truth_points.csv
 !ground_truth_events.csv
-!Code/ground_truth_events.csv
+!Code/archive/ground_truth_events.csv
 match_report.json
 match_report.txt
 *.png
