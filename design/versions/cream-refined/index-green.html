@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
-<script>
-  try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
-</script>
 <style>
 /* ── Design tokens: every decision lives here ─────────────────────────── */
 :root {
@@ -46,8 +43,8 @@
   --hero-full-filter: saturate(1.05);
   --hero-full-kw: #9FD6AB;
   --panel-pad-x: var(--space-6);
-  --green-bg: #1B3A27; --green-surface: #244933; --green-court: #2E5B41; --green-accent: #A8DDB4;
-  --foot-bg: #0B150F;
+  --green-bg: #1E4029; --green-surface: #244933; --green-court: #2E5B41; --green-accent: #A8DDB4;
+  --foot-bg: #0F1C14;
   --film-focus: 70% 45%;
   --cta-h: 440px;
   --cta-focus: 62% 55%;
@@ -85,24 +82,14 @@
   --shadow-1: 0 1px 2px rgba(18, 40, 24, 0.06), 0 10px 28px -14px rgba(18, 40, 24, 0.25);
   --focus: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --hero-filter: brightness(.88) saturate(.95);
-    --bg: #0E1912; --surface: #15251A; --surface-2: #1C3123; --line: #284031; --line-strong: #3A5743;
-    --ink: #F1F6EF; --ink-2: #DFEADD; --muted: #C3D3C3; --dim: #9AAE9C;
-    --accent: #8ED19D; --accent-strong: #A6DFB2; --accent-soft: #1E3A27; --on-accent: #0C1E11;
-    --bad: #E0907F; --court: #1E3527;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
-  }
-}
-:root[data-theme="dark"] {
+/* Permanent palette: one dark court-green set (no light/dark switch). */
+:root {
   --hero-filter: brightness(.88) saturate(.95);
   color-scheme: dark;
-  --bg: #0E1912; --surface: #15251A; --surface-2: #1C3123; --line: #284031; --line-strong: #3A5743;
+  --bg: #15261C; --surface: #1C3226; --surface-2: #243D2F; --line: #31503D; --line-strong: #46684F;
   --ink: #F1F6EF; --ink-2: #DFEADD; --muted: #C3D3C3; --dim: #9AAE9C;
-  --accent: #8ED19D; --accent-strong: #A6DFB2; --accent-soft: #1E3A27; --on-accent: #0C1E11;
-  --bad: #E0907F; --court: #1E3527;
+  --accent: #8ED19D; --accent-strong: #A6DFB2; --accent-soft: #24452F; --on-accent: #0C1E11;
+  --bad: #E0907F; --court: #26422F;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
 }
 
@@ -142,19 +129,8 @@ p { margin: 0; text-wrap: pretty; }
   color: var(--ink-2); text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
 .nav a:hover { color: var(--ink); background: var(--surface-2); }
 .nav a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
-.theme-btn { width: var(--tap); height: var(--tap); display: grid; place-items: center; border: 1px solid var(--line);
-  background: transparent; color: var(--ink); border-radius: var(--radius-pill); cursor: pointer; }
-.theme-btn:hover { background: var(--surface-2); }
-.theme-btn .moon { display: none; }
-:root[data-theme="dark"] .theme-btn .sun { display: none; }
-:root[data-theme="dark"] .theme-btn .moon { display: block; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-btn .sun { display: none; }
-  :root:not([data-theme="light"]) .theme-btn .moon { display: block; }
-}
 @media (max-width: 559px) {
-  .theme-btn { order: 2; }
-  .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
+    .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); }
 }
 
 /* ── Buttons & fields ─────────────────────────────────────────────────── */
@@ -296,14 +272,12 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
    The court photo fills the whole top section, under the top bar too. A dark wash on the left
    (and the top, for the bar) keeps white text readable in both themes; the court stays clear on the right. */
 body.photo-hero .topbar { position: absolute; inset: 0 0 auto; z-index: 5; border-bottom-color: rgba(255,255,255,.16); }
-body.photo-hero .brand, body.photo-hero .nav a, body.photo-hero .theme-btn { color: #fff; }
+body.photo-hero .brand, body.photo-hero .nav a { color: #fff; }
 body.photo-hero .brand-ai { color: var(--hero-full-kw); }
 body.photo-hero .brand circle { fill: var(--hero-full-kw); }
 body.photo-hero .brand path { stroke: #14200f; }
 body.photo-hero .nav a:hover { background: rgba(255,255,255,.12); color: #fff; }
 body.photo-hero .nav a[aria-current="page"] { color: #fff; box-shadow: inset 0 -2px 0 var(--hero-full-kw); }
-body.photo-hero .theme-btn { border-color: rgba(255,255,255,.4); }
-body.photo-hero .theme-btn:hover { background: rgba(255,255,255,.12); }
 .hero.hero-full { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center;
   min-height: var(--hero-full-h); margin: 0; padding: calc(var(--topbar-h) + var(--space-7)) var(--hero-pad) var(--space-9);
   --hero-pad: max(var(--gutter), calc((100% - var(--col)) / 2)); color: #fff; }
@@ -392,10 +366,6 @@ section.block.cta-band { position: relative; isolation: isolate; margin-top: var
       <a href="#new" aria-current="page">New analysis</a>
       <a href="#reports">My reports</a>
     </nav>
-    <button type="button" class="theme-btn" id="themeBtn" aria-label="Switch light/dark" title="Switch light/dark">
-      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-    </button>
   </div>
 </header>
 
@@ -569,13 +539,6 @@ section.block.cta-band { position: relative; isolation: isolate; margin-top: var
 </footer>
 
 <script>
-// Theme: phone setting by default; the toggle wins both ways.
-document.getElementById("themeBtn").addEventListener("click", () => {
-  const root = document.documentElement;
-  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-  try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
-});
 // Step 1 (design mock): choosing a file shows its name and enables Upload.
 const file = document.getElementById("videoFile"), nameEl = document.getElementById("fileName"), up = document.getElementById("uploadBtn");
 file.addEventListener("change", () => {
