@@ -39,6 +39,19 @@
     </svg>`;
   const wordmark = '<span class="wm">Advantage</span><span class="wm-ai">AI</span>';
 
+  // Light/dark switch, only on the report (Home keeps one dark palette). With no saved choice
+  // the report follows the device setting; the report page sets data-theme early from storage.
+  const themeButton = `<button type="button" class="theme-btn" aria-label="Switch between light and dark" title="Light or dark">
+      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>`;
+  function toggleTheme() {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("report_theme", root.dataset.theme); } catch (e) {}
+  }
+
   // Header into <header id="topbar" data-page="home|report">, footer into <footer id="sitefoot">.
   document.addEventListener("DOMContentLoaded", () => {
     const bar = document.getElementById("topbar");
@@ -50,7 +63,8 @@
         <nav class="nav" aria-label="Main">
           <a href="/#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
           <a href="/#reports">My reports</a>
-        </nav></div>`;
+        </nav>${bar.dataset.page === "report" ? themeButton : ""}</div>`;
+      bar.querySelector(".theme-btn")?.addEventListener("click", toggleTheme);
     }
     const foot = document.getElementById("sitefoot");
     if (foot) {

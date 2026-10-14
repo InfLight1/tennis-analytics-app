@@ -1,7 +1,7 @@
 # Advantage AI design (frozen 2026-10-13)
 
 **Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins".
-**Look:** one permanent dark court-green palette (no light/dark switch), photo-led hero, calm panels, tennis-green accent.
+**Look:** dark court-green palette everywhere; the Report alone also has a light mode (sun/moon button in the header, follows the device until pressed, remembered on this device); photo-led hero, calm panels, tennis-green accent.
 **Came from:** references "Escape Tab Hell" (warm editorial, one active item at a time) and "Northpeak" (full-bleed landscape behind the title); see `design/references.md`. The approved design pages (static, sample data) are `design/approved/home.html` and `report.html`; the 6 earlier comparison versions are in git history (commit 19f1242).
 
 ## Where the design lives
@@ -9,7 +9,7 @@
 - `web_assets/site.css`: shared header bar, footer banner and helpers (loads after the page style).
 - `web_assets/site.js`: draws the same header and footer on every page.
 
-## Colours (permanent)
+## Colours (dark, used everywhere)
 | Token | Hex | Use |
 |---|---|---|
 | `--bg` | #15261C | page |
@@ -22,6 +22,8 @@
 | `--bad` | #E0907F | points lost only |
 | green band / footer | #1E4029 / #0D1912 | "How to film" band, footer |
 | ball (logo) | #D4EC7E | the ball in the logo |
+
+**Report light mode:** page #E8EFE6, panels #FBFCFA, text #122016, accent #23683A, lost #A2443A (full set in `report.html`). The header and footer bars stay dark green in both modes.
 
 ## Type
 - Headings and numbers: **Newsreader** (serif). Body and buttons: **Instrument Sans**. Both from Google Fonts.
@@ -41,4 +43,4 @@
 
 ## Always / Never
 - **Always:** real data only; one accent (green), red only for lost points; phone first and checked at 375px and at desktop width; text readable outdoors.
-- **Never:** competitor names; text inside images; a second colour scheme; decoration that hides a button or a number.
+- **Never:** competitor names; text inside images; a light mode outside the Report; decoration that hides a button or a number.

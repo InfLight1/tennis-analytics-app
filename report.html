@@ -12,6 +12,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
+<script>
+  // Apply the reader's saved light/dark choice before the page paints (no flash).
+  try { var t = localStorage.getItem("report_theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <style>
 /* ── Design tokens: every decision lives here ─────────────────────────── */
 :root {
@@ -45,7 +49,8 @@
 
   --focus: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
 }
-/* Permanent palette: one dark court-green set (no light/dark switch). */
+/* Report palette: the site's dark court-green set, plus a light set the reader can switch to
+   (follows the device setting until they press the sun/moon button; Home stays dark). */
 :root {
   color-scheme: dark;
   --bg: #15261C; --surface: #1C3226; --surface-2: #243D2F; --line: #31503D; --line-strong: #46684F;
@@ -55,6 +60,28 @@
   --won-1: #86C795; --won-2: #5F9D6C; --won-3: #3F7449; --won-4: #2C4F33;
   --lost-1: #E0907F; --lost-2: #B86C5E; --lost-3: #8E4E43; --lost-4: #66382F; --lost-5: #F2C2B7; --lost-6: #D6CFC2;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #E8EFE6; --surface: #FBFCFA; --surface-2: #E0E9DD; --line: #CBD8C7; --line-strong: #A9BCA5;
+    --ink: #122016; --ink-2: #213226; --muted: #3A4C3E; --dim: #58695B;
+    --accent: #23683A; --accent-strong: #215630; --accent-soft: #D7E8D5; --on-accent: #FFFFFF;
+    --bad: #A2443A; --bad-soft: #F5E4DF;
+    --won-1: #2B6A3B; --won-2: #5E9468; --won-3: #93BB98; --won-4: #C4DBC4;
+    --lost-1: #A2443A; --lost-2: #C2756A; --lost-3: #D9A399; --lost-4: #EBCBC3; --lost-5: #6E2E27; --lost-6: #463F35;
+    --shadow-1: 0 1px 2px rgba(18, 40, 24, 0.06), 0 10px 28px -14px rgba(18, 40, 24, 0.25);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #E8EFE6; --surface: #FBFCFA; --surface-2: #E0E9DD; --line: #CBD8C7; --line-strong: #A9BCA5;
+  --ink: #122016; --ink-2: #213226; --muted: #3A4C3E; --dim: #58695B;
+  --accent: #23683A; --accent-strong: #215630; --accent-soft: #D7E8D5; --on-accent: #FFFFFF;
+  --bad: #A2443A; --bad-soft: #F5E4DF;
+  --won-1: #2B6A3B; --won-2: #5E9468; --won-3: #93BB98; --won-4: #C4DBC4;
+  --lost-1: #A2443A; --lost-2: #C2756A; --lost-3: #D9A399; --lost-4: #EBCBC3; --lost-5: #6E2E27; --lost-6: #463F35;
+  --shadow-1: 0 1px 2px rgba(18, 40, 24, 0.06), 0 10px 28px -14px rgba(18, 40, 24, 0.25);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────── */
