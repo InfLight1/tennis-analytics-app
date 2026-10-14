@@ -258,6 +258,43 @@ details.fold > summary svg { color: var(--muted); }
   .page-head { padding-top: var(--space-8); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+
+/* ── Brand banner: one header and one footer on every page ──────────────────────────────
+   Header = frosted dark-green bar with a hairline green glow underneath; on Home it floats over the photo
+   (the photo shows faintly through), elsewhere it sits on plain green. Same height, logo and links everywhere. */
+.topbar { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgba(168,221,180,.14);
+  background: rgba(13,27,19,.66); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); }
+.topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
+.brand { display: inline-flex; align-items: center; gap: 11px; color: #F4F8F2; text-decoration: none; }
+.brand .emblem { flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+.brand .wm { font: 500 1.375rem/1 var(--font-serif); letter-spacing: -0.012em; color: #F4F8F2; }
+.brand .wm-ai { margin-left: -3px; padding: 4px 7px 3px; border: 1px solid rgba(168,221,180,.5); border-radius: 6px;
+  background: rgba(168,221,180,.08); font: 650 .6875rem/1 var(--font-sans); letter-spacing: .14em; color: #A8DDB4; }
+.topbar .nav a { color: rgba(244,248,242,.86); }
+.topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+.topbar .nav a[aria-current="page"] { color: #fff; box-shadow: inset 0 -2px 0 #A8DDB4; }
+@media (max-width: 559px) { .topbar { position: relative; } }
+body.photo-hero .topbar { margin-bottom: calc(-1 * var(--topbar-h)); background: rgba(13,27,19,.42); }
+
+/* Footer banner: brand lockup, tagline, links; a faint court drawing for texture. */
+.brand-foot { position: relative; overflow: hidden; margin-top: 0; padding: var(--space-8) 0 var(--space-7);
+  background: radial-gradient(ellipse 70% 120% at 15% 0%, rgba(168,221,180,.12), transparent 60%), #0D1912;
+  border-top: 1px solid rgba(168,221,180,.14); color: #E6EEE5; }
+.brand-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
+.brand-foot .wrap { position: relative; z-index: 1; }
+.bf-court { position: absolute; right: max(-60px, calc(50% - 560px)); bottom: -24px; width: 420px; height: auto; color: #A8DDB4; opacity: .09; }
+.bf-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-6); }
+.brand-lg { gap: 14px; }
+.brand-lg .wm { font-size: 2rem; }
+.brand-lg .wm-ai { font-size: .8125rem; padding: 5px 9px 4px; margin-left: -2px; }
+.bf-tag { margin: 0; font: 400 1.25rem/1.3 var(--font-serif); color: #DCE8DA; }
+.bf-tag em { font-style: italic; color: #A8DDB4; }
+.bf-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid rgba(168,221,180,.14); }
+.bf-nav a { display: inline-flex; align-items: center; min-height: var(--tap); color: #F1F6EF; text-decoration: none; font-weight: 550; }
+.bf-nav a:hover { color: #A8DDB4; }
+.bf-note { margin: var(--space-2) 0 0; color: #B9CBB9; font-size: .9375rem; }
 </style>
 </head>
 <body>
@@ -265,11 +302,14 @@ details.fold > summary svg { color: var(--muted); }
 <header class="topbar">
   <div class="wrap">
     <a class="brand" href="index-green.html" aria-label="Advantage AI, home">
-      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-        <circle cx="14" cy="14" r="12.5" fill="var(--accent)"/>
-        <path d="M5.2 5.6c4.4 3.6 4.4 13.2 0 16.8M22.8 5.6c-4.4 3.6-4.4 13.2 0 16.8" fill="none" stroke="var(--bg)" stroke-width="1.8" stroke-linecap="round"/>
+      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="emb-h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8657"/><stop offset="1" stop-color="#143424"/></linearGradient></defs>
+        <rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#emb-h)" stroke="rgba(190,235,200,.38)"/>
+        <circle cx="16" cy="16" r="8.6" fill="#D4EC7E"/>
+        <path d="M9.4 10.4c3.1 2.3 3.1 8.9 0 11.2M22.6 10.4c-3.1 2.3-3.1 8.9 0 11.2" fill="none" stroke="#1A4330" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 7.2a12 12 0 0 1 6-3.6" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>
       </svg>
-      <span>Advantage <span class="brand-ai">AI</span></span>
+      <span class="wm">Advantage</span><span class="wm-ai">AI</span>
     </a>
     <nav class="nav" aria-label="Main">
       <a href="index-green.html#new">New analysis</a>
@@ -292,6 +332,30 @@ details.fold > summary svg { color: var(--muted); }
   </details>
   <div class="end"></div>
 </main>
+<footer class="brand-foot">
+  <svg class="bf-court" viewBox="0 0 360 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M40 190 L320 190 L250 20 L110 20 Z"/><path d="M68 122 H292 M96 54 H264 M180 122 V54"/><path d="M84 88 H276" stroke-width="2.4"/>
+      <path d="M54 156 H306" stroke-dasharray="2 4"/></g></svg>
+  <div class="wrap">
+    <div class="bf-top">
+      <a class="brand brand-lg" href="index-green.html" aria-label="Advantage AI, home">
+        <svg class="emblem" width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="emb-f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8657"/><stop offset="1" stop-color="#143424"/></linearGradient></defs>
+        <rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#emb-f)" stroke="rgba(190,235,200,.38)"/>
+        <circle cx="16" cy="16" r="8.6" fill="#D4EC7E"/>
+        <path d="M9.4 10.4c3.1 2.3 3.1 8.9 0 11.2M22.6 10.4c-3.1 2.3-3.1 8.9 0 11.2" fill="none" stroke="#1A4330" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 7.2a12 12 0 0 1 6-3.6" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+        <span class="wm">Advantage</span><span class="wm-ai">AI</span>
+      </a>
+      <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
+    </div>
+    <nav class="bf-nav" aria-label="Footer">
+      <a href="index-green.html#new">New analysis</a><a href="index-green.html#reports">My reports</a><a href="report-green.html">Example report</a>
+    </nav>
+    <p class="bf-note">Made for players. Built to work alongside your coach, not replace one.</p>
+  </div>
+</footer>
 <div id="tip" role="tooltip"></div>
 
 <script>
