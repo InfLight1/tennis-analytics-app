@@ -336,6 +336,12 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 #uploadDetail { font-size: var(--text-sm); color: var(--muted); margin-top: var(--space-2); }
 #uploadStatus { margin-top: var(--space-2); color: var(--ink-2); }
 #uploadStatus.error, #statusLine.error { color: var(--bad); }
+.pending { margin-bottom: var(--space-4); padding: 12px 14px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); }
+.link-btn { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.estimate { margin: var(--space-2) 0 0; color: var(--ink-2); }
+.estimate:empty { display: none; }
+.awake-note { margin: var(--space-2) 0 0; color: var(--ink-2); font-weight: 600; }
 #instruction { background: var(--accent-soft); border-radius: var(--radius-md); padding: 12px 14px; font-weight: 600; margin: var(--space-4) 0 var(--space-3); }
 #canvasWrap { position: relative; display: block; max-width: 100%; }
 #frameCanvas { display: block; max-width: 100%; border-radius: var(--radius-md); cursor: crosshair; touch-action: none; }
@@ -390,7 +396,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
   <div class="actions">
     <a class="btn btn-primary" href="#new">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M5 20h14"/></svg>
-      New analysis
+      <span id="heroNewLabel">New analysis</span>
     </a>
     <a class="btn" href="/report?job=76a383379d90">See an example report</a>
   </div>
@@ -411,10 +417,15 @@ body.photo-hero .topbar { margin-bottom: -64px; }
       <li class="step is-active" data-step="1" aria-current="step">
         <h3 class="step-title"><span class="step-n active" id="badge1">1</span>Choose your match video</h3>
         <div class="step-body" id="uploadPanel">
+          <div id="pendingUpload" class="pending hidden" role="status">
+            <p id="pendingText"></p>
+            <button type="button" class="link-btn" id="discardPendingBtn">Start a new upload instead</button>
+          </div>
           <div class="picker">
             <label class="btn file-pick" style="margin:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg> Choose video<input type="file" id="videoFile" accept="video/*"></label>
             <span id="fileName" aria-live="polite">No video chosen</span>
           </div>
+          <p id="uploadEstimate" class="estimate" aria-live="polite"></p>
           <div class="upload-row">
             <button type="button" class="btn btn-primary" id="uploadBtn" disabled>Upload</button>
             <button type="button" class="btn hidden" id="cancelUploadBtn">Pause</button>
@@ -424,6 +435,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
           <div id="uploadProgressWrap"><div id="uploadProgressBar"></div></div>
           <div id="uploadDetail"></div>
           <div id="uploadStatus" role="status"></div>
+          <p id="awakeNote" class="awake-note hidden"></p>
           <p class="tip">Film from high up behind the baseline with the whole court in view (see <a href="#filmGuide" data-open-guide>how to film your match</a>). Up to 60 minutes.</p>
         </div>
         <p class="step-done-note">✓ Video uploaded.</p>
@@ -606,17 +618,113 @@ function formatBytes(bytes) {
   return `${(mb / 1024).toFixed(2)} GB`;
 }
 
-// ── Step 1: Upload (chunked, Week 2 #10) ─────────────────────────────
+// ── Step 1: Upload (chunked, Week 2 #10; easier waiting 2026-10-14) ────
 // The video goes up in CHUNK_SIZE pieces (/api/upload/init -> PUT
-// /part/{i} -> /complete). Each piece is retried with backoff; if the
-// connection drops for longer, "Resume upload" asks the server which
-// pieces it already has and sends only the rest. XMLHttpRequest (not
-// fetch) for upload-progress events and distinct error types.
+// /part/{i} -> /complete), PARALLEL at a time. Each piece is retried with
+// backoff; if the connection drops for longer, the upload carries on by
+// itself when the device is back online (or the page is shown again), and
+// "Resume upload" does the same by hand: it asks the server which pieces
+// it already has and sends only the rest. XMLHttpRequest (not fetch) for
+// upload-progress events.
+// While uploading, the screen is kept on (Wake Lock) and leaving the page
+// asks first. The unfinished upload is remembered on this device
+// (PENDING_KEY), so after a reload or a closed tab, choosing the same
+// video again continues it instead of starting over.
 const CHUNK_SIZE = 16 * 1024 * 1024;
 const PARALLEL = 8;  // pieces in flight at once (1 was ~0.3 MB/s, 4 was ~1 MB/s on a phone)
-const MAX_TRIES = 5;
-let upload = null;   // { file, jobId, cancelled }
+const MAX_TRIES = 8;
+// Wi-Fi speeds (MB/s) for the estimate shown before the first upload on a
+// device; after that the device's own measured speed is used (SPEED_KEY).
+// Rough guess: update from the Oct 14 phone benchmark.
+const GUESS_MBPS = [2, 5];
+const PENDING_KEY = "tennis_pending_upload";   // {jobId, name, size, sent, at}
+const SPEED_KEY = "tennis_upload_mbps";        // last measured upload speed here
+
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+let upload = null;   // { file, jobId, running, paused, failed, run: {stop} }
 const liveXhrs = new Set();
+
+function formatMinutes(sec) {
+  const m = Math.max(1, Math.round(sec / 60));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h} h ${r} min` : `${h} h`;
+}
+
+const aboutTime = (sec) => (sec < 60 ? "under a minute" : `about ${formatMinutes(sec)}`);
+
+// Before the upload: about how long it will take, for `bytes` still to send.
+function estimateText(bytes) {
+  const mb = bytes / (1024 * 1024);
+  const own = Number(store.get(SPEED_KEY));
+  if (own > 0) return `${aboutTime(mb / own)} (based on your last upload)`;
+  const lo = mb / GUESS_MBPS[1] / 60, hi = mb / GUESS_MBPS[0] / 60;
+  const a = Math.max(1, Math.round(lo)), b = Math.max(1, Math.round(hi));
+  if (b <= 1) return "about a minute on good Wi-Fi";
+  if (hi < 60) return `roughly ${a}–${b} min on good Wi-Fi`;
+  return `roughly ${formatMinutes(lo * 60)} to ${formatMinutes(hi * 60)} on good Wi-Fi`;
+}
+
+// Keep the screen on while uploading (phones pause uploads when the screen locks).
+// The browser drops the lock whenever the page is hidden; it is asked for again on return.
+const canKeepAwake = "wakeLock" in navigator;
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && canKeepAwake && !wakeLock && document.visibilityState === "visible") {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } else if (!on && wakeLock) {
+      const w = wakeLock; wakeLock = null; await w.release();
+    }
+  } catch (e) { wakeLock = null; }
+}
+
+window.addEventListener("beforeunload", (e) => {
+  if (upload && upload.running) { e.preventDefault(); e.returnValue = ""; }
+});
+
+// After a dropped connection: carry on by itself once back online or back on the page.
+function autoContinue() {
+  if (upload && upload.jobId && upload.failed && !upload.running && !upload.paused) runUpload();
+}
+window.addEventListener("online", autoContinue);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (upload && upload.running) keepAwake(true).then(updateAwakeNote); else autoContinue();
+});
+
+// A remembered unfinished upload (this device), shown above the picker.
+function pendingFor(file) {
+  const p = store.get(PENDING_KEY);
+  return p && p.jobId && file && p.size === file.size ? p : null;   // same size = same video
+}
+function showPending() {
+  const p = store.get(PENDING_KEY);
+  if (!p || !p.jobId || (upload && upload.jobId === p.jobId)) {
+    $("pendingUpload").classList.add("hidden");
+    $("heroNewLabel").textContent = "New analysis";
+    return;
+  }
+  const pct = Math.min(99, Math.round(100 * (p.sent || 0) / p.size));
+  $("pendingText").innerHTML = `<b>Unfinished upload:</b> ${escText(p.name)} (${formatBytes(p.size)}, ${pct}% sent). ` +
+    `Choose the same video below and it carries on from there.`;
+  $("pendingUpload").classList.remove("hidden");
+  $("heroNewLabel").textContent = "Continue your upload";
+}
+function escText(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+$("discardPendingBtn").addEventListener("click", () => {
+  store.del(PENDING_KEY);
+  showPending();
+  $("videoFile").dispatchEvent(new Event("change"));
+});
 
 function sendPart(jobId, index, blob, onProgress) {
   return new Promise((resolve, reject) => {
@@ -626,8 +734,12 @@ function sendPart(jobId, index, blob, onProgress) {
     xhr.open("PUT", `${backendUrl()}/api/upload/${jobId}/part/${index}`, true);
     passcodeHeader(xhr);
     xhr.upload.addEventListener("progress", (e) => { if (e.lengthComputable) onProgress(e.loaded); });
-    xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300)
-      ? resolve() : reject(new Error(`server returned HTTP ${xhr.status}`)));
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      const err = new Error(`server returned HTTP ${xhr.status}`);
+      err.expired = xhr.status === 404;          // the server no longer knows this upload
+      reject(err);
+    });
     xhr.addEventListener("error", () => reject(new Error("network error")));
     xhr.addEventListener("timeout", () => reject(new Error("timed out")));
     xhr.addEventListener("abort", () => reject(new Error("cancelled")));
@@ -636,14 +748,45 @@ function sendPart(jobId, index, blob, onProgress) {
   });
 }
 
+// Phones (iPhone especially) can stop letting the page read a chosen video, e.g. after
+// switching apps. That looks like a network error, so check the file itself.
+async function canRead(blob) {
+  try { await blob.slice(0, 1).arrayBuffer(); return true; } catch (e) { return false; }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Wait `ms`, longer if the device is offline (up to 2 more minutes for the connection to return).
+async function waitToRetry(ms, run) {
+  await sleep(ms);
+  for (let t = 0; !navigator.onLine && !run.stop && t < 120; t++) await sleep(1000);
+}
+
+function setUploading(on) {
+  $("uploadBtn").disabled = on || !$("videoFile").files[0];
+  $("videoFile").disabled = on;
+  $("cancelUploadBtn").classList.toggle("hidden", !on);
+  if (on) $("resumeUploadBtn").classList.add("hidden");
+  $("awakeNote").classList.toggle("hidden", !on);
+  updateAwakeNote();
+}
+// Promise "screen stays on" only when the browser actually granted it.
+function updateAwakeNote() {
+  $("awakeNote").textContent = wakeLock
+    ? "Keep this page open. Your screen will stay on until the upload finishes."
+    : "Keep this page open and your screen on until the upload finishes.";
+}
 
 async function runUpload() {
   const { file } = upload;
+  const run = { stop: false };
+  upload.run = run;
+  upload.running = true;
+  upload.failed = false;
   const n = Math.ceil(file.size / CHUNK_SIZE);
-  $("uploadBtn").disabled = true;
-  $("resumeUploadBtn").classList.add("hidden");
-  $("cancelUploadBtn").classList.remove("hidden");
+  setUploading(true);
+  keepAwake(true).then(updateAwakeNote);
+  $("pendingUpload").classList.add("hidden");
+  $("uploadEstimate").textContent = "";
   $("uploadProgressWrap").style.display = "block";
   $("uploadStatus").classList.remove("error");
   const startedAt = Date.now();
@@ -656,82 +799,127 @@ async function runUpload() {
       const res = await fetch(`${backendUrl()}/api/upload/init`, { method: "POST", body: form });
       if (!res.ok) throw new Error(`could not start the upload (HTTP ${res.status})`);
       upload.jobId = (await res.json()).job_id;
+      store.set(PENDING_KEY, { jobId: upload.jobId, name: file.name, size: file.size, sent: 0, at: new Date().toISOString() });
     }
-    const have = new Set((await (await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`)).json()).parts);
+    const partsRes = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`);
+    if (!partsRes.ok) throw new Error(`could not reach the server (HTTP ${partsRes.status})`);
+    const have = new Set((await partsRes.json()).parts);
     let done = [...have].reduce((sum, i) => sum + Math.min(CHUNK_SIZE, file.size - i * CHUNK_SIZE), 0);
     const inflightBytes = new Map();   // piece index -> bytes sent so far
     const show = () => {
       const inflight = [...inflightBytes.values()].reduce((a, b) => a + b, 0);
-      const sent = done + inflight;
-      const pct = Math.round((sent / file.size) * 100);
+      const sent = Math.min(done + inflight, file.size);
+      const pct = Math.floor((sent / file.size) * 100);
       $("uploadProgressBar").style.width = pct + "%";
-      const rate = (sentThisSession + inflight) / (1024 * 1024) / Math.max((Date.now() - startedAt) / 1000, 0.001);
-      $("uploadDetail").textContent = `${formatBytes(sent)} / ${formatBytes(file.size)} sent (${pct}%, ~${rate.toFixed(1)} MB/s)`;
+      const secs = (Date.now() - startedAt) / 1000;
+      const rate = (sentThisSession + inflight) / Math.max(secs, 0.001);   // bytes per second
+      const left = secs >= 10 && rate > 0
+        ? `${aboutTime((file.size - sent) / rate)} left` : "working out the time left…";
+      $("uploadDetail").textContent = `${formatBytes(sent)} of ${formatBytes(file.size)} sent (${pct}%) · ${left}`;
     };
-    $("uploadStatus").textContent = have.size ? `Resuming: ${have.size} of ${n} pieces already on the server.` : "Uploading...";
+    const remember = () => {                    // progress for the "Unfinished upload" notice
+      const p = store.get(PENDING_KEY);
+      if (p && p.jobId === upload.jobId) store.set(PENDING_KEY, { ...p, sent: done });
+    };
+    remember();
+    run.tick = setInterval(show, 1000);         // keep "time left" fresh between pieces
+    $("uploadStatus").textContent = have.size ? "Carrying on from where the upload stopped." : "Uploading…";
     show();
     const todo = [];
     for (let i = 0; i < n; i++) if (!have.has(i)) todo.push(i);
     const sendOne = async (i) => {
       const blob = file.slice(i * CHUNK_SIZE, Math.min((i + 1) * CHUNK_SIZE, file.size));
       for (let attempt = 1; ; attempt++) {
-        if (upload.cancelled) throw new Error("cancelled");
+        if (run.stop) throw new Error("cancelled");
         try {
           await sendPart(upload.jobId, i, blob, (b) => { inflightBytes.set(i, b); show(); });
           break;
         } catch (err) {
           inflightBytes.delete(i);
-          if (err.message === "cancelled" || upload.cancelled || attempt >= MAX_TRIES) throw err;
-          const wait = Math.min(2000 * 2 ** (attempt - 1), 30000);
-          $("uploadStatus").textContent = `Piece ${i + 1}/${n}: ${err.message}, retrying in ${wait / 1000}s (attempt ${attempt + 1}/${MAX_TRIES})...`;
-          await sleep(wait);
-          $("uploadStatus").textContent = "Uploading...";
+          if (err.message === "network error" && !(await canRead(blob))) err.unreadable = true;
+          if (err.message === "cancelled" || err.expired || err.unreadable || run.stop || attempt >= MAX_TRIES) throw err;
+          $("uploadStatus").textContent = navigator.onLine
+            ? "The connection dropped for a moment. Trying again…"
+            : "You're offline. The upload will carry on when the connection is back.";
+          await waitToRetry(Math.min(2000 * 2 ** (attempt - 1), 30000), run);
+          if (!run.stop) $("uploadStatus").textContent = "Uploading…";
         }
       }
       inflightBytes.delete(i);
       done += blob.size;
       sentThisSession += blob.size;
+      remember();
       show();
     };
     const worker = async () => {
       while (todo.length) {
-        if (upload.cancelled) throw new Error("cancelled");
+        if (run.stop) throw new Error("cancelled");
         await sendOne(todo.shift());
       }
     };
     try {
       await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker));
     } catch (err) {
-      upload.cancelled = true;              // stop the other pieces too; Resume picks up from the server's list
+      run.stop = true;                      // stop the other pieces too; the server keeps what arrived
       for (const x of liveXhrs) x.abort();
       throw err;
+    } finally {
+      clearInterval(run.tick);
     }
-    $("uploadStatus").textContent = "Finishing the upload…";
+    // Remember this device's speed for the next estimate (only from a decent sample).
+    const secs = (Date.now() - startedAt) / 1000;
+    if (sentThisSession > 50 * 1024 * 1024) store.set(SPEED_KEY, +(sentThisSession / (1024 * 1024) / secs).toFixed(2));
+    $("uploadStatus").textContent = "Almost done: putting your video together (this can take a minute)…";
+    $("uploadDetail").textContent = `${formatBytes(file.size)} sent (100%)`;
     const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST" });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(data.error || `HTTP ${res.status}`);
+      err.final = res.status === 413;      // too long: the server deleted it
+      throw err;
+    }
+    store.del(PENDING_KEY);
+    showPending();
     jobId = data.job_id;
     POINT_LABELS = data.point_labels;
     INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
     $("uploadStatus").textContent = "Uploaded.";
     upload = null;
+    keepAwake(false);
+    setUploading(false);
     setStage($("badge1"), "done");
     setStage($("badge2"), "active");
     $("calibratePanel").classList.remove("hidden");
     $("calibratePanel").scrollIntoView({ behavior: "smooth" });
     loadFrame();
+    return;
   } catch (err) {
     $("uploadStatus").classList.add("error");
-    if (err.message === "cancelled") {
-      $("uploadStatus").textContent = "Upload paused. Press Resume to continue from where it stopped.";
+    if (err.expired || err.final) {
+      store.del(PENDING_KEY);
+      $("uploadStatus").textContent = err.final ? err.message
+        : "This upload can't be continued any more. Please press Upload to start it again.";
+      upload = null;
+    } else if (err.unreadable) {
+      $("uploadStatus").textContent = "The page can no longer read your video (this happens on some phones after " +
+        "switching apps). Choose the same video again and it carries on from where it stopped.";
+      upload = null;
+      $("videoFile").value = "";
+      $("fileName").textContent = "No video chosen";
+      showPending();
+    } else if (upload.paused) {
+      $("uploadStatus").classList.remove("error");
+      $("uploadStatus").textContent = "Paused. Press Resume upload to carry on; what was sent is kept.";
     } else {
-      $("uploadStatus").textContent = `Upload interrupted (${err.message}). What was sent is kept: ` +
-        `keep this page open and press "Resume upload".`;
+      upload.failed = true;
+      $("uploadStatus").textContent = "The upload stopped because the connection dropped. What was sent is kept: " +
+        "it carries on by itself when you're back online, or press Resume upload.";
     }
-    if (upload && upload.jobId) $("resumeUploadBtn").classList.remove("hidden");
-  } finally {
-    finishUpload();
   }
+  if (upload) upload.running = false;
+  keepAwake(false);
+  setUploading(false);
+  if (upload && upload.jobId) $("resumeUploadBtn").classList.remove("hidden");
 }
 
 // Longest video accepted (the server checks too). Checked here first so a
@@ -752,37 +940,44 @@ function videoMinutes(file) {
 
 $("videoFile").addEventListener("change", () => {
   const file = $("videoFile").files[0];
+  const p = pendingFor(file);
   $("fileName").textContent = file ? `${file.name} (${formatBytes(file.size)})` : "No video chosen";
+  $("uploadBtn").textContent = p ? "Continue upload" : "Upload";
+  $("uploadEstimate").textContent = !file ? ""
+    : p ? `Already ${Math.min(99, Math.round(100 * (p.sent || 0) / p.size))}% sent. The rest takes ${estimateText(file.size - (p.sent || 0))}.`
+    : `Upload time: ${estimateText(file.size)}.`;
   $("uploadBtn").disabled = !file;
 });
 
 $("uploadBtn").addEventListener("click", async () => {
   const file = $("videoFile").files[0];
   if (!file) { alert("Choose a video file first."); return; }
-  const minutes = await videoMinutes(file);
-  if (minutes && minutes > MAX_VIDEO_MINUTES) {
-    alert(`This video is ${Math.round(minutes)} minutes long. The limit is ${MAX_VIDEO_MINUTES} minutes; please trim it and try again.`);
-    return;
+  const p = pendingFor(file);
+  if (!p) {
+    const minutes = await videoMinutes(file);
+    if (minutes && minutes > MAX_VIDEO_MINUTES) {
+      alert(`This video is ${Math.round(minutes)} minutes long. The limit is ${MAX_VIDEO_MINUTES} minutes; please trim it and try again.`);
+      return;
+    }
   }
-  upload = { file, jobId: null, cancelled: false };
+  upload = { file, jobId: p ? p.jobId : null, running: false, paused: false, failed: false };
   runUpload();
 });
 
 $("resumeUploadBtn").addEventListener("click", () => {
-  if (!upload) return;
-  upload.cancelled = false;
+  if (!upload || upload.running) return;
+  upload.paused = false;
   runUpload();
 });
 
 $("cancelUploadBtn").addEventListener("click", () => {
-  if (upload) upload.cancelled = true;
+  if (!upload) return;
+  upload.paused = true;
+  if (upload.run) upload.run.stop = true;
   for (const x of liveXhrs) x.abort();
 });
 
-function finishUpload() {
-  $("uploadBtn").disabled = !$("videoFile").files[0];
-  $("cancelUploadBtn").classList.add("hidden");
-}
+showPending();
 
 // ── Resume: skip upload entirely for a job_id whose video is already on
 // the volume (e.g. a prior upload that wrote fully but errored before
@@ -1268,8 +1463,8 @@ renderReports();
   const watch = new MutationObserver(sync);
   document.querySelectorAll(".step-n").forEach((b) => watch.observe(b, { attributes: true, attributeFilter: ["class"] }));
   sync();
-  // Returning players see their reports first; new visitors start with the upload.
-  if (Site.reports().length) {
+  // Returning players see their reports first; new visitors (or anyone with an unfinished upload) start with the upload.
+  if (Site.reports().length && !store.get(PENDING_KEY)) {
     const reports = document.getElementById("reports"), upload = document.getElementById("new");
     upload.parentNode.insertBefore(reports, upload);
   }
