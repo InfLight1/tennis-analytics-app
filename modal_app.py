@@ -1788,6 +1788,17 @@ def web_app():
         return Response(content=buf.tobytes(), media_type="image/jpeg")
 
     @fastapi_app.post("/api/calibrate")
+    async def calibrate_safe(job_id: str = Form(...), points_json: str = Form(...),
+                             player1_name: str = Form(""), player2_name: str = Form("")):
+        """Saving the court marking must never answer with a bare crash page: log it, explain it."""
+        import traceback
+        try:
+            return await calibrate(job_id, points_json, player1_name, player2_name)
+        except Exception as e:
+            print(f"[job {job_id}] calibrate failed:\n{traceback.format_exc()}")
+            return JSONResponse({"error": f"The server couldn't save the court marking ({type(e).__name__}: {e}). "
+                                          "Please press Start analysis again in a moment."}, status_code=500)
+
     async def calibrate(
         job_id: str = Form(...),
         points_json: str = Form(...),  # {"label": [x, y], ...}

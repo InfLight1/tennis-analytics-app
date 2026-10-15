@@ -1749,8 +1749,8 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
 
   try {
     const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    const data = await res.json().catch(() => ({ error: `the server had a problem (HTTP ${res.status}). Your marking is kept: press Start analysis again in a moment` }));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     if (data.status === "waiting_for_video") {  // upload still being put together: analysis starts when it's ready
       markingToResend = form;
       STAGE_ORDER = PREP_STAGES;
@@ -1770,7 +1770,7 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
     $("processingPanel").scrollIntoView({ behavior: "smooth" });
     startPolling();
   } catch (e) {
-    alert(`Calibration failed: ${e.message}`);
+    alert(`Couldn't start the analysis: ${e.message}`);
     $("submitCalibrationBtn").disabled = false;
   }
 });

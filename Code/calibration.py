@@ -69,6 +69,20 @@ def get_reference_points_schema(court_w=config.TABLE_W, court_h=config.TABLE_H):
     }
 
 
+IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _read_first_frame(path):
+    """First frame of a video, or the picture itself when given an image (the court can be
+    marked on a picture taken before the video is ready). None if it can't be read."""
+    if str(path).lower().endswith(IMAGE_SUFFIXES):
+        return cv2.imread(str(path))
+    cap = cv2.VideoCapture(str(path))
+    ret, frame = cap.read()
+    cap.release()
+    return frame if ret else None
+
+
 def extract_calibration_frame(video_path):
     """
     Reads the first frame of video_path, for use by a calibration UI
@@ -81,11 +95,8 @@ def extract_calibration_frame(video_path):
         The raw BGR frame (OpenCV's native format). Caller converts to
         RGB/JPEG/etc. as needed for its own display context.
     """
-    cap = cv2.VideoCapture(str(video_path))
-    ret, frame = cap.read()
-    cap.release()
-
-    if not ret:
+    frame = _read_first_frame(video_path)
+    if frame is None:
         raise RuntimeError(f"Could not read video: {video_path}")
 
     return frame
@@ -257,11 +268,8 @@ def build_perspective_transform(
     print(f"Saved {matrix_path}")
 
     # ── Bird's-eye-view sanity check image ────────────────────────────────
-    cap = cv2.VideoCapture(str(video_path))
-    ret, frame = cap.read()
-    cap.release()
-
-    if not ret:
+    frame = _read_first_frame(video_path)
+    if frame is None:
         raise RuntimeError(f"Could not read video frame: {video_path}")
 
     warped = cv2.warpPerspective(frame, M, (court_w, court_h))
