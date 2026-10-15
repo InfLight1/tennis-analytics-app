@@ -407,6 +407,7 @@
       $("calibratePanel").classList.remove("hidden");
       $("calibratePanel").scrollIntoView({ behavior: "smooth" });
       showFrame(URL.createObjectURL(still));
+      guessCourt();
     } catch (e) {
       $("recStatus").classList.add("error");
       $("recStatus").textContent = `Couldn't get ready: ${e.message}. Check the signal and try again.`;

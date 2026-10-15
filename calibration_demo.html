@@ -1146,6 +1146,7 @@ async function loadFrame() {
   const res = await fetch(`${backendUrl()}/api/frame/${jobId}`);
   if (!res.ok) { $("instruction").textContent = "Couldn't load a frame from the video. Try again in a minute."; return; }
   showFrame(URL.createObjectURL(await res.blob()));
+  guessCourt();
 }
 
 function showFrame(src) {
@@ -1320,6 +1321,14 @@ function updateInstruction() {
   $("checkPanel").classList.toggle("hidden", remaining.length > 0 || !fit);
   if (remaining.length === 0) {
     const bad = fit ? POINT_LABELS.filter((l) => fit.errors[l] > MAX_POINT_ERROR_CM) : [];
+    if (autoPlaced && fit) {
+      $("instruction").textContent = "We found the court and placed the 7 points. Check that the blue lines sit on the " +
+        "court's lines; drag any dot that's off, then tick the box.";
+      $("checkWarn").classList.toggle("hidden", bad.length === 0);
+      $("checkWarn").textContent = bad.length ? "⚠ Some dots don't agree with the others: drag them onto the right spot." : "";
+      $("submitCalibrationBtn").disabled = !(fit && !POINT_LABELS.some((l) => fit.errors[l] > BLOCK_POINT_ERROR_CM) && $("looksRight").checked);
+      return;
+    }
     const adjusted = fit && fit.outer.length
       ? ` You tapped the outer corner for ${fit.outer.length === 1 ? "one corner" : `${fit.outer.length} corners`}; that's adjusted for you.` : "";
     $("instruction").textContent = fit
@@ -1341,7 +1350,8 @@ function updateInstruction() {
   const next = remaining[0];
   const n = POINT_LABELS.length - remaining.length + 1;
   $("instruction").innerHTML = `<div class="instr-row">${next in COURT_POINTS ? courtDiagram(next) : ""}` +
-    `<div><div>Tap point ${n} of ${POINT_LABELS.length}: ${escText(INSTRUCTIONS[next] || next)}</div>` +
+    `<div>${guessing && n === 1 ? '<div class="instr-tip">Looking for the court lines… you can start tapping.</div>' : ""}` +
+    `<div>Tap point ${n} of ${POINT_LABELS.length}: ${escText(INSTRUCTIONS[next] || next)}</div>` +
     `<div class="instr-tip">${escText(tipFor(next))}</div></div></div>`;
   $("submitCalibrationBtn").disabled = true;
 }
@@ -1480,18 +1490,86 @@ function showLoupe(clientX, clientY, above) {
 }
 function hideLoupe() { $("loupe").style.display = "none"; }
 
+// Court found automatically (2026-10-14): the server fits the court lines in this picture and,
+// when it is confident, the 7 points are placed for the player to check; any dot can be dragged.
+let autoPlaced = false, guessing = false;
+async function guessCourt() {
+  const job = jobId;
+  if (!job) return;
+  guessing = true;
+  updateInstruction();
+  try {
+    const res = await fetch(`${backendUrl()}/api/court-guess/${job}`);
+    const data = await res.json();
+    if (res.ok && data.ok && data.points && jobId === job && !Object.keys(clickedPoints).length) {
+      clickedPoints = Object.fromEntries(POINT_LABELS.filter((l) => data.points[l]).map((l) => [l, data.points[l]]));
+      clickOrder = POINT_LABELS.filter((l) => l in clickedPoints);
+      autoPlaced = true;
+      pointsChanged();
+    }
+  } catch (e) { /* tapping still works */ }
+  guessing = false;
+  updateInstruction();
+}
+
+// Drag a placed dot (mouse or finger) to fix it; tap elsewhere to place the next point.
+let dragging = null, justDragged = false, dragOffset = [0, 0];   // finger-to-dot gap, kept while dragging
+function pointNear(clientX, clientY, radiusPx) {
+  const rect = $("frameCanvas").getBoundingClientRect();
+  const k = rect.width / Number($("frameCanvas").dataset.origW || 1);
+  let best = null, bestD = radiusPx;
+  for (const l of POINT_LABELS) {
+    if (!(l in clickedPoints)) continue;
+    const dx = rect.left + clickedPoints[l][0] * k - clientX, dy = rect.top + clickedPoints[l][1] * k - clientY;
+    const d = Math.hypot(dx, dy);
+    if (d < bestD) { best = l; bestD = d; dragOffset = [dx, dy]; }
+  }
+  return best;
+}
+function dragTo(clientX, clientY) {
+  clickedPoints[dragging] = toOrig(clientX + dragOffset[0], clientY + dragOffset[1]);
+  refit();
+  redrawFrame();
+}
+function endDrag() {
+  dragging = null;
+  pointsChanged();
+}
+
 const fc = $("frameCanvas");
-fc.addEventListener("mousemove", (e) => showLoupe(e.clientX, e.clientY, false));
+fc.addEventListener("mousedown", (e) => {
+  dragging = pointNear(e.clientX, e.clientY, 14);
+  if (dragging) e.preventDefault();
+});
+fc.addEventListener("mousemove", (e) => {
+  if (dragging) { dragTo(e.clientX, e.clientY); justDragged = true; }
+  showLoupe(e.clientX, e.clientY, false);
+});
+window.addEventListener("mouseup", () => { if (dragging) endDrag(); });
 fc.addEventListener("mouseleave", hideLoupe);
-fc.addEventListener("click", (e) => placePoint(e.clientX, e.clientY));
-// Touch: drag to aim with the loupe above the finger, lift to place.
+fc.addEventListener("click", (e) => {
+  if (justDragged) { justDragged = false; return; }
+  placePoint(e.clientX, e.clientY);
+});
+// Touch: start on a dot to drag it; otherwise aim with the loupe above the finger and lift to place.
 let lastTouch = null;
-fc.addEventListener("touchstart", (e) => { e.preventDefault(); lastTouch = e.touches[0]; showLoupe(lastTouch.clientX, lastTouch.clientY, true); }, { passive: false });
-fc.addEventListener("touchmove", (e) => { e.preventDefault(); lastTouch = e.touches[0]; showLoupe(lastTouch.clientX, lastTouch.clientY, true); }, { passive: false });
+fc.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  lastTouch = e.touches[0];
+  dragging = pointNear(lastTouch.clientX, lastTouch.clientY, 28);
+  showLoupe(lastTouch.clientX, lastTouch.clientY, true);
+}, { passive: false });
+fc.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  lastTouch = e.touches[0];
+  if (dragging) dragTo(lastTouch.clientX, lastTouch.clientY);
+  showLoupe(lastTouch.clientX, lastTouch.clientY, true);
+}, { passive: false });
 fc.addEventListener("touchend", (e) => {
   e.preventDefault();
   hideLoupe();
-  if (lastTouch) placePoint(lastTouch.clientX, lastTouch.clientY);
+  if (dragging) endDrag();
+  else if (lastTouch) placePoint(lastTouch.clientX, lastTouch.clientY);
   lastTouch = null;
 }, { passive: false });
 
@@ -1505,6 +1583,7 @@ $("undoPointBtn").addEventListener("click", () => {
 });
 
 $("resetPointsBtn").addEventListener("click", () => {
+  autoPlaced = false;
   clickedPoints = {};
   clickOrder = [];
   pointsChanged();

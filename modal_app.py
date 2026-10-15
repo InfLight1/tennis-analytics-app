@@ -1144,6 +1144,44 @@ def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
 
 
 # ---------------------------------------------------------------------------
+# Court found automatically (2026-10-14): Code/court_detect.py fits the court
+# lines in the marking picture, and the page pre-places the 7 points for the
+# player to check (and drag). Below its confidence bar the page falls back to
+# tapping. Runs in its own small CPU function (the web container is tiny).
+# ---------------------------------------------------------------------------
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, cpu=2.0, timeout=120)
+def guess_court_remote(job_id: str) -> dict:
+    import sys
+    import time
+    sys.path.insert(0, "/root/Code")
+    import cv2
+    import calibration
+    import court_detect
+
+    volume.reload()
+    p = _job_paths(job_id)
+    still = f"{p['job_dir']}/input/calib_frame.jpg"
+    if os.path.exists(still):
+        frame = cv2.imread(still)
+    elif os.path.exists(p["video_path"]):
+        frame = calibration.extract_calibration_frame(p["video_path"])
+    else:
+        return {"ok": False, "error": "no picture yet"}
+    t0 = time.time()
+    res = court_detect.detect_court(frame)
+    out = {"ok": bool(res["ok"]), "score": res["score"], "points": res["points"],
+           "seconds": round(time.time() - t0, 1)}
+    print(f"[job {job_id}] court guess: ok={out['ok']} score={out['score']} in {out['seconds']}s")
+    try:
+        with open(f"{p['job_dir']}/court_guess.json", "w", encoding="utf-8") as f:
+            json.dump(out, f)
+        volume.commit()
+    except OSError:
+        pass
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Demo web UI backend -- FastAPI app served as a Modal web endpoint.
 # See the module docstring's "DEMO WEB UI" section for the full flow.
 # Deploy with `modal deploy modal_app.py`; the printed URL is BACKEND_URL
@@ -1464,6 +1502,15 @@ def web_app():
             starts = [0]
         finish_recording_remote.spawn(job_id, pieces, size, starts)
         return JSONResponse({"job_id": job_id, "status": "preparing"})
+
+    @fastapi_app.get("/api/court-guess/{job_id}")
+    async def court_guess(job_id: str):
+        """The 7 points found automatically in the marking picture, if the fit is confident."""
+        try:
+            return JSONResponse(await guess_court_remote.remote.aio(job_id))
+        except Exception as e:
+            print(f"[job {job_id}] court guess failed: {e}")
+            return JSONResponse({"ok": False, "error": "court finding failed"})
 
     @fastapi_app.get("/api/point-labels")
     def point_labels():
