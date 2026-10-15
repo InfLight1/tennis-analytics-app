@@ -168,6 +168,7 @@
     renderReports();
     $("processingPanel").classList.remove("hidden");
     $("processingPanel").scrollIntoView({ behavior: "smooth" });
+    analysisStartedAt = Date.now();     // the analysis clock starts when the match video is complete
     startPolling();
   }
 

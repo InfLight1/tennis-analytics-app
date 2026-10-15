@@ -884,6 +884,11 @@ def _write_status(job_id: str, **fields):
         except Exception:
             pass
     current.update(fields)
+    # When each stage started (server clock, seconds): the analysing screen shows a timer and the
+    # report a "how long it took" breakdown from these. The first entry of a stage is kept.
+    if fields.get("stage"):
+        import time
+        current.setdefault("stage_times", {}).setdefault(fields["stage"], round(time.time(), 1))
     with open(status_path, "w", encoding="utf-8") as f:
         json.dump(current, f, indent=2, default=str)
     volume.commit()
@@ -1649,11 +1654,11 @@ def web_app():
         return JSONResponse({"index": index, "bytes": size})
 
     @fastapi_app.post("/api/upload/{job_id}/complete")
-    async def upload_complete(job_id: str):
+    async def upload_complete(job_id: str, upload_seconds: float = Form(0)):
         await _wait_for_commits()
-        return await asyncio.to_thread(_check_and_finish_upload, job_id)
+        return await asyncio.to_thread(_check_and_finish_upload, job_id, upload_seconds)
 
-    def _check_and_finish_upload(job_id: str):
+    def _check_and_finish_upload(job_id: str, upload_seconds: float = 0):
         """Every piece is on our side or in R2? Then join in the background (finish_upload_remote)."""
         p = _job_paths(job_id)
         d = _parts_dir(job_id)
@@ -1664,7 +1669,8 @@ def web_app():
         if len(have) != expected:
             return JSONResponse({"error": f"Have {len(have)} of {expected} pieces -- resume the upload."},
                                 status_code=409)
-        _write_status(job_id, stage="preparing", message="Putting the video together...")
+        _write_status(job_id, stage="preparing", message="Putting the video together...",
+                      **({"upload_seconds": round(upload_seconds, 1)} if 0 < upload_seconds < 6 * 3600 else {}))
         finish_upload_remote.spawn(job_id)
         return JSONResponse({
             "job_id": job_id,
@@ -1838,6 +1844,7 @@ def web_app():
 
         # Still recording (marked on the camera still, no video yet): the matrix only
         # needs the 7 points; the still stands in for the video's first frame.
+        _write_status(job_id, marked_at=round(time.time(), 1))   # when the player pressed Start analysis
         early = not os.path.exists(p["video_path"]) and os.path.exists(_calib_frame_path(job_id))
         recording = early and (_read_json(f"{p['job_dir']}/input/upload.json", {}) or {}).get("mode") == "record"
         if not early:
@@ -1867,6 +1874,7 @@ def web_app():
         # Re-run jobs keep their first run's status note; the report file is
         # the truth for "is there a report to open".
         st["report_ready"] = os.path.exists(_job_paths(job_id)["profile_json_path"])
+        st["server_time"] = round(time.time(), 1)
         return JSONResponse(st)
 
     from fastapi.responses import FileResponse

@@ -367,6 +367,10 @@ async function load() {
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     render();
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
+    if (JOB && JOB !== "76a383379d90") {
+      fetch(`${BACKEND}/api/status/${encodeURIComponent(JOB)}`).then((r) => r.json())
+        .then((st) => { timingHtml = timingFrom(st); if (timingHtml) render(); }).catch(() => {});
+    }
   } catch (e) {
     $("title").textContent = "Report unavailable";
     $("error").textContent = e.message;
@@ -437,7 +441,30 @@ function render() {
   renderPlayer(P[current]);
   $("coverageBox").classList.remove("hidden");
   $("coverage").innerHTML = DATA.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
-    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>`;
+    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>` +
+    timingHtml;
+}
+
+// "How long it took" (2026-10-14, for benchmarks): from the job's step start times (server
+// clock) and the upload time the page measured. Not on the example (its status needs the passcode).
+let timingHtml = "";
+function timingFrom(st) {
+  const t = st.stage_times || {};
+  const clock = (sec) => { const n = Math.round(sec); return n >= 60 ? `${Math.floor(n / 60)} min ${n % 60} s` : `${n} s`; };
+  const span = (a, ...ends) => { const e = ends.map((k) => t[k]).find((v) => v && t[a] && v >= t[a]); return e ? e - t[a] : null; };
+  const rows = [
+    ["Upload (from pressing Upload to 100%)", st.upload_seconds || null],
+    ["Recording", span("recording", "preparing")],
+    ["Putting the video together", span("preparing", "uploaded", "queued")],
+    ["Waiting for a computer to start", span("queued", "detecting")],
+    ["Finding the ball and players", span("detecting", "analyzing")],
+    ["Working out the points and writing tips", span("analyzing", "done")],
+    ["From pressing Start analysis to the report", st.marked_at && t.done && t.done > st.marked_at && !t.recording ? t.done - st.marked_at : null],
+    ["From the end of the match to the report", t.recording && t.preparing && t.done ? t.done - t.preparing : null],
+  ].filter(([, v]) => v != null && v >= 0);
+  if (!rows.length) return "";
+  return `<h3 class="sub-h">How long it took</h3><ul class="early">` +
+    rows.map(([k, v]) => `<li>${esc(k)}: <b class="num">${clock(v)}</b></li>`).join("") + "</ul>";
 }
 $("tabs").addEventListener("click", (e) => {
   const b = e.target.closest("button[role=tab]");

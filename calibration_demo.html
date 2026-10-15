@@ -424,6 +424,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .stage-pill.current { background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .stage-pill.past { background: var(--accent-soft); color: var(--accent); }
 #statusLine { color: var(--ink-2); }
+.elapsed { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-sm); }
 /* My reports: each match is its own card (2026-10-14: the plain rows were easy to miss). */
 .rep-head h2 { display: flex; align-items: center; gap: var(--space-3); }
 .rep-count { display: inline-grid; place-items: center; min-width: 34px; height: 34px; padding: 0 10px; border-radius: var(--radius-pill);
@@ -578,6 +579,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
         <div class="step-body hidden" id="processingPanel">
           <div class="stage-track" id="stageTrack"></div>
           <div id="statusLine" role="status">Starting…</div>
+          <div class="elapsed num" id="elapsedLine"></div>
         </div>
       </li>
     </ol>
@@ -1036,7 +1038,9 @@ async function runUpload() {
     if (sentThisSession > 50 * 1024 * 1024) store.set(SPEED_KEY, +(sentThisSession / (1024 * 1024) / secs).toFixed(2));
     $("uploadStatus").textContent = "Almost done…";
     $("uploadDetail").textContent = `${formatBytes(file.size)} sent (100%)`;
-    const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST" });
+    const finishForm = new FormData();      // how long the upload took, kept with the job for benchmarks
+    finishForm.append("upload_seconds", ((Date.now() - upload.t0) / 1000).toFixed(1));
+    const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST", body: finishForm });
     const data = await res.json();
     if (!res.ok) {
       const err = new Error(data.error || `HTTP ${res.status}`);
@@ -1131,7 +1135,7 @@ $("uploadBtn").addEventListener("click", async () => {
       return;
     }
   }
-  upload = { file, jobId: p ? p.jobId : null, running: false, paused: false, failed: false };
+  upload = { file, jobId: p ? p.jobId : null, running: false, paused: false, failed: false, t0: Date.now() };
   if (p && p.r2) useR2(p.jobId, true);
   runUpload();
 });
@@ -1741,6 +1745,7 @@ $("resetPointsBtn").addEventListener("click", () => {
 $("submitCalibrationBtn").addEventListener("click", async () => {
   if (!jobId) { alert("No job: this is the offline preview. Upload a video to calibrate for real."); return; }
   $("submitCalibrationBtn").disabled = true;
+  analysisStartedAt = Date.now();
   const form = new FormData();
   form.append("job_id", jobId);
   form.append("points_json", JSON.stringify(pointsForServer()));
@@ -1787,19 +1792,36 @@ const STAGE_LABEL = {
   done: "Report ready", error: "Error",
 };
 
+// Timer (2026-10-14): the server notes when each step started (stage_times, its own clock);
+// the pills show how long each step took and the running step ticks every second.
+const clockText = (sec) => { const t = Math.max(0, Math.round(sec)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+const UNTIMED = ["uploaded", "recording", "done"];        // waiting on the player, or the end
+let lastStatus = null, serverOffset = 0, analysisStartedAt = null, timerTick = null;
+
 function renderStageTrack(currentStage) {
   const track = $("stageTrack");
   track.innerHTML = "";
   const idx = STAGE_ORDER.indexOf(currentStage);
+  const times = (lastStatus && lastStatus.stage_times) || {};
+  const nowServer = Date.now() / 1000 + serverOffset;
   STAGE_ORDER.forEach((stage, i) => {
     const pill = document.createElement("span");
     pill.className = "stage-pill" + (stage === currentStage ? " current" : (i < idx ? " past" : ""));
-    pill.textContent = STAGE_LABEL[stage];
+    let took = "";
+    if (times[stage] && !UNTIMED.includes(stage)) {
+      const next = STAGE_ORDER.slice(i + 1).map((s2) => times[s2]).find((t) => t && t >= times[stage]);
+      const end = stage === currentStage ? nowServer : next;
+      if (end) took = ` · ${clockText(end - times[stage])}`;
+    }
+    pill.textContent = STAGE_LABEL[stage] + took;
     track.appendChild(pill);
   });
+  $("elapsedLine").textContent = analysisStartedAt ? `Time since you pressed Start: ${clockText((Date.now() - analysisStartedAt) / 1000)}` : "";
 }
 
 function startPolling() {
+  clearInterval(timerTick);
+  timerTick = setInterval(() => { if (lastStatus && lastStatus.stage !== "done") renderStageTrack(lastStatus.stage); }, 1000);
   pollTimer = setInterval(async () => {
     try {
       const res = await fetch(`${backendUrl()}/api/status/${jobId}`);
@@ -1811,6 +1833,8 @@ function startPolling() {
         await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: again });
         return;
       }
+      lastStatus = data;
+      if (data.server_time) serverOffset = data.server_time - Date.now() / 1000;
       renderStageTrack(data.stage);
       $("statusLine").classList.remove("error");
       $("statusLine").textContent = data.message || data.stage;
