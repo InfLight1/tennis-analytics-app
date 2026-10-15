@@ -1034,7 +1034,7 @@ async function runUpload() {
     // Remember this device's speed for the next estimate (only from a decent sample).
     const secs = (Date.now() - startedAt) / 1000;
     if (sentThisSession > 50 * 1024 * 1024) store.set(SPEED_KEY, +(sentThisSession / (1024 * 1024) / secs).toFixed(2));
-    $("uploadStatus").textContent = "Almost done: putting your video together (this can take a minute)…";
+    $("uploadStatus").textContent = "Almost done…";
     $("uploadDetail").textContent = `${formatBytes(file.size)} sent (100%)`;
     const res = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/complete`, { method: "POST" });
     const data = await res.json();
@@ -1049,6 +1049,7 @@ async function runUpload() {
     POINT_LABELS = data.point_labels;
     INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
     $("uploadStatus").textContent = "Uploaded.";
+    const uploadedFile = upload.file;
     upload = null;
     keepAwake(false);
     setUploading(false);
@@ -1056,7 +1057,8 @@ async function runUpload() {
     setStage($("badge2"), "active");
     $("calibratePanel").classList.remove("hidden");
     $("calibratePanel").scrollIntoView({ behavior: "smooth" });
-    loadFrame();
+    if (data.preparing) startEarlyMarking(uploadedFile);
+    else loadFrame();
     return;
   } catch (err) {
     $("uploadStatus").classList.add("error");
@@ -1187,6 +1189,76 @@ $("resumeBtn").addEventListener("click", async () => {
 });
 
 // ── Step 2: Calibration frame + click collection ────────────────────
+// Mark the court while the server puts the video together (2026-10-14): the first picture is
+// taken from the video on this device and sent ahead, so the court is found straight away.
+// Where this browser can't read the video (e.g. iPhone files in some desktop browsers), it
+// waits for the server and uses the server's first picture, as before.
+function firstFrame(file) {
+  return new Promise((resolve) => {
+    const v = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    let done = false;
+    const finish = (blob) => { if (done) return; done = true; URL.revokeObjectURL(url); v.removeAttribute("src"); resolve(blob); };
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.onloadedmetadata = () => { v.currentTime = 0.001; };   // ask for the very first picture
+    v.onseeked = () => {
+      if (!v.videoWidth) return finish(null);
+      const c = document.createElement("canvas");
+      c.width = v.videoWidth;
+      c.height = v.videoHeight;
+      const g = c.getContext("2d");
+      g.drawImage(v, 0, 0);
+      const px = g.getImageData(0, 0, c.width, c.height).data;   // a blank (undecoded) picture is no use
+      let sum = 0;
+      for (let i = 0; i < px.length; i += 4 * 997) sum += px[i] + px[i + 1] + px[i + 2];
+      if (sum / (3 * Math.ceil(px.length / (4 * 997))) < 8) return finish(null);
+      c.toBlob((b) => finish(b), "image/jpeg", 0.92);
+    };
+    v.onerror = () => finish(null);
+    setTimeout(() => finish(null), 10000);
+    v.src = url;
+  });
+}
+
+async function waitForVideo(job) {
+  for (;;) {
+    try {
+      const st = await (await fetch(`${backendUrl()}/api/status/${job}`)).json();
+      if (st.stage === "error") return st.message || "Something went wrong";
+      if (st.stage && st.stage !== "preparing") return null;
+    } catch (e) { /* keep waiting */ }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
+async function startEarlyMarking(file) {
+  const job = jobId;
+  const still = await firstFrame(file);
+  if (still && jobId === job) {
+    const form = new FormData();
+    form.append("file", still, "court.jpg");
+    try {
+      const res = await fetch(`${backendUrl()}/api/upload/${job}/frame`, { method: "POST", body: form });
+      if (res.ok) {
+        showFrame(URL.createObjectURL(still));
+        guessCourt();
+        return;
+      }
+    } catch (e) { /* use the server's picture instead */ }
+  }
+  $("instruction").textContent = "Putting your video together… the court picture appears in a moment.";
+  const problem = await waitForVideo(job);
+  if (jobId !== job) return;
+  if (problem) { $("instruction").textContent = `Couldn't prepare the video: ${problem}`; return; }
+  loadFrame();
+}
+
+// Court marked before the video was ready: the server starts the analysis when the video is
+// ready; if it finished first, the marking is sent again once (see startPolling).
+let markingToResend = null;
+
 async function loadFrame() {
   const res = await fetch(`${backendUrl()}/api/frame/${jobId}`);
   if (!res.ok) { $("instruction").textContent = "Couldn't load a frame from the video. Try again in a minute."; return; }
@@ -1679,6 +1751,10 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
     const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+    if (data.status === "waiting_for_video") {  // upload still being put together: analysis starts when it's ready
+      markingToResend = form;
+      STAGE_ORDER = PREP_STAGES;
+    }
     if (data.status === "recording") {          // Record match: court marked, now film
       Site.rememberReport(jobId, `${$("player1Name").value.trim() || "Player 1"} vs ${$("player2Name").value.trim() || "Player 2"}`);
       renderReports();
@@ -1702,6 +1778,7 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
 // ── Step 3: Processing status polling ────────────────────────────────
 const UPLOAD_STAGES = ["uploaded", "calibrating", "queued", "detecting", "analyzing", "done"];
 const RECORD_STAGES = ["recording", "preparing", "queued", "detecting", "analyzing", "done"];   // Record match
+const PREP_STAGES = ["preparing", "queued", "detecting", "analyzing", "done"];   // court marked while the upload is joined
 let STAGE_ORDER = UPLOAD_STAGES;
 const STAGE_LABEL = {
   uploaded: "Uploaded", calibrating: "Court marked", queued: "Waiting to start",
@@ -1727,6 +1804,13 @@ function startPolling() {
     try {
       const res = await fetch(`${backendUrl()}/api/status/${jobId}`);
       const data = await res.json();
+      if (markingToResend && !["preparing", "uploaded"].includes(data.stage)) markingToResend = null;   // started without it
+      if (data.stage === "uploaded" && markingToResend) {
+        const again = markingToResend;
+        markingToResend = null;
+        await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: again });
+        return;
+      }
       renderStageTrack(data.stage);
       $("statusLine").classList.remove("error");
       $("statusLine").textContent = data.message || data.stage;

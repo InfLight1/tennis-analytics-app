@@ -1272,6 +1272,59 @@ def assemble_recording(parts_dir: str, work_dir: str, out_path: str, pieces: int
     return frames, fps, len(made)
 
 
+def _video_minutes(path: str):
+    import cv2
+    cap = cv2.VideoCapture(path)
+    frames, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
+    cap.release()
+    return frames / fps / 60 if fps and frames > 0 else None
+
+
+# File uploads, joined in the background (2026-10-14): /complete used to join the
+# pieces itself, so players waited ~1 min after 100% before they could mark the
+# court. Now /complete only checks every piece is there and starts this; the page
+# sends the video's first picture straight away, so the court is found and marked
+# while this runs. Processing starts here if the court is already marked;
+# otherwise the page re-sends its marking once the stage is "uploaded".
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600, secrets=[R2_SECRET])
+def finish_upload_remote(job_id: str):
+    p = _job_paths(job_id)
+    d = f"{p['job_dir']}/input/parts"
+    try:
+        volume.reload()
+        meta = _read_json(f"{p['job_dir']}/input/upload.json", {}) or {}
+        expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
+        if _r2():
+            _stop_r2_puller(job_id)
+            _pull_r2_parts(job_id, d)
+        volume.reload()
+        parts = _part_names(d)
+        if len(parts) != expected:
+            raise RuntimeError(f"only {len(parts)} of {expected} pieces arrived; please upload again")
+        size = _join_parts(d, p["video_path"])
+        if size != meta.get("size"):
+            raise RuntimeError(f"the joined video is {size} bytes, expected {meta.get('size')}")
+        _remove_parts(d)
+        minutes = _video_minutes(p["video_path"])
+        print(f"[job {job_id}] upload joined: {size / (1024 * 1024):.0f} MB in {len(parts)} pieces"
+              + (f", {minutes:.1f} min" if minutes else ""))
+        if minutes and minutes > MAX_VIDEO_MINUTES:
+            os.remove(p["video_path"])
+            _write_status(job_id, stage="error", message=f"This video is {minutes:.0f} minutes long. "
+                          f"The limit is {MAX_VIDEO_MINUTES} minutes; please trim it and upload again.")
+            return
+        volume.commit()
+        volume.reload()
+        if os.path.exists(p["matrix_path"]):          # court already marked on the early picture: go
+            _write_status(job_id, stage="queued", message="Video ready. Processing queued...")
+            run_full_job_remote.spawn(job_id, BALL_MODEL_NAME, PLAYER_MODEL_NAME)
+        else:
+            _write_status(job_id, stage="uploaded", message="Video uploaded, ready to calibrate.")
+    except Exception as e:
+        _write_status(job_id, stage="error", message=f"Couldn't put the video together: {e}")
+        raise
+
+
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=3600, secrets=[R2_SECRET])
 def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
     import time
@@ -1598,36 +1651,24 @@ def web_app():
     @fastapi_app.post("/api/upload/{job_id}/complete")
     async def upload_complete(job_id: str):
         await _wait_for_commits()
-        return await asyncio.to_thread(_join_upload, job_id)
+        return await asyncio.to_thread(_check_and_finish_upload, job_id)
 
-    def _join_upload(job_id: str):
+    def _check_and_finish_upload(job_id: str):
+        """Every piece is on our side or in R2? Then join in the background (finish_upload_remote)."""
         p = _job_paths(job_id)
         d = _parts_dir(job_id)
-        meta = _read_json(f"{p['job_dir']}/input/upload.json", {})
+        volume.reload()
+        meta = _read_json(f"{p['job_dir']}/input/upload.json", {}) or {}
         expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
-        if _r2():
-            _stop_r2_puller(job_id)
-            _pull_r2_parts(job_id, d)
-        parts = _part_names(d)
-        if len(parts) != expected:          # some pieces may have landed on another container
-            volume.reload()
-            parts = _part_names(d)
-        if len(parts) != expected:
-            return JSONResponse({"error": f"Have {len(parts)} of {expected} pieces -- resume the upload."},
+        have = {int(n.split(".")[0]) for n in _part_names(d)} | set(_r2_part_keys(job_id))
+        if len(have) != expected:
+            return JSONResponse({"error": f"Have {len(have)} of {expected} pieces -- resume the upload."},
                                 status_code=409)
-        size = _join_parts(d, p["video_path"])
-        if size != meta.get("size"):
-            return JSONResponse({"error": f"Size mismatch: got {size} bytes, expected {meta.get('size')}"},
-                                status_code=409)
-        _remove_parts(d)
-        print(f"[job {job_id}] chunked upload complete: {size / (1024 * 1024):.0f} MB in {len(parts)} pieces")
-        too_long = _reject_if_too_long(job_id, p["video_path"])
-        if too_long:
-            volume.commit()
-            return too_long
-        _write_status(job_id, stage="uploaded", message="Video uploaded, ready to calibrate.")
+        _write_status(job_id, stage="preparing", message="Putting the video together...")
+        finish_upload_remote.spawn(job_id)
         return JSONResponse({
             "job_id": job_id,
+            "preparing": True,
             "point_labels": calibration.EXTENDED_POINT_LABELS,
             "instructions": calibration.CLICK_INSTRUCTIONS,
         })
@@ -1647,8 +1688,10 @@ def web_app():
         return f"{_job_paths(job_id)['job_dir']}/input/calib_frame.jpg"
 
     @fastapi_app.post("/api/record/{job_id}/frame")
+    @fastapi_app.post("/api/upload/{job_id}/frame")
     async def record_frame(job_id: str, file: UploadFile = File(...)):
-        """A still from the camera at the start: the court is marked on it while play goes on."""
+        """The marking picture sent by the page before the video is ready: a camera still at the
+        start of a recording, or the first picture of an uploaded video (taken on the device)."""
         if not os.path.isdir(_parts_dir(job_id)):
             volume.reload()
         if not os.path.isdir(_parts_dir(job_id)):
@@ -1784,12 +1827,13 @@ def web_app():
 
         # Still recording (marked on the camera still, no video yet): the matrix only
         # needs the 7 points; the still stands in for the video's first frame.
-        recording = not os.path.exists(p["video_path"]) and os.path.exists(_calib_frame_path(job_id))
-        if not recording:
+        early = not os.path.exists(p["video_path"]) and os.path.exists(_calib_frame_path(job_id))
+        recording = early and (_read_json(f"{p['job_dir']}/input/upload.json", {}) or {}).get("mode") == "record"
+        if not early:
             _write_status(job_id, stage="calibrating", message="Building perspective transform...")
         calibration.build_perspective_transform(
             clicked_points_px=clicked_points_px,
-            video_path=_calib_frame_path(job_id) if recording else p["video_path"],
+            video_path=_calib_frame_path(job_id) if early else p["video_path"],
             matrix_path=p["matrix_path"],
             birdeye_check_path=p["birdeye_check_path"],
             display=False,
@@ -1798,6 +1842,8 @@ def web_app():
         if recording:
             _write_status(job_id, stage="recording", message="Court marked. Recording...")
             return JSONResponse({"job_id": job_id, "status": "recording"})
+        if early:     # upload still being joined: finish_upload_remote starts the job when it's ready
+            return JSONResponse({"job_id": job_id, "status": "waiting_for_video"})
 
         _write_status(job_id, stage="queued", message="Calibrated. Processing queued...")
         run_full_job_remote.spawn(job_id, ball_model_name, player_model_name)
