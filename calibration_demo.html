@@ -926,7 +926,7 @@ async function runUpload() {
       store.set(PENDING_KEY, { jobId: upload.jobId, name: file.name, size: file.size, sent: 0, r2: !!init.r2, at: new Date().toISOString() });
     }
     const partsRes = await fetch(`${backendUrl()}/api/upload/${upload.jobId}/parts`);
-    if (!partsRes.ok) throw new Error(`could not reach the server (HTTP ${partsRes.status})`);
+    if (!partsRes.ok) throw new Error(`HTTP ${partsRes.status} when checking what was sent`);
     const have = new Set((await partsRes.json()).parts);
     let done = [...have].reduce((sum, i) => sum + Math.min(CHUNK_SIZE, file.size - i * CHUNK_SIZE), 0);
     const inflightBytes = new Map();   // piece index -> bytes sent so far
@@ -1034,6 +1034,10 @@ async function runUpload() {
     } else if (upload.paused) {
       $("uploadStatus").classList.remove("error");
       $("uploadStatus").textContent = "Paused. Press Resume upload to carry on; what was sent is kept.";
+    } else if (/HTTP \d/.test(err.message)) {
+      // The server answered with an error (not a dropped connection): say so, and let Resume try again.
+      $("uploadStatus").textContent = `The upload stopped because the server had a problem (${err.message}). ` +
+        "What was sent is kept: press Resume upload to try again in a minute.";
     } else {
       upload.failed = true;
       $("uploadStatus").textContent = "The upload stopped because the connection dropped. What was sent is kept: " +

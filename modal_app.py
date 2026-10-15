@@ -976,18 +976,52 @@ R2_KEYS = ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCK
 _r2_cache = {}
 
 
-def _r2():
-    """(client, bucket) when R2 is set up, else None."""
+WEB_ORIGIN = "https://rudragoel10--tennis-perf-app-web-app.modal.run"   # must match the bucket's CORS rule
+
+
+def _r2_problem(e: Exception) -> str:
+    """A storage error in plain words (never includes the keys)."""
+    code = getattr(e, "response", {}).get("Error", {}).get("Code", "") if hasattr(e, "response") else ""
+    return {
+        "NoSuchBucket": "the bucket name in R2_BUCKET doesn't exist in this account",
+        "InvalidAccessKeyId": "R2_ACCESS_KEY_ID isn't a key Cloudflare knows",
+        "SignatureDoesNotMatch": "R2_SECRET_ACCESS_KEY doesn't match the access key",
+        "AccessDenied": "the API token isn't allowed to use this bucket (needs Object Read & Write on it)",
+        "403": "the API token isn't allowed to use this bucket (needs Object Read & Write on it)",
+        "404": "the bucket name in R2_BUCKET doesn't exist in this account",
+    }.get(code) or (f"can't reach the storage address (check R2_ACCOUNT_ID): {type(e).__name__}"
+                    if any(w in type(e).__name__ for w in ("Endpoint", "Connect", "SSL")) else f"{type(e).__name__}: {code or e}")
+
+
+def _r2_values() -> list:
+    """The four R2 settings; the account ID is accepted as the bare ID or as the whole
+    endpoint address (https://<id>.r2.cloudflarestorage.com), an easy thing to paste."""
     vals = [os.environ.get(k, "").strip() for k in R2_KEYS]
-    if not all(vals) or os.environ.get("R2_ENABLED", "1").strip() == "0":
+    vals[0] = vals[0].replace("https://", "").replace("http://", "").split(".r2.cloudflarestorage.com")[0].strip("/ ")
+    return vals
+
+
+def _r2():
+    """(client, bucket) when R2 is set up AND answers, else None. Checked once per container: if
+    Cloudflare refuses, storage is switched off (pages use the app server) and the reason is logged."""
+    vals = _r2_values()
+    if not all(vals) or os.environ.get("R2_ENABLED", "1").strip() == "0" or "broken" in _r2_cache:
         return None
     if "c" not in _r2_cache:
         import boto3
         from botocore.config import Config
         acct, key, secret, bucket = vals
-        _r2_cache["c"] = (boto3.client("s3", endpoint_url=f"https://{acct}.r2.cloudflarestorage.com",
-                                       aws_access_key_id=key, aws_secret_access_key=secret, region_name="auto",
-                                       config=Config(signature_version="s3v4", retries={"max_attempts": 5})), bucket)
+        client = boto3.client("s3", endpoint_url=f"https://{acct}.r2.cloudflarestorage.com",
+                              aws_access_key_id=key, aws_secret_access_key=secret, region_name="auto",
+                              config=Config(signature_version="s3v4", retries={"max_attempts": 2},
+                                            connect_timeout=5, read_timeout=15))
+        try:
+            client.head_bucket(Bucket=bucket)
+        except Exception as e:
+            _r2_cache["broken"] = _r2_problem(e)
+            print(f"[r2] storage switched OFF: {_r2_cache['broken']}")
+            return None
+        _r2_cache["c"] = (client, bucket)
     return _r2_cache["c"]
 
 
@@ -1002,11 +1036,14 @@ def _r2_part_keys(job_id: str) -> dict:
         return {}
     client, bucket = r2
     out = {}
-    for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=f"uploads/{job_id}/"):
-        for o in page.get("Contents", []):
-            name = o["Key"].rsplit("/", 1)[-1]
-            if name.endswith(".part"):
-                out[int(name.split(".")[0])] = o["Key"]
+    try:
+        for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=f"uploads/{job_id}/"):
+            for o in page.get("Contents", []):
+                name = o["Key"].rsplit("/", 1)[-1]
+                if name.endswith(".part"):
+                    out[int(name.split(".")[0])] = o["Key"]
+    except Exception as e:          # storage trouble must never stop an upload
+        print(f"[job {job_id}] couldn't list R2 pieces: {_r2_problem(e)}")
     return out
 
 
@@ -1020,18 +1057,61 @@ def _pull_r2_parts(job_id: str, parts_dir: str) -> int:
     keys = _r2_part_keys(job_id)
     os.makedirs(parts_dir, exist_ok=True)
     copied = 0
-    for i, key in sorted(keys.items()):
-        final = f"{parts_dir}/{i:06d}.part"
-        if not os.path.exists(final):
-            client.download_file(bucket, key, final + ".tmp")
-            os.replace(final + ".tmp", final)
-            copied += 1
-    batch = [{"Key": k} for k in keys.values()]
-    for n in range(0, len(batch), 1000):
-        client.delete_objects(Bucket=bucket, Delete={"Objects": batch[n:n + 1000], "Quiet": True})
+    try:
+        for i, key in sorted(keys.items()):
+            final = f"{parts_dir}/{i:06d}.part"
+            if not os.path.exists(final):
+                client.download_file(bucket, key, final + ".tmp")
+                os.replace(final + ".tmp", final)
+                copied += 1
+        batch = [{"Key": k} for k in keys.values()]
+        for n in range(0, len(batch), 1000):
+            client.delete_objects(Bucket=bucket, Delete={"Objects": batch[n:n + 1000], "Quiet": True})
+    except Exception as e:          # missing pieces are reported by the join ("resume the upload")
+        print(f"[job {job_id}] couldn't pull R2 pieces: {_r2_problem(e)}")
     if copied:
         print(f"[job {job_id}] pulled {copied} piece(s) from R2")
     return copied
+
+
+@app.function(image=cpu_image, secrets=[R2_SECRET], timeout=120)
+def check_r2():
+    """Checks the Cloudflare R2 setup step by step, in plain words:
+    python -m modal run modal_app.py::check_r2"""
+    import urllib.request
+    vals = dict(zip(R2_KEYS, _r2_values()))
+    missing = [k for k, v in vals.items() if not v]
+    if os.environ.get("R2_ENABLED", "1").strip() == "0" or missing:
+        print(f"OFF: the r2 secret is still the placeholder or is missing {', '.join(missing) or 'nothing'}.")
+        return
+    print(f"Account ID looks {'right (32 characters)' if len(vals['R2_ACCOUNT_ID']) == 32 else 'WRONG: it should be 32 letters/numbers, got ' + str(len(vals['R2_ACCOUNT_ID']))}")
+    r2 = _r2()
+    if not r2:
+        print(f"FAIL 1/3 connect to the bucket: {_r2_cache.get('broken')}")
+        return
+    print(f"OK   1/3 connected to bucket '{vals['R2_BUCKET']}'")
+    client, bucket = r2
+    try:
+        client.put_object(Bucket=bucket, Key="uploads/_check/000000.part", Body=b"check")
+        client.delete_object(Bucket=bucket, Key="uploads/_check/000000.part")
+        print("OK   2/3 the token can write and delete pieces")
+    except Exception as e:
+        print(f"FAIL 2/3 write a test piece: {_r2_problem(e)}")
+        return
+    url = client.generate_presigned_url("put_object", Params={"Bucket": bucket, "Key": "uploads/_check/cors.part"}, ExpiresIn=300)
+    req = urllib.request.Request(url, method="OPTIONS", headers={
+        "Origin": WEB_ORIGIN, "Access-Control-Request-Method": "PUT", "Access-Control-Request-Headers": "content-type"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            allow = r.headers.get("Access-Control-Allow-Origin", "")
+    except Exception as e:
+        allow = getattr(e, "headers", {}).get("Access-Control-Allow-Origin", "") if hasattr(e, "headers") else ""
+    if allow in (WEB_ORIGIN, "*"):
+        print("OK   3/3 the CORS rule lets the app's pages send pieces")
+        print("All good: uploads should now go to Cloudflare.")
+    else:
+        print(f"FAIL 3/3 CORS: the bucket doesn't allow uploads from {WEB_ORIGIN} "
+              "(check AllowedOrigins exactly, no slash at the end; AllowedMethods PUT; AllowedHeaders content-type)")
 
 
 def _remove_parts(parts_dir: str):
