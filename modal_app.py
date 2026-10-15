@@ -1064,6 +1064,8 @@ def _pull_r2_parts(job_id: str, parts_dir: str) -> int:
                 client.download_file(bucket, key, final + ".tmp")
                 os.replace(final + ".tmp", final)
                 copied += 1
+        if copied:
+            volume.commit()            # saved on our side before Cloudflare's copy is deleted
         batch = [{"Key": k} for k in keys.values()]
         for n in range(0, len(batch), 1000):
             client.delete_objects(Bucket=bucket, Delete={"Objects": batch[n:n + 1000], "Quiet": True})
@@ -1072,6 +1074,76 @@ def _pull_r2_parts(job_id: str, parts_dir: str) -> int:
     if copied:
         print(f"[job {job_id}] pulled {copied} piece(s) from R2")
     return copied
+
+
+# Copying pieces in while the upload is still going (2026-10-14): without this the
+# server only started copying from R2 after 100%, so players waited at "Almost
+# done". The helper polls R2 every few seconds; at the end the web app (or the
+# recording finisher) asks it to stop, waits for it briefly, and copies only the
+# last few pieces itself. Markers live in the job's input folder on the volume.
+PULLER_POLL_S, PULLER_IDLE_S, PULLER_STOP_WAIT_S = 4, 20 * 60, 60
+
+
+def _puller_marker(job_id: str, name: str) -> str:
+    return f"{_job_paths(job_id)['job_dir']}/input/r2_puller_{name}"
+
+
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, secrets=[R2_SECRET], timeout=3 * 3600)
+def r2_puller_remote(job_id: str):
+    import time
+
+    d = f"{_job_paths(job_id)['job_dir']}/input/parts"
+    with open(_puller_marker(job_id, "started"), "w") as f:
+        f.write("1")
+    volume.commit()
+    started = last_new = time.time()
+    total = 0
+    while True:
+        volume.reload()
+        stopping = os.path.exists(_puller_marker(job_id, "stop"))
+        if not os.path.isdir(d):
+            # joined already, or the job is gone; just after the start it may not be visible yet
+            if stopping or os.path.exists(_job_paths(job_id)["video_path"]) or time.time() - started > 120:
+                break
+            time.sleep(PULLER_POLL_S)
+            continue
+        n = _pull_r2_parts(job_id, d)
+        if n:
+            total += n
+            last_new = time.time()
+        if stopping or time.time() - last_new > PULLER_IDLE_S:
+            break
+        time.sleep(PULLER_POLL_S)
+    with open(_puller_marker(job_id, "done"), "w") as f:
+        f.write(str(total))
+    volume.commit()
+    print(f"[job {job_id}] R2 helper copied {total} piece(s) during the upload")
+
+
+def _start_r2_puller(job_id: str):
+    if _r2():
+        try:
+            r2_puller_remote.spawn(job_id)
+        except Exception as e:            # the end-of-upload copy still works without it
+            print(f"[job {job_id}] couldn't start the R2 helper: {e}")
+
+
+def _stop_r2_puller(job_id: str):
+    """Ask the helper to finish its current copy and stop; wait up to a minute for it."""
+    import time
+    volume.reload()
+    if not os.path.exists(_puller_marker(job_id, "started")) or os.path.exists(_puller_marker(job_id, "done")):
+        return
+    with open(_puller_marker(job_id, "stop"), "w") as f:
+        f.write("1")
+    volume.commit()
+    t0 = time.time()
+    while time.time() - t0 < PULLER_STOP_WAIT_S:
+        time.sleep(1)
+        volume.reload()
+        if os.path.exists(_puller_marker(job_id, "done")):
+            return
+    print(f"[job {job_id}] R2 helper didn't stop in time; copying the rest here")
 
 
 @app.function(image=cpu_image, secrets=[R2_SECRET], timeout=120)
@@ -1207,6 +1279,8 @@ def finish_recording_remote(job_id: str, pieces: int, size: int, segments=None):
     p = _job_paths(job_id)
     d = f"{p['job_dir']}/input/parts"
     try:
+        if _r2():
+            _stop_r2_puller(job_id)
         # Pieces may still be saving from other web containers: wait up to 2 min for all of them.
         for _ in range(60):
             volume.reload()
@@ -1431,6 +1505,7 @@ def web_app():
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"size": size, "chunk_size": chunk_size}, f)
         volume.commit()
+        _start_r2_puller(job_id)
         return JSONResponse({"job_id": job_id, "r2": bool(_r2())})
 
     @fastapi_app.get("/api/upload/{job_id}/parts")
@@ -1530,7 +1605,9 @@ def web_app():
         d = _parts_dir(job_id)
         meta = _read_json(f"{p['job_dir']}/input/upload.json", {})
         expected = -(-meta.get("size", 0) // max(meta.get("chunk_size", 1), 1))
-        _pull_r2_parts(job_id, d)
+        if _r2():
+            _stop_r2_puller(job_id)
+            _pull_r2_parts(job_id, d)
         parts = _part_names(d)
         if len(parts) != expected:          # some pieces may have landed on another container
             volume.reload()
@@ -1563,6 +1640,7 @@ def web_app():
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"mode": "record", "mime": mime[:80]}, f)
         _write_status(job_id, stage="recording", message="Recording...")   # commits
+        _start_r2_puller(job_id)
         return JSONResponse({"job_id": job_id, "r2": bool(_r2())})
 
     def _calib_frame_path(job_id: str) -> str:
