@@ -370,6 +370,17 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .estimate:empty { display: none; }
 .awake-note { margin: var(--space-2) 0 0; color: var(--ink-2); font-weight: 600; }
 #instruction { background: var(--accent-soft); border-radius: var(--radius-md); padding: 12px 14px; font-weight: 600; margin: var(--space-4) 0 var(--space-3); }
+.instr-row { display: flex; align-items: center; gap: var(--space-4); }
+.instr-tip { margin-top: var(--space-1); font-weight: 400; color: var(--ink-2); font-size: var(--text-sm); }
+.court-mini { flex: none; width: 132px; height: auto; }
+.court-mini line { stroke: var(--ink-2); stroke-width: 1.4; stroke-linecap: round; }
+.court-mini line.dbl { stroke: var(--dim); stroke-width: 1; stroke-dasharray: 2 3; }
+.court-mini line.net { stroke: var(--muted); stroke-width: 2.4; }
+.court-mini .dot { fill: #D4EC7E; }
+.court-mini .ring { fill: none; stroke: #D4EC7E; stroke-width: 2; animation: mini-pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mini-pulse { from { opacity: 1; transform: scale(.6); } to { opacity: 0; transform: scale(1.6); } }
+@media (prefers-reduced-motion: reduce) { .court-mini .ring { animation: none; } }
+@media (max-width: 420px) { .instr-row { gap: var(--space-3); } .court-mini { width: 84px; } }
 #canvasWrap { position: relative; display: block; max-width: 100%; }
 #frameCanvas { display: block; max-width: 100%; border-radius: var(--radius-md); cursor: crosshair; touch-action: none; }
 /* Phones: the frame uses the panel's full width (step indent + panel padding) so the 7 taps land precisely. */
@@ -657,11 +668,18 @@ let POINT_LABELS = [
 // Plain names for the points (left/right as seen in the video). The server
 // also sends its own wording; these win, with the server's as fallback.
 const FRIENDLY_POINTS = {
-  baseline_near_left: "Near baseline, left corner", baseline_near_right: "Near baseline, right corner",
-  baseline_far_right: "Far baseline, right corner", baseline_far_left: "Far baseline, left corner",
+  baseline_near_left: "Near baseline, left inner corner", baseline_near_right: "Near baseline, right inner corner",
+  baseline_far_right: "Far baseline, right inner corner", baseline_far_left: "Far baseline, left inner corner",
   service_line_near_left: "Near service line, left end", service_line_near_right: "Near service line, right end",
   net_center: "Middle of the net, where it meets the ground",
 };
+// One extra sentence per point, shown with a small court picture of where to tap.
+const POINT_TIPS = {
+  corner: "Where the baseline meets the inner (singles) sideline. The outer corner works too.",
+  service: "Where the service line meets the inner sideline.",
+  net_center: "The bottom of the net, in the middle.",
+};
+const tipFor = (l) => (l.startsWith("baseline_") ? POINT_TIPS.corner : l.startsWith("service_") ? POINT_TIPS.service : POINT_TIPS[l] || "");
 let INSTRUCTIONS = { ...FRIENDLY_POINTS };
 
 let jobId = null;
@@ -1169,6 +1187,21 @@ const COURT_LINES = [            // [from, to, dashed]
   [[SERVICE, COURT_H / 2], [COURT_W - SERVICE, COURT_H / 2]],                     // centre service line
   [[NET, 0], [NET, COURT_H], true],                                                // net
 ];
+// Forgiving marking (2026-10-14): players often tap the OUTER (doubles) corner of the baseline,
+// the obvious "corner" of a court. The fit also tries each baseline corner as an outer corner and
+// keeps that version when it clearly explains the taps better; the points sent to the server are
+// then moved onto the inner corners, so the server's court is always the singles court.
+const ALLEY = 137;               // doubles alley width (cm)
+const OUTER_CORNERS = {
+  baseline_near_left: [0, -ALLEY], baseline_near_right: [0, COURT_H + ALLEY],
+  baseline_far_right: [COURT_W, COURT_H + ALLEY], baseline_far_left: [COURT_W, -ALLEY],
+};
+const DOUBLES_LINES = [          // drawn fainter, so the whole painted court can be checked
+  [[0, -ALLEY], [COURT_W, -ALLEY]], [[0, COURT_H + ALLEY], [COURT_W, COURT_H + ALLEY]],
+  [[0, -ALLEY], [0, 0]], [[0, COURT_H], [0, COURT_H + ALLEY]],
+  [[COURT_W, -ALLEY], [COURT_W, 0]], [[COURT_W, COURT_H], [COURT_W, COURT_H + ALLEY]],
+];
+const OUTER_BETTER = 0.6;        // the outer-corner version must cut the total error to below 60%
 const MAX_POINT_ERROR_CM = 75;   // same threshold as calibration.build_perspective_transform
 const BLOCK_POINT_ERROR_CM = 250; // a point this far off is a mis-click, never "looks right": submit is blocked
 
@@ -1227,18 +1260,59 @@ function applyH(H, x, y) {
 
 let fit = null;   // { imgToCourt, courtToImg, errors: {label: cm} } once all points are in
 
+// Fit with the given baseline corners taken as outer corners; null if the fit fails.
+function fitWith(labels, outer) {
+  const target = (l) => (outer.includes(l) ? OUTER_CORNERS[l] : COURT_POINTS[l]);
+  const imgToCourt = fitHomography(labels.map((l) => clickedPoints[l]), labels.map(target));
+  if (!imgToCourt) return null;
+  const errors = {};
+  let total = 0;
+  labels.forEach((l) => {
+    const [cx, cy] = applyH(imgToCourt, ...clickedPoints[l]);
+    errors[l] = Math.abs(cx - target(l)[0]) + Math.abs(cy - target(l)[1]);   // L1, as the backend
+    total += errors[l];
+  });
+  return { imgToCourt, errors, total, outer };
+}
+
 function refit() {
   fit = null;
   const labels = POINT_LABELS.filter((l) => l in clickedPoints && l in COURT_POINTS);
   if (labels.length < POINT_LABELS.length || labels.length < 4) return;
-  const imgToCourt = fitHomography(labels.map((l) => clickedPoints[l]), labels.map((l) => COURT_POINTS[l]));
-  if (!imgToCourt) return;
-  const errors = {};
-  labels.forEach((l) => {
-    const [cx, cy] = applyH(imgToCourt, ...clickedPoints[l]);
-    errors[l] = Math.abs(cx - COURT_POINTS[l][0]) + Math.abs(cy - COURT_POINTS[l][1]);   // L1, as the backend
-  });
-  fit = { imgToCourt, courtToImg: inv3(imgToCourt), errors };
+  const corners = Object.keys(OUTER_CORNERS).filter((l) => labels.includes(l));
+  const inner = fitWith(labels, []);
+  let best = inner;
+  for (let m = 1; m < 1 << corners.length; m++) {
+    const f = fitWith(labels, corners.filter((_, i) => m & (1 << i)));
+    if (f && (!best || f.total < best.total)) best = f;
+  }
+  if (inner && best !== inner && best.total > OUTER_BETTER * inner.total) best = inner;
+  if (!best) return;
+  fit = { imgToCourt: best.imgToCourt, courtToImg: inv3(best.imgToCourt), errors: best.errors, outer: best.outer };
+}
+
+// The points the server gets: outer-corner taps moved onto the inner corners (same fit).
+function pointsForServer() {
+  const pts = { ...clickedPoints };
+  if (fit) for (const l of fit.outer) pts[l] = applyH(fit.courtToImg, ...COURT_POINTS[l]).map((v) => Math.round(v * 10) / 10);
+  return pts;
+}
+
+// Small court seen from behind the near baseline, with a dot where to tap.
+function courtDiagram(label) {
+  const P = (x, y) => {
+    const t = x / COURT_W, sc = 1 - 0.5 * t;
+    return [(92 + ((y - COURT_H / 2) / (COURT_H / 2 + ALLEY)) * 80 * sc).toFixed(1), (128 - 108 * t).toFixed(1)];
+  };
+  const line = ([a, b], cls = "") => { const [x1, y1] = P(...a), [x2, y2] = P(...b); return `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`; };
+  const lines = [
+    ...DOUBLES_LINES.map((l) => line(l, "dbl")),
+    ...COURT_LINES.filter((l) => !l[2]).map((l) => line(l)),
+    line([[NET, -ALLEY - 40], [NET, COURT_H + ALLEY + 40]], "net"),
+  ].join("");
+  const [cx, cy] = P(...COURT_POINTS[label]);
+  return `<svg class="court-mini" viewBox="0 0 184 140" width="184" height="140" aria-hidden="true">${lines}` +
+    `<circle class="ring" cx="${cx}" cy="${cy}" r="9"/><circle class="dot" cx="${cx}" cy="${cy}" r="4.5"/></svg>`;
 }
 
 function updateInstruction() {
@@ -1246,8 +1320,10 @@ function updateInstruction() {
   $("checkPanel").classList.toggle("hidden", remaining.length > 0 || !fit);
   if (remaining.length === 0) {
     const bad = fit ? POINT_LABELS.filter((l) => fit.errors[l] > MAX_POINT_ERROR_CM) : [];
+    const adjusted = fit && fit.outer.length
+      ? ` You tapped the outer corner for ${fit.outer.length === 1 ? "one corner" : `${fit.outer.length} corners`}; that's adjusted for you.` : "";
     $("instruction").textContent = fit
-      ? "All points placed. Check the blue lines below, then start the analysis."
+      ? `All points placed. Check the blue lines below, then start the analysis.${adjusted}`
       : "All points placed, but the court fit failed. Re-click the points.";
     $("checkWarn").classList.toggle("hidden", bad.length === 0);
     $("checkWarn").textContent = bad.length
@@ -1264,8 +1340,9 @@ function updateInstruction() {
   }
   const next = remaining[0];
   const n = POINT_LABELS.length - remaining.length + 1;
-  $("instruction").textContent =
-    `Tap point ${n} of ${POINT_LABELS.length}: ${INSTRUCTIONS[next] || next}`;
+  $("instruction").innerHTML = `<div class="instr-row">${next in COURT_POINTS ? courtDiagram(next) : ""}` +
+    `<div><div>Tap point ${n} of ${POINT_LABELS.length}: ${escText(INSTRUCTIONS[next] || next)}</div>` +
+    `<div class="instr-tip">${escText(tipFor(next))}</div></div></div>`;
   $("submitCalibrationBtn").disabled = true;
 }
 
@@ -1296,6 +1373,16 @@ function redrawFrame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(canvas._img, 0, 0, canvas.width, canvas.height);
   if (fit) {
+    ctx.strokeStyle = "rgba(34, 211, 238, .55)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    for (const [from, to] of DOUBLES_LINES) {
+      const [x1, y1] = applyH(fit.courtToImg, ...from), [x2, y2] = applyH(fit.courtToImg, ...to);
+      ctx.beginPath();
+      ctx.moveTo(x1 * canvasScale, y1 * canvasScale);
+      ctx.lineTo(x2 * canvasScale, y2 * canvasScale);
+      ctx.stroke();
+    }
     ctx.strokeStyle = "#22d3ee";
     ctx.lineWidth = 1.5;
     for (const [from, to, dashed] of COURT_LINES) {
@@ -1440,7 +1527,7 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
   $("submitCalibrationBtn").disabled = true;
   const form = new FormData();
   form.append("job_id", jobId);
-  form.append("points_json", JSON.stringify(clickedPoints));
+  form.append("points_json", JSON.stringify(pointsForServer()));
   form.append("player1_name", $("player1Name").value);
   form.append("player2_name", $("player2Name").value);
 
