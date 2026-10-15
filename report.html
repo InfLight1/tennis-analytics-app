@@ -286,18 +286,58 @@ details.fold > summary svg { color: var(--muted); }
 .head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 #printView, .print-only { display: none; }
 @media print {
-  @page { margin: 14mm 12mm; }
+  /* Compact print layout (2026-10-14: the screen sizes printed 12+ half-empty pages). Text is
+     ~11 pt, spacing and rings are small, and sections may continue on the next page; only
+     small items (one fix, one tile, one legend row) are kept in one piece. */
+  @page { size: A4; margin: 11mm 12mm; }
+  :root {
+    font-size: 12px;
+    --text-display: 2.6rem; --text-2xl: 1.75rem; --text-xl: 1.4rem; --text-lg: 1.2rem; --text-num: 1.7rem;
+    --space-1: 2px; --space-2: 4px; --space-3: 6px; --space-4: 8px; --space-5: 10px; --space-6: 12px; --space-7: 14px; --space-8: 16px;
+    --panel-pad: 10px; --panel-gap: 8px; --ring-size: 80px; --ring-size-phone: 80px; --ring-num: 1.7rem; --tap: 22px;
+  }
   html, body { background: #fff !important; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg { display: none !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 1.05rem; line-height: 1.4; }
+  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg, .end { display: none !important; }
   #printView { display: block !important; }
   .print-only { display: inline !important; }
-  .page-head { padding-top: 0 !important; }
-  .print-player + .print-player { break-before: page; }
-  .print-name { margin: var(--space-5) 0 0; font: 500 2rem/1.1 var(--font-serif); }
-  .sec, details.fold { box-shadow: none !important; break-inside: avoid; }
-  .fix, .tile, .mini, .keep, .first-fix, .ring-item { break-inside: avoid; }
+  .wrap { max-width: none; padding: 0; }
+  .page-head { padding: 0 0 var(--space-3) !important; }
+  .print-name { margin: var(--space-6) 0 var(--space-2); padding-top: var(--space-4); border-top: 2px solid var(--line-strong);
+    font: 500 1.9rem/1.1 var(--font-serif); break-after: avoid; }
+  .print-player:first-child .print-name { border-top: 0; padding-top: 0; margin-top: var(--space-3); }
+  .sec { padding: 8px 12px; border-radius: 8px; box-shadow: none !important; break-inside: auto; }
+  .sec > h2, .sec-head { margin-bottom: var(--space-3); }
+  h2 { break-after: avoid; }
+  .first-fix { margin-top: var(--space-3); padding: 8px 12px 8px 16px; border-radius: 8px; }
+  .first-fix::before { top: 8px; bottom: 8px; }
+  .tags { margin-bottom: var(--space-3); }
+  .tag { min-height: 0; padding: 1px 8px; }
+  .rings { grid-template-columns: repeat(2, auto); justify-content: start; gap: var(--space-8); }
+  .minis { margin-top: var(--space-4); }
+  .mini, .tile { padding: 6px 8px; border-radius: 6px; }
+  .summary { margin-top: var(--space-4); font-size: 1.2rem; max-width: none; }
+  .bar { height: 14px; }
+  .legend { margin-top: var(--space-2); columns: 2; column-gap: var(--space-8); }
+  .legend li { padding: 2px 0; border-top: 0; }
+  .fixes { gap: var(--space-4); }
+  .fix { padding-left: var(--space-4); grid-template-columns: 2rem 1fr; }
+  .rank { font-size: 1.8rem; }
+  .fix-head h3 { font-size: 1.3rem; }
+  .pts { min-height: 0; padding: 1px 8px; }
+  details.more { margin-top: var(--space-2); }
+  details.more > summary { display: none; }
+  .advice { grid-template-columns: 1fr 1fr; gap: 6px 14px; padding: 6px 10px; border-radius: 6px; }
+  .advice div { max-width: none; }
+  .keep { padding: 4px 0; }
+  .keep h3 { font-size: 1.2rem; }
+  details.fold { margin-top: var(--panel-gap); padding: 0 12px; border-radius: 8px; break-inside: auto; }
+  details.fold > summary { min-height: 0; padding: 6px 0; font-size: 1.3rem; }
   details > summary svg { display: none; }
+  .fold-body { padding-bottom: 8px; }
+  .sub-h { margin: var(--space-4) 0 var(--space-2); }
+  .early li { padding: 2px 0; }
+  .fix, .tile, .mini, .keep, .first-fix, .ring-item, .legend li, .advice div { break-inside: avoid; }
   a { color: inherit; text-decoration: none; }
 }
 .btn-del:hover { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
