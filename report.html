@@ -283,6 +283,8 @@ details.fold > summary svg { color: var(--muted); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--tap); padding: 0 var(--space-5);
   border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 var(--text-base)/1 var(--font-sans); cursor: pointer; }
 .btn:hover { background: var(--surface-2); }
+.head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.btn-del:hover { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
 </style>
 <link rel="stylesheet" href="site.css">
 </head>
@@ -296,7 +298,10 @@ details.fold > summary svg { color: var(--muted); }
       <h1 id="title">Loading…</h1>
       <p class="score" id="subtitle"></p>
     </div>
-    <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
+    <div class="head-actions">
+      <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
+      <button type="button" class="btn btn-del hidden" id="deleteBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg> Delete report</button>
+    </div>
   </header>
   <form id="namesForm" class="hidden">
     <div><label for="n1">Player who starts at the near end (closest to the camera)</label><input id="n1" maxlength="40"></div>
@@ -355,7 +360,10 @@ async function load() {
     }
     HAS_INSIGHTS = !!profile.insights;
     DATA = shape(profile);
-    if (JOB && JOB !== "76a383379d90") $("editNamesBtn").classList.remove("hidden");   // the example report is read only
+    if (JOB && JOB !== "76a383379d90") {   // the example report is read only
+      $("editNamesBtn").classList.remove("hidden");
+      $("deleteBtn").classList.remove("hidden");
+    }
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     render();
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
@@ -541,6 +549,18 @@ document.addEventListener("pointermove", (e) => {
 
 // ── rename players (job mode) ───────────────────────────────────────────
 $("editNamesBtn").addEventListener("click", () => $("namesForm").classList.toggle("hidden"));
+$("deleteBtn").addEventListener("click", async () => {
+  if (!confirm("Delete this report?\n\nThe report and its video are removed for good.")) return;
+  $("deleteBtn").disabled = true;
+  try {
+    const res = await Site.deleteReport(JOB);
+    if (!res.ok) { alert(`Couldn't delete it: ${res.error}`); $("deleteBtn").disabled = false; return; }
+    location.href = "/#reports";
+  } catch (e) {
+    alert("Couldn't reach the server. Check the connection and try again.");
+    $("deleteBtn").disabled = false;
+  }
+});
 $("namesForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const form = new FormData();

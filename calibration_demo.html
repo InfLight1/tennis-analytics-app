@@ -413,14 +413,37 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .stage-pill.current { background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .stage-pill.past { background: var(--accent-soft); color: var(--accent); }
 #statusLine { color: var(--ink-2); }
-.report-list { margin-top: var(--space-5); }
+/* My reports: each match is its own card (2026-10-14: the plain rows were easy to miss). */
+.rep-head h2 { display: flex; align-items: center; gap: var(--space-3); }
+.rep-count { display: inline-grid; place-items: center; min-width: 34px; height: 34px; padding: 0 10px; border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--on-accent); font: 700 var(--text-base)/1 var(--font-sans); }
+.rep-sub { margin-top: var(--space-2); color: var(--ink-2); }
+.report-list { display: grid; gap: var(--space-3); margin-top: var(--space-5); }
 .report-list > .muted { padding: var(--space-5); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); color: var(--ink-2); }
-.report-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; min-height: var(--tap); }
-.report-row:first-child { border-top: 0; padding-top: 0; }
-.report-row h3 { font: 600 var(--text-lg)/1.3 var(--font-sans); }
-.report-row .when { color: var(--muted); font-size: var(--text-sm); }
-.report-row .pill { margin-left: auto; }
-.report-row:hover h3 { color: var(--accent); }
+.report-card { display: flex; align-items: stretch; background: color-mix(in oklab, var(--surface-2), var(--accent) 12%); border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md); overflow: hidden; transition: border-color var(--dur) var(--ease-out), transform var(--dur) var(--ease-out); }
+.report-card.is-ready { box-shadow: inset 4px 0 0 var(--accent); }
+.report-card:hover { border-color: var(--accent); }
+.rc-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-3); min-height: 72px; padding: var(--space-3) var(--space-4);
+  color: var(--ink); text-decoration: none; }
+.rc-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.rc-text { min-width: 0; }
+.rc-title { display: block; font: 650 var(--text-lg)/1.25 var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-when { display: block; margin-top: 2px; color: var(--ink-2); font-size: var(--text-sm); }
+.rc-open .pill { margin-left: auto; flex: none; }
+.report-card .pill.ready { background: var(--accent); color: var(--on-accent); }
+.rc-chev { flex: none; color: var(--accent); }
+.report-card:hover .rc-title { color: var(--accent); }
+.rc-del { flex: none; width: 52px; display: grid; place-items: center; border: 0; border-left: 1px solid var(--line-strong);
+  background: transparent; color: var(--ink-2); cursor: pointer; }
+.rc-del:hover, .rc-del:focus-visible { color: var(--bad); background: var(--bad-soft); }
+.rc-del:disabled { opacity: .5; cursor: default; }
+@media (max-width: 459px) {
+  .rc-open { flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+  .rc-icon { width: 36px; height: 36px; }
+  .rc-chev { display: none; }
+  .rc-open .pill { margin-left: calc(36px + var(--space-3)); }
+}
 </style>
 <link rel="stylesheet" href="site.css">
 </head>
@@ -597,7 +620,10 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 
   <!-- My reports (remembered on this device) -->
   <section class="block panel-sec" id="reports" aria-labelledby="repH">
-    <h2 id="repH">My reports</h2>
+    <div class="rep-head">
+      <h2 id="repH">My reports <span class="rep-count hidden" id="repCount"></span></h2>
+      <p class="rep-sub">Saved on this device. Tap a match to open its report.</p>
+    </div>
     <div class="report-list" id="reportList"></div>
 
     <details class="fold">
@@ -1706,24 +1732,51 @@ function reportHref(job) {
 function renderReports() {
   const list = Site.reports();
   if (!list.length) {
+    $("repCount").classList.add("hidden");
     $("reportList").innerHTML = `<div class="muted">No reports yet. Upload a match above and its report will appear here.</div>`;
     return;
   }
+  $("repCount").textContent = list.length;
+  $("repCount").classList.remove("hidden");
   $("reportList").innerHTML = list.map((r) => `
-    <a class="report-row" href="${reportHref(r.job)}" data-job="${encodeURIComponent(r.job)}">
-      <div><h3>${esc(r.title)}</h3><div class="when">${new Date(r.added).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div></div>
-      <span class="pill">Checking…</span>
-    </a>`).join("");
+    <div class="report-card" data-job="${encodeURIComponent(r.job)}">
+      <a class="rc-open" href="${reportHref(r.job)}">
+        <span class="rc-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 6.3c3.2 2.5 3.2 8.9 0 11.4M18.4 6.3c-3.2 2.5-3.2 8.9 0 11.4"/></svg></span>
+        <span class="rc-text"><span class="rc-title">${esc(r.title)}</span>
+          <span class="rc-when">${new Date(r.added).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span></span>
+        <span class="pill">Checking…</span>
+        <svg class="rc-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+      <button type="button" class="rc-del" aria-label="Delete report: ${esc(r.title)}" title="Delete report"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>
+    </div>`).join("");
   list.forEach(async (r) => {
-    const pill = $("reportList").querySelector(`[data-job="${encodeURIComponent(r.job)}"] .pill`);
+    const card = $("reportList").querySelector(`[data-job="${encodeURIComponent(r.job)}"]`);
+    const pill = card.querySelector(".pill");
+    card.querySelector(".rc-del").addEventListener("click", () => deleteReport(r, card));
     try {
       const st = await (await fetch(`${backendUrl()}/api/status/${encodeURIComponent(r.job)}`)).json();
-      const [text, cls] = st.report_ready || st.stage === "done" ? ["Ready", "ready"] : st.stage === "error" ? ["Failed", "failed"]
+      const ready = st.report_ready || st.stage === "done";
+      const [text, cls] = ready ? ["Ready", "ready"] : st.stage === "error" ? ["Failed", "failed"]
         : st.stage === "unknown" ? ["Not found", "failed"] : st.stage === "recording" ? ["Recording", ""] : ["Processing…", ""];
       pill.textContent = text;
       pill.className = `pill ${cls}`;
+      card.classList.toggle("is-ready", ready);
     } catch (e) { pill.textContent = "Offline"; }
   });
+}
+
+async function deleteReport(r, card) {
+  if (!confirm(`Delete "${r.title}"?\n\nThe report and its video are removed for good.`)) return;
+  const btn = card.querySelector(".rc-del");
+  btn.disabled = true;
+  try {
+    const res = await Site.deleteReport(r.job);
+    if (!res.ok) { alert(`Couldn't delete it: ${res.error}`); btn.disabled = false; return; }
+    renderReports();
+  } catch (e) {
+    alert("Couldn't reach the server. Check the connection and try again.");
+    btn.disabled = false;
+  }
 }
 
 // Open any report by its job code (e.g. one started on another device).

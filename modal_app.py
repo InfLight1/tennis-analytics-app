@@ -1690,6 +1690,38 @@ def web_app():
             print(f"[job {job_id}] court guess failed: {e}")
             return JSONResponse({"ok": False, "error": "court finding failed"})
 
+    # ── Delete a report (2026-10-14): the player removes a match for good ────
+    # Removes the job folder (report, stats, the uploaded video and every working
+    # file) and any pieces still in R2. Not the example, and not while the match is
+    # still being analysed (the running job would fail half-way).
+    @fastapi_app.delete("/api/job/{job_id}")
+    def delete_job(job_id: str):
+        import re
+        if not re.fullmatch(r"[0-9a-f]{12}", job_id):
+            return JSONResponse({"error": "Not a job code"}, status_code=400)
+        if job_id == EXAMPLE_JOB_ID:
+            return JSONResponse({"error": "The example report can't be deleted."}, status_code=403)
+        volume.reload()
+        d = _job_paths(job_id)["job_dir"]
+        if not os.path.isdir(d):
+            return JSONResponse({"deleted": False, "error": "Not found"}, status_code=404)
+        stage = (_read_json(f"{d}/status.json", {}) or {}).get("stage")
+        if stage in ("calibrating", "queued", "detecting", "analyzing", "preparing"):
+            return JSONResponse({"error": "This match is still being analysed. You can delete it once its report is ready."},
+                                status_code=409)
+        shutil.rmtree(d, ignore_errors=True)
+        volume.commit()
+        r2 = _r2()
+        if r2:
+            try:
+                keys = list(_r2_part_keys(job_id).values())
+                for n in range(0, len(keys), 1000):
+                    r2[0].delete_objects(Bucket=r2[1], Delete={"Objects": [{"Key": k} for k in keys[n:n + 1000]], "Quiet": True})
+            except Exception as e:
+                print(f"[job {job_id}] couldn't clear R2 pieces: {_r2_problem(e)}")
+        print(f"[job {job_id}] deleted by the player (stage was {stage})")
+        return JSONResponse({"deleted": True})
+
     @fastapi_app.get("/api/point-labels")
     def point_labels():
         """Lets the frontend fetch the calibration point schema without an

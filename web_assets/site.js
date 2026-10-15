@@ -27,6 +27,13 @@
       save([entry, ...list.filter((r) => r.job !== job)]);
     },
     forgetReport(job) { save(load().filter((r) => r.job !== job)); },
+    // Delete a report for good (report, stats and its video on the server), then drop it here.
+    async deleteReport(job) {
+      const res = await fetch(`/api/job/${encodeURIComponent(job)}`, { method: "DELETE" });
+      if (res.ok || res.status === 404) { window.Site.forgetReport(job); return { ok: true }; }
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.error || `The server said ${res.status}.` };
+    },
   };
 
   // Logo: a tennis ball on a green tile. `uid` keeps gradient ids unique when it appears twice.
