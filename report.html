@@ -367,7 +367,7 @@ async function load() {
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     render();
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
-    if (JOB && JOB !== "76a383379d90") {
+    if (Site.dev && JOB && JOB !== "76a383379d90") {   // timings: dev mode only
       fetch(`${BACKEND}/api/status/${encodeURIComponent(JOB)}`).then((r) => r.json())
         .then((st) => { timingHtml = timingFrom(st); if (timingHtml) render(); }).catch(() => {});
     }
@@ -445,8 +445,8 @@ function render() {
     timingHtml;
 }
 
-// "How long it took" (2026-10-14, for benchmarks): from the job's step start times (server
-// clock) and the upload time the page measured. Not on the example (its status needs the passcode).
+// "How long it took" (2026-10-14, for benchmarks; dev mode only, see site.js): from the job's
+// step start times (server clock) and the upload time the page measured. Not on the example.
 let timingHtml = "";
 function timingFrom(st) {
   const t = st.stage_times || {};

@@ -12,10 +12,22 @@
   }
 
   const EXAMPLE_JOB = "76a383379d90";   // showcase match, linked from the home page
+
+  // Dev mode (for us, not players or judges): add ?dev=1 to any page address to turn it on for
+  // this device, ?dev=0 to turn it off. It shows the step timings used for benchmarks.
+  const DEV_KEY = "advantage_dev";
+  const devParam = new URLSearchParams(location.search).get("dev");
+  try {
+    if (devParam === "1") localStorage.setItem(DEV_KEY, "1");
+    if (devParam === "0") localStorage.removeItem(DEV_KEY);
+  } catch (e) {}
+  let dev = devParam === "1";
+  try { dev = dev || localStorage.getItem(DEV_KEY) === "1"; } catch (e) {}
   if (load().some((r) => r.job === EXAMPLE_JOB)) save(load().filter((r) => r.job !== EXAMPLE_JOB));
 
   window.Site = {
     EXAMPLE_JOB,
+    dev,
     reportUrl: (job) => `/report?job=${encodeURIComponent(job)}`,
     reports: load,
     // Add or update a report (newest first). Keeps the first "added" date.
@@ -86,6 +98,7 @@
           </div>
           <nav class="bf-nav" aria-label="Footer"><a href="/#new">New analysis</a><a href="/#reports">My reports</a><a href="/report?job=${EXAMPLE_JOB}">Example report</a></nav>
           <p class="bf-note">Made for players. Built to work alongside your coach, not replace one.</p>
+          ${dev ? '<p class="bf-note">Dev mode is on for this device (add ?dev=0 to the address to turn it off).</p>' : ""}
         </div>`;
     }
   });

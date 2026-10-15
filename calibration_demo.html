@@ -1808,7 +1808,7 @@ function renderStageTrack(currentStage) {
     const pill = document.createElement("span");
     pill.className = "stage-pill" + (stage === currentStage ? " current" : (i < idx ? " past" : ""));
     let took = "";
-    if (times[stage] && !UNTIMED.includes(stage)) {
+    if (Site.dev && times[stage] && !UNTIMED.includes(stage)) {   // timings: dev mode only
       const next = STAGE_ORDER.slice(i + 1).map((s2) => times[s2]).find((t) => t && t >= times[stage]);
       const end = stage === currentStage ? nowServer : next;
       if (end) took = ` · ${clockText(end - times[stage])}`;
@@ -1816,7 +1816,7 @@ function renderStageTrack(currentStage) {
     pill.textContent = STAGE_LABEL[stage] + took;
     track.appendChild(pill);
   });
-  $("elapsedLine").textContent = analysisStartedAt ? `Time since you pressed Start: ${clockText((Date.now() - analysisStartedAt) / 1000)}` : "";
+  $("elapsedLine").textContent = Site.dev && analysisStartedAt ? `Time since you pressed Start: ${clockText((Date.now() - analysisStartedAt) / 1000)}` : "";
 }
 
 function startPolling() {
