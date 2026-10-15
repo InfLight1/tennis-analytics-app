@@ -371,6 +371,17 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .awake-note { margin: var(--space-2) 0 0; color: var(--ink-2); font-weight: 600; }
 #instruction { background: var(--accent-soft); border-radius: var(--radius-md); padding: 12px 14px; font-weight: 600; margin: var(--space-4) 0 var(--space-3); }
 .instr-row { display: flex; align-items: center; gap: var(--space-4); }
+/* Banner about the automatic court finding (top of "Mark the court"). */
+.auto-banner { display: flex; align-items: flex-start; gap: var(--space-3); margin-top: var(--space-4); padding: 12px 14px;
+  border: 1px solid var(--accent); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink-2); }
+.auto-banner b { color: var(--ink); }
+.ab-icon { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; }
+.auto-banner[data-state="looking"] .ab-icon { border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: ab-spin .9s linear infinite; }
+.auto-banner[data-state="found"] .ab-icon { background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7' fill='none' stroke='%2310200F' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+.auto-banner[data-state="none"], .auto-banner[data-state="tapped"] { border-color: var(--line-strong); }
+.auto-banner[data-state="none"] .ab-icon, .auto-banner[data-state="tapped"] .ab-icon { border: 2px solid var(--muted); }
+@keyframes ab-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .auto-banner[data-state="looking"] .ab-icon { animation: none; } }
 .instr-tip { margin-top: var(--space-1); font-weight: 400; color: var(--ink-2); font-size: var(--text-sm); }
 .court-mini { flex: none; width: 132px; height: auto; }
 .court-mini line { stroke: var(--ink-2); stroke-width: 1.4; stroke-linecap: round; }
@@ -530,6 +541,10 @@ body.photo-hero .topbar { margin-bottom: -64px; }
         <h3 class="step-title"><span class="step-n" id="badge2">2</span>Mark the court</h3>
         <p>Tap 7 points on the court in a frame from your video, then name both players.</p>
         <div class="step-body hidden" id="calibratePanel">
+          <div id="autoBanner" class="auto-banner hidden" role="status">
+            <span class="ab-icon" aria-hidden="true"></span>
+            <div><b id="abTitle"></b> <span id="abText"></span></div>
+          </div>
           <div id="instruction">Loading a frame from your video…</div>
           <div id="canvasWrap"><canvas id="frameCanvas"></canvas><canvas id="loupe" width="160" height="160"></canvas></div>
           <div class="point-list" id="pointList"></div>
@@ -539,7 +554,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
             <button type="button" class="btn" id="resetPointsBtn">Start over</button>
           </div>
           <div id="checkPanel" class="hidden">
-            <div><span class="legend-swatch" style="background:#22d3ee"></span><b>Check the blue lines.</b>
+            <div><span class="legend-swatch" style="background:#22d3ee"></span><b>Check the drawn court lines.</b>
               They should sit on the court's painted lines everywhere, especially the far service line.
               Hover over (or press and hold) the far corners to zoom in.</div>
             <div class="warn hidden" id="checkWarn"></div>
@@ -1352,8 +1367,7 @@ function updateInstruction() {
   if (remaining.length === 0) {
     const bad = fit ? POINT_LABELS.filter((l) => fit.errors[l] > MAX_POINT_ERROR_CM) : [];
     if (autoPlaced && fit) {
-      $("instruction").textContent = "We found the court and placed the 7 points. Check that the blue lines sit on the " +
-        "court's lines; drag any dot that's off, then tick the box.";
+      $("instruction").textContent = "All 7 points are placed. When the lines look right, tick the box and start the analysis.";
       $("checkWarn").classList.toggle("hidden", bad.length === 0);
       $("checkWarn").textContent = bad.length ? "⚠ Some dots don't agree with the others: drag them onto the right spot." : "";
       $("submitCalibrationBtn").disabled = !(fit && !POINT_LABELS.some((l) => fit.errors[l] > BLOCK_POINT_ERROR_CM) && $("looksRight").checked);
@@ -1362,7 +1376,7 @@ function updateInstruction() {
     const adjusted = fit && fit.outer.length
       ? ` You tapped the outer corner for ${fit.outer.length === 1 ? "one corner" : `${fit.outer.length} corners`}; that's adjusted for you.` : "";
     $("instruction").textContent = fit
-      ? `All points placed. Check the blue lines below, then start the analysis.${adjusted}`
+      ? `All points placed. Check the drawn court lines below, then start the analysis.${adjusted}`
       : "All points placed, but the court fit failed. Re-click the points.";
     $("checkWarn").classList.toggle("hidden", bad.length === 0);
     $("checkWarn").textContent = bad.length
@@ -1380,7 +1394,7 @@ function updateInstruction() {
   const next = remaining[0];
   const n = POINT_LABELS.length - remaining.length + 1;
   $("instruction").innerHTML = `<div class="instr-row">${next in COURT_POINTS ? courtDiagram(next) : ""}` +
-    `<div>${guessing && n === 1 ? '<div class="instr-tip">Looking for the court lines… you can start tapping.</div>' : ""}` +
+    `<div>` +
     `<div>Tap point ${n} of ${POINT_LABELS.length}: ${escText(INSTRUCTIONS[next] || next)}</div>` +
     `<div class="instr-tip">${escText(tipFor(next))}</div></div></div>`;
   $("submitCalibrationBtn").disabled = true;
@@ -1523,22 +1537,42 @@ function hideLoupe() { $("loupe").style.display = "none"; }
 // Court found automatically (2026-10-14): the server fits the court lines in this picture and,
 // when it is confident, the 7 points are placed for the player to check; any dot can be dragged.
 let autoPlaced = false, guessing = false;
+const AUTO_BANNER = {
+  looking: ["Finding the court for you…", "This takes a few seconds (up to about 15). The 7 dots appear on their own, or you can start tapping them yourself."],
+  found: ["Court found automatically.", "Check that the drawn lines sit on the court's painted lines, and drag any dot that's off."],
+  none: ["Couldn't find the court in this picture.", "Tap the 7 points below; the small picture next to each step shows where."],
+  tapped: ["You're marking the court yourself.", "That works just as well; the small picture shows where each point goes."],
+};
+function setAutoBanner(state) {
+  const b = $("autoBanner");
+  b.classList.toggle("hidden", !state);
+  if (!state) return;
+  b.dataset.state = state;
+  [$("abTitle").textContent, $("abText").textContent] = AUTO_BANNER[state];
+}
 async function guessCourt() {
   const job = jobId;
   if (!job) return;
   guessing = true;
+  autoPlaced = false;
+  setAutoBanner("looking");
   updateInstruction();
+  let state = "none";
   try {
     const res = await fetch(`${backendUrl()}/api/court-guess/${job}`);
     const data = await res.json();
-    if (res.ok && data.ok && data.points && jobId === job && !Object.keys(clickedPoints).length) {
+    if (jobId !== job) return;
+    if (Object.keys(clickedPoints).length) state = "tapped";      // they started tapping: keep their points
+    else if (res.ok && data.ok && data.points) {
       clickedPoints = Object.fromEntries(POINT_LABELS.filter((l) => data.points[l]).map((l) => [l, data.points[l]]));
       clickOrder = POINT_LABELS.filter((l) => l in clickedPoints);
       autoPlaced = true;
+      state = "found";
       pointsChanged();
     }
   } catch (e) { /* tapping still works */ }
   guessing = false;
+  setAutoBanner(state);
   updateInstruction();
 }
 
@@ -1613,6 +1647,7 @@ $("undoPointBtn").addEventListener("click", () => {
 });
 
 $("resetPointsBtn").addEventListener("click", () => {
+  if (autoPlaced) setAutoBanner("tapped");
   autoPlaced = false;
   clickedPoints = {};
   clickOrder = [];
