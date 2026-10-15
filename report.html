@@ -303,9 +303,8 @@ details.fold > summary svg { color: var(--muted); }
   .print-only { display: inline !important; }
   .wrap { max-width: none; padding: 0; }
   .page-head { padding: 0 0 var(--space-3) !important; }
-  .print-name { margin: var(--space-6) 0 var(--space-2); padding-top: var(--space-4); border-top: 2px solid var(--line-strong);
-    font: 500 1.9rem/1.1 var(--font-serif); break-after: avoid; }
-  .print-player:first-child .print-name { border-top: 0; padding-top: 0; margin-top: var(--space-3); }
+  .print-player + .print-player { break-before: page; }   /* each player starts on a new page */
+  .print-name { margin: var(--space-3) 0 var(--space-2); font: 500 1.9rem/1.1 var(--font-serif); break-after: avoid; }
   .sec { padding: 8px 12px; border-radius: 8px; box-shadow: none !important; break-inside: auto; }
   .sec > h2, .sec-head { margin-bottom: var(--space-3); }
   h2 { break-after: avoid; }
