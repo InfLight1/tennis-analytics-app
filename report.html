@@ -284,6 +284,22 @@ details.fold > summary svg { color: var(--muted); }
   border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 var(--text-base)/1 var(--font-sans); cursor: pointer; }
 .btn:hover { background: var(--surface-2); }
 .head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+#printView, .print-only { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  html, body { background: #fff !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg { display: none !important; }
+  #printView { display: block !important; }
+  .print-only { display: inline !important; }
+  .page-head { padding-top: 0 !important; }
+  .print-player + .print-player { break-before: page; }
+  .print-name { margin: var(--space-5) 0 0; font: 500 2rem/1.1 var(--font-serif); }
+  .sec, details.fold { box-shadow: none !important; break-inside: avoid; }
+  .fix, .tile, .mini, .keep, .first-fix, .ring-item { break-inside: avoid; }
+  details > summary svg { display: none; }
+  a { color: inherit; text-decoration: none; }
+}
 .btn-del:hover { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
 </style>
 <link rel="stylesheet" href="site.css">
@@ -294,11 +310,12 @@ details.fold > summary svg { color: var(--muted); }
 <main class="wrap">
   <header class="page-head">
     <div>
-      <div class="label">Match report</div>
+      <div class="label">Match report <span class="print-only">· Advantage AI · <span id="printDate"></span></span></div>
       <h1 id="title">Loading…</h1>
       <p class="score" id="subtitle"></p>
     </div>
     <div class="head-actions">
+      <button type="button" class="btn hidden" id="pdfBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Save as PDF</button>
       <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
       <button type="button" class="btn btn-del hidden" id="deleteBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg> Delete report</button>
     </div>
@@ -311,6 +328,7 @@ details.fold > summary svg { color: var(--muted); }
   <div id="error" class="hidden" role="alert"></div>
   <div class="tabs hidden" role="tablist" aria-label="Player" id="tabs"></div>
   <div id="player" role="tabpanel"></div>
+  <div id="printView" aria-hidden="true"></div>
   <details class="fold hidden" id="coverageBox">
     <summary>About this data <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="fold-body" id="coverage"></div>
@@ -366,6 +384,7 @@ async function load() {
     }
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     render();
+    $("pdfBtn").classList.remove("hidden");
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
     if (Site.dev && JOB && JOB !== "76a383379d90") {   // timings: dev mode only
       fetch(`${BACKEND}/api/status/${encodeURIComponent(JOB)}`).then((r) => r.json())
@@ -478,6 +497,12 @@ $("tabs").addEventListener("keydown", (e) => {
 });
 
 function renderPlayer(pl) {
+  $("player").innerHTML = playerHtml(pl);
+}
+
+// One player's report as HTML. print: both Lost and Won bars (no switch), ids made unique.
+function playerHtml(pl, print = false) {
+  const idp = print ? `${pl.id}-` : "";
   const s = pl.stats, sv = s.serve, rt = s.return;
   const ordered = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
   const fixes = ordered(pl.weaknesses), keeps = ordered(pl.strengths);
@@ -504,8 +529,8 @@ function renderPlayer(pl) {
   const top = fixes.slice(0, 3);
   const n1 = top[0];
 
-  $("player").innerHTML = `
-    ${n1 ? `<a class="first-fix" href="#fixes">
+  return `
+    ${n1 ? `<a class="first-fix" href="#${idp}fixes">
       <span class="ff-label">Your #1 fix</span>
       <span class="ff-text">${esc(headlineOf(n1))}</span>
       ${n1.points ? `<span class="pts lost">−${n1.points} pts</span>` : ""}
@@ -526,6 +551,9 @@ function renderPlayer(pl) {
       ${pl.ai_summary ? `<p class="summary">${esc(pl.ai_summary)}</p>` : ""}
     </section>
 
+    ${print ? `
+    <section class="sec"><h2>How ${esc(pl.name)} lost points</h2>${stackedBar(lostParts, s.points_lost, "lost", "lost")}</section>
+    <section class="sec"><h2>How ${esc(pl.name)} won points</h2>${stackedBar(wonParts, s.points_won, "won", "won")}</section>` : `
     <section class="sec" aria-labelledby="barH">
       <div class="sec-head"><h2 id="barH">How ${esc(pl.name)} ${barView} points</h2>
         <div class="seg" role="group" aria-label="Show points lost or won">
@@ -533,14 +561,14 @@ function renderPlayer(pl) {
           <button type="button" data-view="won" aria-pressed="${barView === "won"}">Won</button>
         </div></div>
       ${barView === "lost" ? stackedBar(lostParts, s.points_lost, "lost", "lost") : stackedBar(wonParts, s.points_won, "won", "won")}
-    </section>
+    </section>`}
 
-    <section class="sec" id="fixes" aria-labelledby="fixH">
-      <h2 id="fixH">${top.length ? `Top ${top.length} things to fix` : "Things to fix"}</h2>
+    <section class="sec" id="${idp}fixes" aria-labelledby="${idp}fixH">
+      <h2 id="${idp}fixH">${top.length ? `Top ${top.length} things to fix` : "Things to fix"}</h2>
       ${top.length ? `<ol class="fixes">${top.map((p, i) => fixCard(p, i + 1, i === 0)).join("")}</ol>` : `<p class="muted">Not enough tracked points yet to rank anything.</p>`}
     </section>
 
-    ${keeps.length ? `<section class="sec" aria-labelledby="keepH"><h2 id="keepH">Keep doing</h2>
+    ${keeps.length ? `<section class="sec" aria-labelledby="${idp}keepH"><h2 id="${idp}keepH">Keep doing</h2>
       <ul class="keeps">${keeps.slice(0, 3).map((p) => `<li class="keep"><h3>${esc(headlineOf(p))}</h3>${p.points ? `<span class="pts won">+${p.points} pts</span>` : ""}</li>`).join("")}</ul>
       ${HAS_INSIGHTS ? `<p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>` : ""}
     </section>` : ""}
@@ -575,6 +603,39 @@ document.addEventListener("pointermove", (e) => {
 
 
 // ── rename players (job mode) ───────────────────────────────────────────
+// Save as PDF (2026-10-14): the browser's own print screen, which saves a PDF on phones and
+// computers. The print view has both players one after the other, the light colours, every
+// fold open and both Lost and Won bars; the page goes back to how it was afterwards.
+let printState = null;
+function preparePrint() {
+  if (printState || !DATA) return;
+  const root = document.documentElement;
+  printState = { theme: root.dataset.theme, title: document.title };
+  root.dataset.theme = "light";
+  const ids = Object.keys(DATA.players);
+  $("printView").innerHTML = ids.map((id) => `<div class="print-player">
+      <h2 class="print-name">${esc(DATA.players[id].name)}</h2>${playerHtml({ ...DATA.players[id], id }, true)}</div>`).join("");
+  $("printView").querySelectorAll("details").forEach((d) => { d.open = true; });
+  $("coverageBox").open = true;
+  const when = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  $("printDate").textContent = `Saved ${when}`;
+  document.title = `Advantage AI report - ${ids.map((id) => DATA.players[id].name).join(" vs ")}`;
+}
+function restoreAfterPrint() {
+  if (!printState) return;
+  const root = document.documentElement;
+  if (printState.theme) root.dataset.theme = printState.theme; else delete root.dataset.theme;
+  document.title = printState.title;
+  $("printView").innerHTML = "";
+  printState = null;
+}
+window.addEventListener("beforeprint", preparePrint);     // also when printing from the browser menu
+window.addEventListener("afterprint", restoreAfterPrint);
+$("pdfBtn").addEventListener("click", () => {
+  preparePrint();
+  setTimeout(() => window.print(), 50);                     // let the light colours apply first
+});
+
 $("editNamesBtn").addEventListener("click", () => $("namesForm").classList.toggle("hidden"));
 $("deleteBtn").addEventListener("click", async () => {
   if (!confirm("Delete this report?\n\nThe report and its video are removed for good.")) return;
