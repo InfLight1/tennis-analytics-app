@@ -1084,10 +1084,30 @@ def check_r2():
     if os.environ.get("R2_ENABLED", "1").strip() == "0" or missing:
         print(f"OFF: the r2 secret is still the placeholder or is missing {', '.join(missing) or 'nothing'}.")
         return
-    print(f"Account ID looks {'right (32 characters)' if len(vals['R2_ACCOUNT_ID']) == 32 else 'WRONG: it should be 32 letters/numbers, got ' + str(len(vals['R2_ACCOUNT_ID']))}")
+    def size_check(name, want):
+        n = len(vals[name])
+        odd = [c for c in vals[name] if not c.isalnum()]
+        verdict = "looks right" if n == want and not odd else f"LOOKS WRONG (should be {want} letters/numbers)"
+        print(f"{name}: {n} characters{', has odd characters ' + repr(''.join(sorted(set(odd)))) if odd else ''} -> {verdict}")
+    size_check("R2_ACCOUNT_ID", 32)
+    size_check("R2_ACCESS_KEY_ID", 32)
+    size_check("R2_SECRET_ACCESS_KEY", 64)
+    print(f"R2_BUCKET: '{vals['R2_BUCKET']}' (must match the bucket name in Cloudflare exactly)")
     r2 = _r2()
     if not r2:
-        print(f"FAIL 1/3 connect to the bucket: {_r2_cache.get('broken')}")
+        # Ask again with a call whose error comes back with Cloudflare's own explanation.
+        import boto3
+        from botocore.config import Config
+        acct, key, secret, bucket = _r2_values()
+        detail = ""
+        try:
+            boto3.client("s3", endpoint_url=f"https://{acct}.r2.cloudflarestorage.com", aws_access_key_id=key,
+                         aws_secret_access_key=secret, region_name="auto",
+                         config=Config(signature_version="s3v4")).list_objects_v2(Bucket=bucket, MaxKeys=1)
+        except Exception as e:
+            err = getattr(e, "response", {}).get("Error", {}) if hasattr(e, "response") else {}
+            detail = f" | Cloudflare says: {err.get('Code', type(e).__name__)}: {err.get('Message', str(e)[:200])}"
+        print(f"FAIL 1/3 connect to the bucket: {_r2_cache.get('broken')}{detail}")
         return
     print(f"OK   1/3 connected to bucket '{vals['R2_BUCKET']}'")
     client, bucket = r2
