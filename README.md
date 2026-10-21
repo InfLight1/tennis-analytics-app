@@ -98,8 +98,8 @@ flowchart LR
 
 To test the app, I labeled one full match by hand, point by point, and compared the calls of the app against my own labels.
 
-- The app counted the near player's serves and faults exactly right, with **9 serves and 5 faults**.
-- It picked the correct winner for **13 of 20 points**, and point winners are the hardest part, since a single missed bounce can flip the result.
+- It picked the correct winner for **18 of 20 points**, and for the other 2 it called no winner rather than a wrong one.
+- It named the right server for **all 20 points**, which matters because the two-serve rule depends on knowing who is serving.
 - The ball model was trained on frames from other matches, so this match was completely new to it. Some scoring rules were built while studying this same match, though, so **testing on more matches is next**.
 
 ## Limits
@@ -117,12 +117,11 @@ Since players are trusting the app with videos of themselves, I feel that protec
 
 ## What's next
 
-1. **Accuracy first**, since every other feature depends on it. I want to film and label more matches with different courts, players, and lighting, and keep some of them completely separate as test matches.
-2. **Progress across matches**, so a player can see which weaknesses are shrinking over a whole season and which still need work.
-3. A simple **focus for the week** built from the #1 fix, with practice tracking that connects what a player worked on to how their next match went.
-4. **Easier use at the court**, with uploads that keep going in the background and a notification when the report is ready.
-5. **Accounts and stronger privacy**, where each player signs in to see only their own reports and each video is deleted automatically once its report is ready.
-6. **Doubles**, since high school tennis includes doubles matches.
+1. **Progress across matches**, so a player can see which weaknesses are shrinking over a whole season and which still need work.
+2. A simple **focus for the week** built from the #1 fix, with practice tracking that connects what a player worked on to how their next match went.
+3. **Easier use at the court**, with uploads that keep going in the background and a notification when the report is ready.
+4. **Accounts and stronger privacy**, where each player signs in to see only their own reports and each video is deleted automatically once its report is ready.
+5. **Doubles**, since high school tennis includes doubles matches.
 
 ## Project layout
 
