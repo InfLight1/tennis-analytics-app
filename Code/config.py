@@ -153,6 +153,7 @@ BALL_LINK_FAST_SEGMENT_PX = 20      # ...or a fast stretch (best median of 5 mov
 BALL_LINK_PREFER_FAST = False       # overlapping tracks: prefer the faster one (tested 10-07: hurts the hold-out, off)
 BALL_LINK_LOCAL_SLOW_PX = 6         # overlapping tracks: one moving slower than this right now (median step, +/-WINDOW frames) loses (0 = off)
 BALL_LINK_LOCAL_WINDOW = 4
+BALL_LINK_DEAD_AFTER_FRAMES = 30    # a track moving slower than BALL_LINK_LOCAL_SLOW_PX for longer than this (1 s) is a dead ball rolling/lying on court: drop the rest of that slow stretch (0 = off)
 BALL_LINK_ROLLER_MAX_PX = 0        # a track whose fastest stretch stays under this is a rolling stray ball: loses to any overlapping track (0 = off)
 
 INTERPOLATION_LIMIT = 10   # max frames to linearly interpolate over gaps

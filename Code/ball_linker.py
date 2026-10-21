@@ -199,6 +199,15 @@ def link_ball_detections(
             w = config.BALL_LINK_LOCAL_WINDOW
             local.append(st.rolling(2 * w + 1, center=True, min_periods=2).median())
         acc["_slow"] = (pd.concat(local).reindex(acc.index) < config.BALL_LINK_LOCAL_SLOW_PX).fillna(False)
+        if config.BALL_LINK_DEAD_AFTER_FRAMES:
+            # A ball still slow a second later is dead (2026-10-21: one rolled
+            # across the court for 2 s and filled the gap where the far
+            # player's second serve should be inferred, point 14). Keep the
+            # first second so a ball dribbling in the net is still seen.
+            first_slow = acc["frame"].where(acc["_slow"] & ~acc["_slow"].groupby(acc["track_id"]).shift(fill_value=False))
+            first_slow = first_slow.groupby(acc["track_id"]).ffill()
+            dead = acc["_slow"] & (acc["frame"] - first_slow > config.BALL_LINK_DEAD_AFTER_FRAMES)
+            acc = acc[~dead]
         acc = acc.sort_values(["frame", "_slow", "track_path_px", "confidence"],
                               ascending=[True, True, False, False])
     elif config.BALL_LINK_ROLLER_MAX_PX:

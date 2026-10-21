@@ -16,6 +16,7 @@ SERVICE_LINE = config.SERVICE_LINE_OFFSET_FROM_BASELINE
 TOL = config.IN_OUT_TOLERANCE_CM
 SERVE_BOX_CHECK = True
 SERVE_MAX_FLIGHT_FRAMES = 45    # serve contact -> first bounce (measured ~20-30)
+FAR_BOX_LONG_MARGIN_CM = 100    # near-player serve called long only this far past the far service line (None = never)
 # Two serves per point (2026-09-30, confirmed by the user): a serve fault is
 # only a lost point if it's the SECOND serve. A first-serve fault is a rally
 # lost by the server on the serve itself, followed by the same server serving
@@ -24,6 +25,12 @@ SERVE_MAX_FLIGHT_FRAMES = 45    # serve contact -> first bounce (measured ~20-30
 TWO_SERVES = True
 SECOND_SERVE_MAX_GAP_S = 15
 MIN_SERVE_GAP_S = 3          # nobody serves again sooner than this
+# The receiver often swats a fault back over (or into the net) anyway; the
+# point was already over when the serve landed out, so serve + one more hit
+# is still a serve fault (point 13 of ground_truth_points.csv, 2026-10-21).
+# More hits than that = a real rally, so a "fault" there is a misread bounce.
+SERVE_FAULT_MAX_HITS = 2
+DROP_BETWEEN_POINT_FEEDS = True   # see drop_between_point_feeds
 
 
 def classify_error_type(hit_table_x, bounce_table_x, bounce_table_y, hitter_side=None):
@@ -146,8 +153,14 @@ def serve_fault(g):
         # ground_truth_points.csv that were in (points 8, 11 -- long rallies
         # followed) measured 50-120 cm past the far service line, so a long
         # or wide call there would be a guess.
+        # 2026-10-21: that "runs long" came from a misplaced hand-marked
+        # court; with the court found automatically point 8's serve lands
+        # 2 m inside the box. Far-half positions still wobble with camera
+        # sway, so only a clearly long serve is called.
         if x < NET_X - TOL:
             return "net"
+        if FAR_BOX_LONG_MARGIN_CM is not None and x > COURT_W - SERVICE_LINE + FAR_BOX_LONG_MARGIN_CM:
+            return "long"
         return None
     if y < -TOL or y > COURT_H + TOL:
         return "wide"
@@ -160,6 +173,8 @@ def _classify_rally_ending(g):
                 "error_type": None, "final_table_x": None, "final_table_y": None}
 
     fault = serve_fault(g) if SERVE_BOX_CHECK else None
+    if fault is not None and (g["event_type"] == "hit").sum() > SERVE_FAULT_MAX_HITS:
+        fault = None                                # play went on: the serve bounce was misread
     if fault is not None:
         server = g.iloc[0]["player_side"]
         return {"winner": OTHER_SIDE[server], "loser": server,
@@ -243,7 +258,7 @@ def rally_outcomes(events_df):
             "error_type": outcome["error_type"],
             "final_table_x": outcome["final_table_x"],
             "final_table_y": outcome["final_table_y"],
-            "serve_fault": bool(len(hits) == 1 and outcome["reason"] == "opponent_error"
+            "serve_fault": bool(len(hits) <= SERVE_FAULT_MAX_HITS and outcome["reason"] == "opponent_error"
                                 and server in OTHER_SIDE and outcome["loser"] == server),
             "start_frame": int(g["frame"].min()),
             "end_frame": int(g["frame"].max()),
@@ -252,6 +267,34 @@ def rally_outcomes(events_df):
     out = pd.DataFrame(rows)
     if TWO_SERVES and len(out):
         out = mark_first_serve_faults(out)
+    if DROP_BETWEEN_POINT_FEEDS and len(out):
+        out = drop_between_point_feeds(out)
+    return out
+
+
+def drop_between_point_feeds(out):
+    """An unreturned single shot from the wrong end in the middle of the
+    other player's service game is the ball being hit back to the server
+    between points, not an ace (2026-10-21: 2 of the 3 points the pipeline
+    invented outside the labeled ones). Same "one player serves a whole
+    game" test as serve_attempts; no winner, reason 'between_points'."""
+    out = out.sort_values("start_frame").reset_index(drop=True)
+    known = out[out["server"].isin(list(OTHER_SIDE))]
+    s, idx = known["server"].tolist(), known.index.tolist()
+    # Feeds cluster, so take out the most out-of-place one and repeat.
+    while len(s) >= 3:
+        def odd(k):            # most of the 2 rallies either side came from the other end
+            nb = s[max(0, k - 2):k] + s[k + 1:k + 3]
+            return sum(x != s[k] for x in nb) / len(nb) if len(nb) >= 2 else 0
+        scores = [odd(k) for k in range(len(s))]
+        worst = max(range(len(s)), key=lambda k: scores[k])
+        if scores[worst] <= 0.5:
+            break
+        i = idx[worst]
+        if out.loc[i, "n_hits"] == 1 and out.loc[i, "reason"] == "opponent_no_return":
+            out.loc[i, ["winner", "loser"]] = None
+            out.loc[i, "reason"] = "between_points"
+        del s[worst], idx[worst]
     return out
 
 

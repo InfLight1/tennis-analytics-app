@@ -135,6 +135,13 @@ OVERHEAD_MIN_BALL_TO_BOX = 0.028     # ball box size / player box height (near: 
 OVERHEAD_MIN_SPEEDUP = 2.0           # speed after / speed before
 OVERHEAD_MIN_SPEED_AFTER = 3.0       # ball diameters / frame
 OVERHEAD_KEEP_FRAMES = 8             # keep "off-court" projections this close to an overhead detection
+# A near-player serve flies AWAY from the camera, so on screen it can leave
+# no faster than the toss fell and the speed-up rule misses it (point 7 of
+# ground_truth_points.csv, 2026-10-21). The ball falling and then climbing
+# the image above a player's head is a contact too: gravity can't reverse it
+# there. The ball-size guard above still keeps far-court bounces out.
+OVERHEAD_REVERSAL = True
+OVERHEAD_REVERSAL_MIN_VY = 0.5       # ball diameters / frame, down before and up after
 
 # Ball stopped by the net (2026-09-29). 7 of the 20 labeled points end in
 # the net (mostly near-player serves) and the pipeline had no such event:
@@ -156,8 +163,9 @@ NET_STALL_PROJ_MAX = 800
 NET_STALL_MAX_AFTER_HIT = 60         # frames: must follow a hit
 PRE_SERVE_FILTER = True
 PRE_SERVE_NO_HIT_FRAMES = 60         # no hit this long before = the ball is dead
-PRE_SERVE_MAX_TRAVEL = 0.5           # ball stayed within this many player-heights over the last 30 frames
+PRE_SERVE_MAX_TRAVEL = 0.5          # ball stayed within this many player-heights over the last 30 frames
 NET_IMPACT_FRAMES = 15               # an impulse this close before the stall is the net impact itself
+NET_IMPACT_MAX_DIST_CM = 300         # ...if the ball is this close to the net line (a hit there = the ball off the tape)
 
 
 def _interp_by_depth(pixel_y, frame_height, near_value, far_value):
@@ -777,8 +785,14 @@ def detect_events_impulse(ball_df, player_df, start_frame, end_frame):
                 fj = F[j]
                 sp_b = speed((F >= fj - H) & (F <= fj), size)
                 sp_a = speed((F > fj) & (F <= fj + H), size)
-                if (sp_a is None or sp_b is None or sp_a < OVERHEAD_MIN_SPEED_AFTER
-                        or sp_a < OVERHEAD_MIN_SPEEDUP * max(sp_b, 0.1)):
+                if sp_a is None or sp_b is None:
+                    continue
+                vy_b = vy((F >= fj - H) & (F <= fj), size)
+                vy_a = vy((F > fj) & (F <= fj + H), size)
+                reversal = (OVERHEAD_REVERSAL and vy_b >= OVERHEAD_REVERSAL_MIN_VY
+                            and vy_a <= -OVERHEAD_REVERSAL_MIN_VY)
+                if not reversal and (sp_a < OVERHEAD_MIN_SPEED_AFTER
+                                     or sp_a < OVERHEAD_MIN_SPEEDUP * max(sp_b, 0.1)):
                     continue
                 overhead = overhead_player(int(fj), X[j], Y[j], S[j])
                 if overhead is not None:
@@ -1164,6 +1178,15 @@ def run_analysis(csv_path, output_path="rally_events.csv",
                                       for n in net_events)]
             all_bounces = sorted(all_bounces + [{**n, "event_type": "net"} for n in net_events],
                                  key=lambda b: b["frame"])
+            # The same impact can read as a hit (the ball drops off the tape
+            # and kicks up off the court): that "hit" then took the netted
+            # shot (2026-10-21, frame 15439 on the unlabeled part of the
+            # clip). Nobody strikes a ball that is already at the net.
+            all_hits = [h for h in all_hits
+                        if h.get("estimated") or not any(
+                            n["frame"] - NET_IMPACT_FRAMES <= h["frame"] < n["frame"]
+                            and abs(h["table_x"] - config.NET_POSITION_OFFSET) <= NET_IMPACT_MAX_DIST_CM
+                            for n in net_events)]
             print(f"Net events: {len(net_events)} (ball stopped by the net; {len(toss_net_hits)} "
                   f"with the serve inferred from the toss); "
                   f"{n_before - (len(all_bounces) - len(net_events))} bounce(s) inside them dropped")
