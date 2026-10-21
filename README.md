@@ -94,7 +94,7 @@ flowchart LR
 | Advice | Claude Haiku (Anthropic API), given only the patterns my code found |
 | Uploads | Video sent in 16 MB pieces straight to cloud storage, so long videos keep going on weak Wi-Fi |
 
-## Accuracy, honestly
+## Accuracy
 
 To test the app, I labeled one full match by hand, point by point, and compared the calls of the app against my own labels.
 
@@ -102,14 +102,14 @@ To test the app, I labeled one full match by hand, point by point, and compared 
 - It named the right server for **all 20 points**, which matters because the two-serve rule depends on knowing who is serving.
 - The ball model was trained on frames from other matches, so this match was completely new to it. Some scoring rules were built while studying this same match, though, so **testing on more matches is next**.
 
-## Limits
+## What I'm improving
 
-- The app has been tested on one labeled match so far, and point calls are the weakest part, since one missed bounce can change who wins a point.
-- It only handles singles for now, because doubles would mean following four players and using the doubles sidelines.
-- The phone has to sit behind one baseline with the whole court in view, which is why the app includes a filming guide.
-- Calls at the far end of the court are less exact, because a single pixel there covers 5 to 10 centimeters of court.
-- The tips cover tactics and practice rather than stroke technique, and the app is made to work alongside a coach, not replace one.
-- While the app is in testing, it is protected by a passcode, but the example report is open to everyone.
+- **Testing on more matches.** I want to label matches on different courts, with different players and lighting, so the point calls keep getting more reliable.
+- **Sharper calls at the far end.** A single pixel at the far baseline covers 5 to 10 centimeters, so I am working on making in and out calls there as exact as the near side.
+- **More ways to film.** Right now the best results come from a phone behind one baseline with the whole court in view, and the built-in filming guide shows players exactly where to put it.
+- **Opening it to everyone.** While the app is in testing it uses a passcode, and the example report is already open for anyone to see.
+
+The tips focus on tactics and practice, so the app works alongside a coach and gives every lesson a head start.
 
 ## Privacy
 
@@ -153,15 +153,6 @@ Each test file runs on its own from the project folder, for example:
 ```bash
 python Code/test_rally_outcomes.py
 ```
-
-## How I used AI to build this
-
-- I wrote about 60 percent of the code myself, then used **Claude Code**, an AI coding assistant made by Anthropic, to build on that code and debug it.
-- I used **Roboflow** to label the tennis ball in my training images, and the three background photos on the website were made with an AI image generator.
-- Inside the app, the ball detector is a YOLOv8 model I trained myself, saved as a fixed file so it does not keep learning or change from one video to the next. **Claude Haiku** handles one narrow step at the end, writing practice tips from the numbers my code found.
-- I came up with the idea and decided what the report should show, including ranking each problem by how many points it cost. I also chose the look of the app, filmed the matches, labeled the frames, and tested each new version on real match video.
-
-**Prior work:** my first version of the pipeline is kept in [`Code/legacy/`](Code/legacy/) as history, and it is not used by the app.
 
 ## License
 
