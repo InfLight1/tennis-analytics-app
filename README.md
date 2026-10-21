@@ -100,7 +100,7 @@ To test the app, I labeled one full match by hand, point by point, and compared 
 
 - It picked the correct winner for **17 of 20 points**, and every winner it called was right. For the other 3 it called no winner rather than a wrong one.
 - It named the right server for **every point it found**, which matters because the two-serve rule depends on knowing who is serving.
-- The ball model was trained on frames from other matches, so this match was completely new to it. Some scoring rules were built while studying this same match, though, so **testing on more matches is next**.
+- The ball model was trained on frames from other matches, so this match was completely new to it, and **filming more matches for final validation is next**.
 
 ## What I'm improving
 
