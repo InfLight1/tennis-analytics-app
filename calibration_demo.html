@@ -261,6 +261,8 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
   min-height: var(--hero-full-h); margin: 0; padding: calc(var(--topbar-h) + var(--space-7)) var(--hero-pad) var(--space-9);
   --hero-pad: max(var(--gutter), calc((100% - var(--col)) / 2)); color: #fff; }
 .hero-full .hero-copy { position: relative; z-index: 2; max-width: 560px; padding: 0; }
+.hero-kicker { margin: 0 0 var(--space-3); font: 650 .8125rem/1.2 var(--font-sans); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--hero-full-kw); text-shadow: 0 1px 12px rgba(0,0,0,.35); }
 .hero-full h1 { color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
 .hero-full h1 .kw { color: var(--hero-full-kw); }
 .hero-full .sub { color: rgba(255,255,255,.92); }
@@ -464,6 +466,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 
 <div class="hero hero-full">
   <div class="hero-copy">
+  <p class="hero-kicker">Built by a player, for players</p>
   <h1>Turn match data into <span class="kw">match wins</span></h1>
   <p class="sub">See what's costing you points. Upload a match video and each player gets their top 3 things to fix, with drills to practise.</p>
   <div class="actions">

@@ -1,6 +1,6 @@
 # Advantage AI design (frozen 2026-10-13)
 
-**Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins".
+**Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins". Slogan: "Built by a player, for players" (small label above the home headline, and in the footer on every page).
 **Look:** dark court-green palette everywhere; the Report alone also has a light mode (sun/moon button in the header, follows the device until pressed, remembered on this device); photo-led hero, calm panels, tennis-green accent.
 **Came from:** references "Escape Tab Hell" (warm editorial, one active item at a time) and "Northpeak" (full-bleed landscape behind the title); see `design/references.md`. The approved design pages (static, sample data) are `design/approved/home.html` and `report.html`; the 6 earlier comparison versions are in git history (commit 19f1242).
 

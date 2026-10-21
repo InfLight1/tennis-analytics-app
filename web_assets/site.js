@@ -97,7 +97,7 @@
             <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
           </div>
           <nav class="bf-nav" aria-label="Footer"><a href="/#new">New analysis</a><a href="/#reports">My reports</a><a href="/report?job=${EXAMPLE_JOB}">Example report</a></nav>
-          <p class="bf-note">Made for players. Built to work alongside your coach, not replace one.</p>
+          <p class="bf-note">Built by a player, for players. Made to work alongside your coach, not replace one.</p>
           ${dev ? '<p class="bf-note">Dev mode is on for this device (add ?dev=0 to the address to turn it off).</p>' : ""}
         </div>`;
     }
