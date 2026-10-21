@@ -1,7 +1,7 @@
 # usage: eval_model.sh <weights.pt> <tag> [--half]
 set -e
-SP="$(dirname "$0")"; W="$1"; TAG="$2"; H="$3"
-cd "/c/Users/rudra/Downloads/Projects/Tennis Performance App/Code"
+SP="$(cd "$(dirname "$0")" && pwd)"; W="$1"; TAG="$2"; H="$3"
+cd "$SP/../../Code"
 export PYTHONIOENCODING=utf-8; PY=../.venv/Scripts/python.exe
 $PY "$SP/extract_with_model.py" "$W" ../Videos/tennis1_clip2.mp4 "$SP/cands_clip2_$TAG.csv" --end-frame 2800 --imgsz 2560 $H | tail -2
 $PY "$SP/extract_with_model.py" "$W" ../Videos/tennis1_clip.mp4 "$SP/cands_clip1_$TAG.csv" --imgsz 2560 $H | tail -2
