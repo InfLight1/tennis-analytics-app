@@ -12,4 +12,4 @@ Used to compare ball model v1-5 (production) vs v2 (far-player retrain) and to s
 
 Windows: run YOLO val/train from a script file (not `python -` via stdin) and set PYTHONIOENCODING=utf-8.
 
-**2026-10-21:** `score_all.sh` now uses the court found by `Code/court_detect.py` (`Diagnostics/perspective_matrix_76a383379d90_auto.npy`, `perspective_matrix_clip1_auto.npy`). The old hand-marked courts were off by ~40 px (2-3 m at the far baseline on the job clip). The hold-out labels live in `Code/legacy/ground_truth_events.csv`. Result: job F1 0.68, hold-out F1 0.70, points 18/20.
+**2026-10-21:** `score_all.sh` now uses the court found by `Code/court_detect.py` (`Diagnostics/perspective_matrix_76a383379d90_auto.npy`, `perspective_matrix_clip1_auto.npy`). The old hand-marked courts were off by ~40 px (2-3 m at the far baseline on the job clip). The hold-out labels live in `Code/legacy/ground_truth_events.csv`. Result: job F1 0.68, hold-out F1 0.70, points 18/20 offline (the live app, with its own ball detections, gets 17/20; that is the number used everywhere else).
