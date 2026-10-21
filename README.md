@@ -25,22 +25,24 @@ Upload a video of a singles tennis match. Each player gets a report that ranks w
 
 ## Why I built it
 
-I lost a JV match for my high school team and, when it ended, I couldn't say what had gone wrong. My coach hadn't been there and nobody had filmed it, so neither of us could name one thing for me to practise.
+I built Advantage AI after losing a JV match for my high school team, because when it ended, I could not say what had actually gone wrong. My coach had not been at the match and nobody had recorded it, so neither of us could point to a single thing I should practice before the next one.
 
-Most players have the same problem. Not everyone has a private coach, and on match day our school coach is watching several courts at once. But almost every player has a phone, and almost every court has a fence to put it on. Advantage AI turns that simple setup into a short, ranked list of what to work on next.
+This problem is not only mine, of course. Not every player has a private coach, and on match day our school coach is watching several courts at once, so no one can see every point. Most players already own a phone, though, and almost every court has a fence to set it on. I wanted Advantage AI to turn that simple setup into a clear list of what to fix, so any player, including my teammates, can walk into practice knowing where their time should go.
 
 ## What it does
 
-1. **Add your match.** Upload the video afterwards, or use **Record match** to send it from the phone while you play.
-2. **Check the court.** The app finds the court lines by itself and places the dots. You check them and name both players.
-3. **Get the report.** For a 12-minute clip the analysis takes about five minutes once the video is in.
+Using the app takes three steps, and the player only has to do the first two.
 
-Each player gets their own report:
+1. **Add your match.** Upload the video after the match, or use **Record match** to send it from your phone while you play.
+2. **Check the court.** The app finds the court lines by itself and places the dots, so you only have to check them and name both players.
+3. **Get the report.** For a 12-minute clip, the analysis takes about five minutes once the video is in.
+
+Each player gets their own report, and it is built to be acted on right away:
 
 - **Your #1 fix**, then the **top 3 things to fix**, ranked by how many points each one cost.
 - A **tactic, habit and drill** for every fix, plus the **times in the video** where those points were lost.
 - Points won, serves in, aces, double faults, shots per rally, and what to **keep doing**.
-- **Save as PDF** to send to a coach before a lesson.
+- **Save as PDF**, so a player can send the report to their coach before a lesson.
 
 <table>
   <tr>
@@ -74,12 +76,12 @@ flowchart LR
     G --> H[Report for<br/>each player]
 ```
 
-- **Ball detection.** Off-the-shelf models missed a ball that is only a few pixels wide and often blurred. I trained my own **YOLOv8** model on about 1,400 frames I labelled (mAP50 about 0.76 for the ball). It runs on full 2560-pixel frames, because shrinking them lost 6 to 10 points of accuracy.
-- **Ball tracking.** Standard trackers expect smooth motion and lose a ball that changes direction at every hit. My linker predicts where the ball should be next from its speed and direction, which also lets it ignore stray balls on the court.
-- **Court mapping.** The app masks the white paint, finds straight lines, and tests pairs of them against a model of a real court. The fit gives a **homography** (a map from the video picture to a flat, top-down court in metres), so bounces and player positions are measured in real distances.
-- **Points.** Hits and bounces show up as sudden changes in the ball's speed. The app tells a serve toss from a serve, calls balls in or out with a small tolerance, and applies the two-serve rule step by step to decide who won each point.
-- **Speed.** A 12-minute 4K video is about 1.5 GB, so it is split into up to 10 pieces that run on cloud GPUs at the same time, then joined before scoring.
-- **Advice.** My code finds and ranks the patterns. Only those numbers go to **Claude Haiku**, which turns them into plain-language practice advice. It never sees the video.
+- **Ball detection.** From the fence, the ball is only a few pixels wide and often blurs into a streak, so ready-made detection models missed most of it. I trained my own **YOLOv8** model on about 1,400 frames I labeled, which brought its mAP50 for the ball to about 0.76, and I run it on full 2560-pixel frames because shrinking them dropped my scores by 6 to 10 points.
+- **Ball tracking.** Standard trackers expect objects to move smoothly, so they kept losing a ball that changes direction at every hit and bounce. I built a linker that predicts where the ball should be next from its speed and direction, which also lets it ignore stray balls on the court.
+- **Court mapping.** The app finds the court by masking the white paint, detecting straight lines, and testing pairs of lines against a model of a real court. From that fit, it computes a **homography** (a map from the video picture to a flat, top-down court in meters), so bounces and player positions are measured in real distances.
+- **Points.** Hits and bounces show up as sudden changes in the speed of the ball. Every call I make without thinking as a player had to become a precise rule, like telling a serve toss apart from the actual serve, calling a ball in or out with a small tolerance, and applying the two-serve rule step by step.
+- **Speed.** A 12-minute 4K video is about 1.5 GB, which is far too slow for one machine, so the app splits it into up to 10 pieces that run on cloud GPUs at the same time and merges the results before scoring.
+- **Advice.** My code finds the patterns that cost each player the most points and ranks them. Then **Claude Haiku** turns only those patterns into clear, encouraging practice advice in plain words, and it never sees the video.
 
 ## Tech stack
 
@@ -87,40 +89,40 @@ flowchart LR
 |---|---|
 | Website | HTML, CSS and JavaScript (no framework), works on phone and computer |
 | Server | Python 3.12, FastAPI, hosted on [Modal](https://modal.com) |
-| Detection | YOLOv8 (my own ball model; standard model for players), ByteTrack for players, OpenCV |
+| Detection | YOLOv8 (my own ball model, standard model for players), ByteTrack for players, OpenCV |
 | Analysis | NumPy and pandas: court mapping, hit and bounce detection, scoring rules |
 | Advice | Claude Haiku (Anthropic API), given only the patterns my code found |
 | Uploads | Video sent in 16 MB pieces straight to cloud storage, so long videos keep going on weak Wi-Fi |
 
 ## Accuracy, honestly
 
-I labelled one full match by hand, point by point, and compared the app's calls against it.
+To test the app, I labeled one full match by hand, point by point, and compared the calls of the app against my own labels.
 
-- The app counted the near player's serves and faults exactly right: **9 serves, 5 faults**.
-- It picked the right winner for **13 of 20 points**.
-- The ball model was trained on frames from other matches, so this match was new to it. Some scoring rules were built while studying this same match, so **testing on more matches is next**.
+- The app counted the near player's serves and faults exactly right, with **9 serves and 5 faults**.
+- It picked the correct winner for **13 of 20 points**, and point winners are the hardest part, since a single missed bounce can flip the result.
+- The ball model was trained on frames from other matches, so this match was completely new to it. Some scoring rules were built while studying this same match, though, so **testing on more matches is next**.
 
 ## Limits
 
-- Tested on one labelled match so far. A single missed bounce can flip a point, so point calls are the weakest part.
-- Singles only. Doubles needs four players tracked.
-- The phone has to be behind one baseline with the whole court in view (the app has a filming guide).
-- Calls at the far end are less exact: one pixel there covers 5 to 10 cm of court.
-- Tips cover tactics and practice, not stroke technique. It is made to work alongside a coach, not replace one.
-- The app is passcode-protected while in testing. The example report is open to everyone.
+- The app has been tested on one labeled match so far, and point calls are the weakest part, since one missed bounce can change who wins a point.
+- It only handles singles for now, because doubles would mean following four players and using the doubles sidelines.
+- The phone has to sit behind one baseline with the whole court in view, which is why the app includes a filming guide.
+- Calls at the far end of the court are less exact, because a single pixel there covers 5 to 10 centimeters of court.
+- The tips cover tactics and practice rather than stroke technique, and the app is made to work alongside a coach, not replace one.
+- While the app is in testing, it is protected by a passcode, but the example report is open to everyone.
 
 ## Privacy
 
-Match videos are stored on the app's passcode-protected server. The AI that writes the tips never sees the video, only the numbers. **Delete report** erases both the video and the report.
+Since players are trusting the app with videos of themselves, I feel that protecting those videos matters as much as the analysis itself. Match videos are stored on the app's passcode-protected server, the AI that writes the tips only gets the numbers and never the video, and the **Delete report** button erases both the video and the report.
 
 ## What's next
 
-1. **Accuracy first:** film and label more matches on different courts, and keep some completely separate as test matches.
-2. **Progress across matches**, so a player can see which weaknesses are shrinking over a season.
-3. A weekly focus from the #1 fix, with practice tracking.
-4. Easier use at the court: background uploads and a notice when the report is ready.
-5. Accounts, and automatic video deletion once the report is ready.
-6. Doubles.
+1. **Accuracy first**, since every other feature depends on it. I want to film and label more matches with different courts, players, and lighting, and keep some of them completely separate as test matches.
+2. **Progress across matches**, so a player can see which weaknesses are shrinking over a whole season and which still need work.
+3. A simple **focus for the week** built from the #1 fix, with practice tracking that connects what a player worked on to how their next match went.
+4. **Easier use at the court**, with uploads that keep going in the background and a notification when the report is ready.
+5. **Accounts and stronger privacy**, where each player signs in to see only their own reports and each video is deleted automatically once its report is ready.
+6. **Doubles**, since high school tennis includes doubles matches.
 
 ## Project layout
 
@@ -155,12 +157,12 @@ python Code/test_rally_outcomes.py
 
 ## How I used AI to build this
 
-- I wrote about 60 percent of the code myself, then used **Claude Code** (Anthropic's coding assistant) to build on it and debug it.
-- I labelled the training images with **Roboflow**. The three background photos on the website were made with an AI image generator.
-- Inside the app, the ball detector is a YOLOv8 model I trained; it does not keep learning from uploaded videos. **Claude Haiku** writes the practice tips from my code's numbers only.
-- The idea, what the report shows (ranking fixes by points lost), the look of the app, the filming, the labelling and the testing were mine.
+- I wrote about 60 percent of the code myself, then used **Claude Code**, an AI coding assistant made by Anthropic, to build on that code and debug it.
+- I used **Roboflow** to label the tennis ball in my training images, and the three background photos on the website were made with an AI image generator.
+- Inside the app, the ball detector is a YOLOv8 model I trained myself, saved as a fixed file so it does not keep learning or change from one video to the next. **Claude Haiku** handles one narrow step at the end, writing practice tips from the numbers my code found.
+- I came up with the idea and decided what the report should show, including ranking each problem by how many points it cost. I also chose the look of the app, filmed the matches, labeled the frames, and tested each new version on real match video.
 
-**Prior work:** my first version of the pipeline is kept in [`Code/legacy/`](Code/legacy/) as history. It is not used by the app.
+**Prior work:** my first version of the pipeline is kept in [`Code/legacy/`](Code/legacy/) as history, and it is not used by the app.
 
 ## License
 
