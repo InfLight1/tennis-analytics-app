@@ -36,6 +36,7 @@ match_report.txt
 *.jpg
 *.jpeg
 !web_assets/*.png
+!docs/screenshots/*
 
 # Training: keep only scripts and small notes, not images, labels or runs
 /Training/**
@@ -51,3 +52,6 @@ match_report.txt
 
 # Browser test screenshots
 .playwright-mcp/
+
+# Design explorations (local only)
+design/versions/
