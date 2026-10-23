@@ -49,7 +49,7 @@
   --panel-pad-x: var(--space-6);
   --green-bg: #1E4029; --green-surface: #244933; --green-court: #2E5B41; --green-accent: #A8DDB4;
   --foot-bg: #0F1C14;
-  --film-focus: 100% 45%;
+  --film-focus: 50% 50%;
   --cta-h: 440px;
   --cta-focus: 62% 55%;
   --hero-under-ratio: 2 / 1;
@@ -157,8 +157,6 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
 .hero-photo { -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.3) calc(var(--hero-fade-h) * 0.5), #000 var(--hero-fade-h));
   mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.3) calc(var(--hero-fade-h) * 0.5), #000 var(--hero-fade-h)); }
 .hero-photo::after { content: ""; position: absolute; inset: auto 0 0; height: 35%; z-index: 1; background: linear-gradient(to top, rgba(0,0,0,.45), transparent); }
-.hero-cap { position: absolute; z-index: 2; bottom: var(--space-4); left: var(--hero-pad); right: var(--gutter);
-  margin: 0; color: #fff; font-size: var(--text-sm); font-weight: 550; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
 /* Wider than a phone: the photo stays under the tagline, centred, at a fixed 16:9 shape (never stretched),
    fading in at the top and softly at the sides. */
 @media (min-width: 760px) {
@@ -168,7 +166,6 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
     mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.35) 14%, #000 32%), linear-gradient(to right, transparent 0%, transparent 2px, #000 12%, #000 88%, transparent calc(100% - 2px));
     mask-composite: intersect; }
   .hero-photo img { object-position: 50% 68%; }
-  .hero-cap { left: auto; right: max(var(--gutter), calc((100% - var(--hero-under-w)) / 2 + 12%)); max-width: 340px; text-align: right; }
 }
 
 
@@ -277,11 +274,9 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
   linear-gradient(to bottom, rgba(10,14,9,.55) 0%, rgba(10,14,9,0) 24%),
   linear-gradient(to right, rgba(10,14,9,.80) 0%, rgba(10,14,9,.62) 36%, rgba(10,14,9,.18) 68%, rgba(10,14,9,0) 85%); }
 .hero-full .hero-photo::after { height: 30%; }
-.hero-full .hero-cap { left: auto; right: var(--hero-pad); bottom: var(--space-5); max-width: 320px; text-align: right; }
 @media (max-width: 759px) {
   .hero.hero-full { align-items: flex-start; }
   .hero-full .hero-photo::before { background: linear-gradient(to bottom, rgba(10,14,9,.78) 0%, rgba(10,14,9,.62) 45%, rgba(10,14,9,.2) 75%, rgba(10,14,9,0) 100%); }
-  .hero-full .hero-cap { left: var(--hero-pad); text-align: left; }
 }
 @media (max-width: 559px) { .hero.hero-full { --topbar-h: 97px; padding-top: calc(var(--topbar-h) + var(--space-6)); min-height: min(100svh, 780px); } }
 
@@ -302,7 +297,7 @@ section.block.band-green { margin-top: var(--space-8); padding: var(--space-8) c
 .band-green .figs figure { background: var(--green-surface); border-radius: var(--radius-lg); padding: var(--space-4); margin: 0; }
 .band-green figcaption { color: var(--ink-2); }
 
-/* ── Photo bands (A: filming guide over the phone-on-fence photo, phone on the court side so nothing blocks the lens, B: closing call to action over the ball-on-line photo) */
+/* ── Photo bands (A: filming guide over a plain fence photo, no phone in it, B: closing call to action over the ball-on-line photo) */
 .band-photo { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
 .band-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 section.block.band-green { position: relative; isolation: isolate; }
@@ -482,7 +477,6 @@ body.photo-hero .topbar { margin-bottom: -64px; }
     <img src="hero-court-800.webp" srcset="hero-court-800.webp 800w, hero-court-1600.webp 1600w"
       sizes="100vw" width="1600" height="1067" fetchpriority="high" alt="">
   </div>
-  <p class="hero-cap">Film from here: high up behind one baseline, the whole court in view.</p>
 </div>
 
 <main class="wrap">
@@ -589,7 +583,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
   </section>
 
   <section class="block band band-green" id="filmGuide" aria-labelledby="filmH">
-    <div class="band-photo" aria-hidden="true"><img src="band-phone-800.webp" srcset="band-phone-800.webp 800w, band-phone-1600.webp 1600w" sizes="100vw" width="1600" height="1245" loading="lazy" alt=""></div>
+    <div class="band-photo" aria-hidden="true"><img src="band-phone-800.webp" srcset="band-phone-800.webp 800w, band-phone-1600.webp 1600w" sizes="100vw" width="1600" height="1067" loading="lazy" alt=""></div>
     <h2 id="filmH">How to film your match</h2>
     <p class="lede">Where to put the phone, in 5 steps.</p>
     <div class="figs">

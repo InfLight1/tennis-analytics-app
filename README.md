@@ -55,7 +55,7 @@ Each player gets their own report, and it is built to be acted on right away:
   </tr>
   <tr>
     <td width="50%"><img src="docs/screenshots/new-analysis.jpg" alt="New analysis: upload a video or record the match"></td>
-    <td width="50%"><img src="docs/screenshots/how-to-film.jpg" alt="How to film your match: phone on the fence behind one baseline"></td>
+    <td width="50%"><img src="docs/screenshots/how-to-film.jpg" alt="How to film your match: where to put the phone, in 5 steps"></td>
   </tr>
   <tr>
     <td align="center"><sub>Three steps: add the match, mark the court, wait</sub></td>
