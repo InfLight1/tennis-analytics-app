@@ -43,7 +43,7 @@
 - My reports: each match is a card (lighter green, ball icon, date, status badge, solid green "Ready", green left edge when ready, chevron to open) with a delete button on its right; a count badge next to the heading. Deleting asks first and removes the report and its video for good (not the example; not while it's being analysed). The report page has the same Delete button.
 - Report order: "Your #1 fix" card, overview (big rings, quick stats, AI summary), lost/won bar, top 3 fixes, keep doing, More stats, About this data. Each section is its own panel.
 - Same header bar and footer banner on every page. On Home the header floats over the photo.
-- Photos (AI-generated, 3 of 5 slots used): hero court from behind the baseline, phone sideways on the fence, ball on the baseline. WebP 800px for phones, 1600px for big screens.
+- Photos (AI-generated, 3 of 5 slots used): hero court from behind the baseline, phone sideways on the court side of the fence (lens facing the court, nothing in front of it), ball on the baseline. WebP 800px for phones, 1600px for big screens.
 
 ## Always / Never
 - **Always:** real data only; one accent (green), red only for lost points; phone first and checked at 375px and at desktop width; text readable outdoors.
