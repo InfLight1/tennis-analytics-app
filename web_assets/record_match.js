@@ -178,7 +178,7 @@
     $("recSent").textContent = msg;
     $("recSent").classList.add("error");
     $("recNote").textContent = "";
-    ["recStartBtn", "recContinueBtn", "recStopBtn"].forEach((id) => $(id).classList.add("hidden"));
+    ["recStartBtn", "recContinueBtn", "recStopBtn", "recCancelBtn"].forEach((id) => $(id).classList.add("hidden"));
     showDiscardInOverlay();
   }
   function showDiscardInOverlay() {
@@ -207,9 +207,32 @@
     enqueue(i);
   }
 
+  // Start (or carry on) filming. The camera may have closed while the court was being
+  // marked (screen locked, another app), so it is opened again first if needed.
+  async function startRecording() {
+    const btn = S.pieces ? $("recContinueBtn") : $("recStartBtn");
+    btn.disabled = true;
+    try {
+      if (!S.cam || S.cam.track.readyState === "ended") {
+        S.cam = await Recorder.openCamera();
+        watchTrack();
+        $("recLive").srcObject = S.cam.stream;
+        $("recLive").play().catch(() => {});
+      }
+      startSegment();
+    } catch (e) {
+      $("recNote").textContent = S.pieces
+        ? `The camera didn't open again (${e.message}). Press Stop to send what was filmed.`
+        : `The camera didn't start (${e.message}). Check the camera is allowed for this site, then press Start recording again.`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   function startSegment() {
+    const rec = Recorder.start(S.cam.stream, onPiece, 4000, interrupted);   // throws if this browser can't record
     S.segments.push(S.pieces);
-    S.recorder = Recorder.start(S.cam.stream, onPiece, 4000, interrupted);
+    S.recorder = rec;
     S.recording = true;
     S.segStart = Date.now();
     save();
@@ -218,6 +241,7 @@
     $("recTitle").textContent = "Recording the match";
     $("recStartBtn").classList.add("hidden");
     $("recContinueBtn").classList.add("hidden");
+    $("recCancelBtn").classList.add("hidden");
     $("recStopBtn").classList.remove("hidden");
     $("recNote").textContent = "Keep this page open; the screen stays on. Press Stop after the last point.";
     if (!$("recLive").classList.contains("off")) toggleLive();   // hide the picture while filming (battery)
@@ -240,23 +264,6 @@
     render();
   }
 
-  async function continueRecording() {
-    $("recContinueBtn").disabled = true;
-    try {
-      if (!S.cam || S.cam.track.readyState === "ended") {
-        S.cam = await Recorder.openCamera();
-        watchTrack();
-        $("recLive").srcObject = S.cam.stream;
-        $("recLive").play().catch(() => {});
-      }
-      startSegment();
-    } catch (e) {
-      $("recNote").textContent = `The camera didn't open again (${e.message}). Press Stop to send what was filmed.`;
-    } finally {
-      $("recContinueBtn").disabled = false;
-    }
-  }
-
   async function stopRecording() {
     if (!confirm("Stop recording? This ends the match video.")) return;
     if (S.recording) {
@@ -264,6 +271,7 @@
       S.recording = false;
       await S.recorder.stop();
     }
+    if (!S.pieces) { fail("Nothing was filmed, so there's nothing to send. Please record again."); return; }
     S.stopped = true;
     save();
     if (S.cam) S.cam.stream.getTracks().forEach((t) => t.stop());
@@ -324,20 +332,27 @@
     S.stopped = true;
     save();
     if (S.cam) S.cam.stream.getTracks().forEach((t) => t.stop());
+    $("recOverlay").classList.remove("live");
+    $("recKicker").textContent = "Match recorded";
     $("recTitle").textContent = `Stopped at ${MAX_MIN} minutes`;
     ["recStartBtn", "recContinueBtn", "recStopBtn"].forEach((id) => $(id).classList.add("hidden"));
+    $("recLive").classList.add("off");
+    $("toggleLiveBtn").classList.add("hidden");
     $("recNote").textContent = "Keep this page open until it's sent. Your report opens when it's ready.";
     maybeFinish();
   }
   setInterval(() => { if (S.job && !$("recOverlay").classList.contains("hidden")) render(); }, 1000);
 
   // ── Before recording: camera, still, court ──
+  // The button to go on is always shown (it used to vanish below 1080p, leaving nothing
+  // to press); only a phone held upright has to be turned first.
   function describe(w, h) {
     const short = Math.min(w, h);
-    if (h > w) return { ok: false, text: "Turn the phone sideways." };
-    if (short < 1080) return { ok: false, text: `This phone only gives ${short}p here, which is too small for good results. Use "Upload video" instead.` };
+    if (!w || !h) return { ok: false, text: "" };
+    if (h > w) return { ok: false, text: "Turn the phone sideways to carry on." };
     if (short >= 2160) return { ok: true, text: "Recording in 4K." };
-    return { ok: true, text: `Recording in ${short}p: quick results, a little less accurate than 4K. For the most accurate report, film in 4K with the camera app and upload at home.` };
+    if (short >= 1080) return { ok: true, text: `Recording in ${short}p: quick results, a little less accurate than 4K. For the most accurate report, film in 4K with the camera app and upload at home.` };
+    return { ok: true, text: `This camera only gives ${short}p here, so the report will be less accurate. For a better report, film in 4K with the camera app and use "Upload video".` };
   }
 
   async function openCamera() {
@@ -354,12 +369,17 @@
       const check = () => {
         const d = describe(v.videoWidth, v.videoHeight);
         $("recQuality").textContent = d.text;
-        $("useViewBtn").classList.toggle("hidden", !d.ok);
+        if (S.job) return;              // already past this step
+        $("useViewBtn").disabled = !d.ok;
+        $("useViewBtn").textContent = d.ok || !d.text ? "Use this view and mark the court" : "Turn the phone sideways";
       };
       v.addEventListener("resize", check);
+      v.addEventListener("loadedmetadata", check);
       check();
       $("recStatus").textContent = "Point the phone at the whole court, then press the button below.";
       $("openCameraBtn").classList.add("hidden");
+      $("useViewBtn").classList.remove("hidden");
+      $("useViewBtn").scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       $("recStatus").classList.add("error");
       $("recStatus").textContent = e.name === "NotAllowedError"
@@ -425,6 +445,27 @@
     $("recLive").play().catch(() => {});
     keepAwake(true);
     render();
+    $("recStartBtn").focus();
+  }
+
+  // "Not now" on the Ready to record screen: nothing was filmed, so drop it and start again.
+  async function cancelBeforeStart() {
+    if (!confirm("Leave without recording? You'll need to mark the court again next time.")) return;
+    if (S.cam) S.cam.stream.getTracks().forEach((t) => t.stop());
+    await discard();
+    location.reload();
+  }
+
+  function closeCamera() {
+    if (S.job || !S.cam) return;
+    S.cam.stream.getTracks().forEach((t) => t.stop());
+    S.cam = null;
+    $("recPreview").classList.add("hidden");
+    $("useViewBtn").classList.add("hidden");
+    $("recQuality").textContent = "";
+    $("recStatus").textContent = "";
+    $("openCameraBtn").classList.remove("hidden");
+    $("openCameraBtn").disabled = false;
   }
 
   // ── A recording left unsent when the page closed ──
@@ -467,7 +508,7 @@
     document.body.style.overflow = "hidden";
     $("recKicker").textContent = "Match recorded";
     $("recTitle").textContent = "Sending the video";
-    ["recStartBtn", "recContinueBtn", "recStopBtn"].forEach((id) => $(id).classList.add("hidden"));
+    ["recStartBtn", "recContinueBtn", "recStopBtn", "recCancelBtn"].forEach((id) => $(id).classList.add("hidden"));
     $("recLive").classList.add("off");
     $("toggleLiveBtn").classList.add("hidden");
     $("recNote").textContent = "Keep this page open until it's sent. Your report opens when it's ready.";
@@ -488,12 +529,13 @@
 
   if (supported()) {
     $("modeSwitch").classList.remove("hidden");
-    $("modeUpload").addEventListener("click", () => { if (!busy()) setMode(false); });
+    $("modeUpload").addEventListener("click", () => { if (!busy()) { closeCamera(); setMode(false); } });
     $("modeRecord").addEventListener("click", () => { if (!(upload && upload.running)) setMode(true); });
     $("openCameraBtn").addEventListener("click", openCamera);
     $("useViewBtn").addEventListener("click", useView);
-    $("recStartBtn").addEventListener("click", startSegment);
-    $("recContinueBtn").addEventListener("click", continueRecording);
+    $("recStartBtn").addEventListener("click", startRecording);
+    $("recContinueBtn").addEventListener("click", startRecording);
+    $("recCancelBtn").addEventListener("click", cancelBeforeStart);
     $("recStopBtn").addEventListener("click", stopRecording);
     $("toggleLiveBtn").addEventListener("click", toggleLive);
     $("recordDiscardBtn").addEventListener("click", async () => {
