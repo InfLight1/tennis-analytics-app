@@ -47,8 +47,12 @@
   --hero-full-filter: saturate(1.05);
   --hero-full-kw: #9FD6AB;
   --panel-pad-x: var(--space-6);
-  --green-bg: #1E4029; --green-surface: #244933; --green-court: #2E5B41; --green-accent: #A8DDB4;
-  --foot-bg: #0F1C14;
+  --green-bg: #1E4029; --green-surface: rgba(28, 50, 38, .86); --green-court: #2E5B41; --green-accent: #A8DDB4;
+  /* one green ramp down the page: page → footer (same as the footer banner in site.css) */
+  --page-bg: #15261C; --foot-bg: #0D1912;
+  --sec-gap: var(--space-8);
+  --fade-h: 128px;
+  --thread: rgba(168, 221, 180, .34);
   --film-focus: 50% 50%;
   --cta-h: 440px;
   --cta-focus: 62% 55%;
@@ -273,7 +277,8 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
 .hero-full .hero-photo::before { content: ""; position: absolute; inset: 0; z-index: 1; background:
   linear-gradient(to bottom, rgba(10,14,9,.55) 0%, rgba(10,14,9,0) 24%),
   linear-gradient(to right, rgba(10,14,9,.80) 0%, rgba(10,14,9,.62) 36%, rgba(10,14,9,.18) 68%, rgba(10,14,9,0) 85%); }
-.hero-full .hero-photo::after { height: 30%; }
+/* Bottom of the photo melts into the page, so the first panel rises out of the court instead of starting under a hard edge. */
+.hero-full .hero-photo::after { height: 36%; background: linear-gradient(to top, var(--page-bg) 8%, rgba(21,38,28,.6) 45%, transparent); }
 @media (max-width: 759px) {
   .hero.hero-full { align-items: flex-start; }
   .hero-full .hero-photo::before { background: linear-gradient(to bottom, rgba(10,14,9,.78) 0%, rgba(10,14,9,.62) 45%, rgba(10,14,9,.2) 75%, rgba(10,14,9,0) 100%); }
@@ -285,16 +290,18 @@ footer { padding: var(--space-7) 0 var(--space-8); color: var(--muted); font-siz
    3) My reports = white panel, 4) footer = dark green band with the name and tagline. */
 html { overflow-x: clip; }
 .band { margin-inline: calc(50% - 50vw); padding-inline: calc(50vw - 50%); }
-section.block.panel-sec { margin-top: var(--space-7); padding: var(--space-6) var(--panel-pad-x); background: var(--surface);
+section.block.panel-sec { position: relative; margin-top: var(--sec-gap); padding: var(--space-6) var(--panel-pad-x); background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); }
 section.block.panel-sec { border-top: 1px solid var(--line); }
 @media (max-width: 559px) { section.block.panel-sec { padding: var(--space-5) var(--space-4); } }
-section.block.band-green { margin-top: var(--space-8); padding: var(--space-8) calc(50vw - 50%); border-top: 0;
+/* The first panel overlaps the bottom of the hero photo. */
+.hero-full + main.wrap > section.block.panel-sec:first-child { z-index: 3; margin-top: calc(-1 * var(--space-8)); }
+section.block.band-green { margin-top: var(--sec-gap); padding: var(--space-8) calc(50vw - 50%); border-top: 0;
   --bg: var(--green-bg); --surface: var(--green-surface); --surface-2: var(--green-surface); --court: var(--green-court);
   --line: rgba(255,255,255,.16); --line-strong: rgba(255,255,255,.3);
   --ink: #F7F3EA; --ink-2: #E6EEE5; --muted: #CFDDD1; --accent: var(--green-accent); --on-accent: #10200F;
-  background: var(--green-bg); color: var(--ink); }
-.band-green .figs figure { background: var(--green-surface); border-radius: var(--radius-lg); padding: var(--space-4); margin: 0; }
+  background: var(--page-bg); color: var(--ink); }
+.band-green .figs figure { background: var(--green-surface); border: 1px solid rgba(168,221,180,.14); border-radius: var(--radius-lg); padding: var(--space-4); margin: 0; }
 .band-green figcaption { color: var(--ink-2); }
 
 /* ── Photo bands (A: filming guide over a plain fence photo, no phone in it, B: closing call to action over the ball-on-line photo) */
@@ -304,8 +311,22 @@ section.block.band-green { position: relative; isolation: isolate; }
 .band-green .band-photo img { object-position: var(--film-focus); }
 .band-green .band-photo::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(to right, rgba(24,46,33,.66) 0%, rgba(24,46,33,.56) 55%, rgba(24,46,33,.36) 100%); }
-section.block.cta-band { position: relative; isolation: isolate; margin-top: var(--space-8); border-top: 0;
+/* Both photo bands fade in from the page colour at the top; the closing band fades out into the footer green. */
+.band-green .band-photo { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-h), #000 calc(100% - var(--fade-h)), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-h), #000 calc(100% - var(--fade-h)), transparent); }
+.cta-band .band-photo { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-h), #000 calc(100% - var(--fade-h) / 2), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-h), #000 calc(100% - var(--fade-h) / 2), transparent); }
+section.block.cta-band { position: relative; isolation: isolate; margin-top: var(--sec-gap); border-top: 0;
+  background: linear-gradient(to bottom, var(--page-bg), var(--foot-bg));
   padding: var(--space-9) calc(50vw - 50%); min-height: var(--cta-h); display: flex; align-items: center; color: #fff; }
+/* Court-line thread: a faint centre line with a small "T" joins each section to the next, like the centre service line. */
+main.wrap > section.block + section.block::before { content: ""; position: absolute; z-index: 1; pointer-events: none;
+  left: calc(50% - 8px); top: calc(-1 * var(--sec-gap)); width: 16px; height: var(--sec-gap);
+  background: linear-gradient(to bottom, transparent, var(--thread)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--thread), var(--thread)) 50% 100% / 16px 1px no-repeat; }
+/* Photo bands have soft, empty edges, so the line runs on into them. */
+main.wrap > section.block + section.block.band::before { height: calc(var(--sec-gap) + var(--space-8)); }
+main.wrap > section.block.band + section.block::before { top: calc(-1 * var(--sec-gap) - var(--space-8)); height: calc(var(--sec-gap) + var(--space-8)); }
 .cta-band .band-photo img { object-position: var(--cta-focus); }
 .cta-band .band-photo::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(to right, rgba(10,14,9,.82) 0%, rgba(10,14,9,.6) 42%, rgba(10,14,9,.1) 75%, rgba(10,14,9,0) 100%); }
@@ -314,8 +335,8 @@ section.block.cta-band { position: relative; isolation: isolate; margin-top: var
 .cta-band h2 .kw { color: var(--hero-full-kw); }
 .cta-band p { margin-top: var(--space-3); color: rgba(255,255,255,.92); }
 .cta-band .btn { margin-top: var(--space-5); }
-.cta-band + @media (max-width: 759px) {
-  section.block.cta-band { align-items: flex-start; --cta-h: 600px; --cta-focus: 64% 50%; background: var(--foot-bg); }
+@media (max-width: 759px) {
+  section.block.cta-band { align-items: flex-start; --cta-h: 600px; --cta-focus: 64% 50%; }
   .cta-band .band-photo { inset: auto 0 0 0; height: 58%; clip-path: inset(3px 0 0); }
   .cta-band .band-photo::after { background: linear-gradient(to bottom, var(--foot-bg) 0%, rgba(20,28,22,.35) 35%, rgba(20,28,22,0) 60%); }
 }
