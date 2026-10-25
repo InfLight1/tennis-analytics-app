@@ -1419,7 +1419,9 @@ def guess_court_remote(job_id: str) -> dict:
 # Deploy with `modal deploy modal_app.py`; the printed URL is BACKEND_URL
 # for calibration_demo.html.
 # ---------------------------------------------------------------------------
-@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=600, min_containers=1,
+# WEB_MIN_CONTAINERS=0 at deploy time lets a test copy (modal deploy --name tennis-perf-app-test) sleep when unused.
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=600,
+              min_containers=int(os.environ.get("WEB_MIN_CONTAINERS", "1")),
               secrets=[modal.Secret.from_name("app-passcode"), R2_SECRET])
 @modal.concurrent(max_inputs=20)   # the page sends several upload pieces at once (2026-10-12)
 @modal.asgi_app()
