@@ -6,7 +6,7 @@
 
 **Turn match data into match wins.**
 
-Upload a video of a singles tennis match. Each player gets a report that ranks what cost them the most points, with a tactic, a habit and a drill for each fix.
+Upload a video of a singles tennis match. Each player gets a report that ranks what cost them the most points, with a tactic, a habit and a drill for each fix. It's made for junior and high school players and their coaches.
 
 *Built by a player, for players.*
 
@@ -106,7 +106,6 @@ To test the app, I labeled one full match by hand, point by point, and compared 
 
 - **Testing on more matches.** I want to label matches on different courts, with different players and lighting, so the point calls keep getting more reliable.
 - **Sharper calls at the far end.** A single pixel at the far baseline covers 5 to 10 centimeters, so I am working on making in and out calls there as exact as the near side.
-- **More ways to film.** Right now the best results come from a phone behind one baseline with the whole court in view, and the built-in filming guide shows players exactly where to put it.
 - **Opening it to everyone.** While the app is in testing it uses a passcode, and the example report is already open for anyone to see.
 
 The tips focus on tactics and practice, so the app works alongside a coach and gives every lesson a head start.
@@ -115,13 +114,17 @@ The tips focus on tactics and practice, so the app works alongside a coach and g
 
 Since players are trusting the app with videos of themselves, I feel that protecting those videos matters as much as the analysis itself. Match videos are stored on the app's passcode-protected server, the AI that writes the tips only gets the numbers and never the video, and the **Delete report** button erases both the video and the report.
 
+## What coaches told me
+
+I showed the app to my coach, Adriana Ciarnuto, who has been teaching tennis for more than 30 years. She told me that coaches do not have time to watch even one of their players' matches fully, and that she thinks the app will help a lot of coaches and students. She and another coach both said that line calls would be one of the most useful features to add, since arguments over in or out calls happen at every level, from juniors to adults.
+
 ## What's next
 
-1. **Progress across matches**, so a player can see which weaknesses are shrinking over a whole season and which still need work.
-2. A simple **focus for the week** built from the #1 fix, with practice tracking that connects what a player worked on to how their next match went.
-3. **Easier use at the court**, with uploads that keep going in the background and a notification when the report is ready.
-4. **Accounts and stronger privacy**, where each player signs in to see only their own reports and each video is deleted automatically once its report is ready.
-5. **Doubles**, since high school tennis includes doubles matches.
+1. **More accurate calls**, by testing on more matches, since every other feature depends on them.
+2. **What coaches asked for:** line calls accurate enough to settle in or out arguments, second serve percentage, and serve speed.
+3. **Progress across matches**, so a player can see which weaknesses are shrinking over a whole season, with the #1 fix turned into a simple focus for the week.
+4. **A better way to film.** The tripod that clamps onto the court fence takes time to set up and doesn't give the best view for stats like line calls.
+5. **Accounts and stronger privacy**, where each player signs in to see only their own reports and each video is deleted automatically once its report is ready.
 
 ## Project layout
 
