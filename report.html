@@ -234,11 +234,6 @@ details[open] > summary svg { transform: rotate(180deg); }
 /* folds */
 details.fold { margin-top: var(--space-3); padding: 0 var(--panel-pad); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
 #player > details.fold { margin-top: var(--panel-gap); }
-/* On screen, "More stats" and "About this data" read as one panel with two rows, not two loose bars. */
-@media screen {
-  main:has(#coverageBox:not(.hidden)) #player > details.fold:last-child { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-  #player:has(> details.fold:last-child) + #coverageBox { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
-}
 @media (max-width: 559px) { details.fold { padding: 0 var(--space-4); } }
 details.fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 64px;
   font: 500 var(--text-xl)/1.2 var(--font-serif); color: var(--ink); }
