@@ -616,7 +616,10 @@ function playerHtml(pl, print = false) {
       <div class="fold-body">
         <div class="tiles">
           <div class="tile"><div class="v">${pct(sv.first_serve_in_pct)}</div><div class="l">First serves in</div><div class="c">${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves}</div></div>
+          ${sv.second_serves != null ? `<div class="tile"><div class="v">${pct(sv.second_serve_in_pct)}</div><div class="l">Second serves in</div><div class="c">${sv.second_serves_in} of ${sv.second_serves}</div></div>` : ""}
           <div class="tile"><div class="v">${pct(sv.service_points_won_pct)}</div><div class="l">Won on serve</div><div class="c">of ${sv.points_served} points</div></div>
+          ${sv.first_serve_points != null ? `<div class="tile"><div class="v">${pct(sv.first_serve_points_won_pct)}</div><div class="l">Won on 1st serve</div><div class="c">of ${sv.first_serve_points} points</div></div>
+          <div class="tile"><div class="v">${pct(sv.second_serve_points_won_pct)}</div><div class="l">Won on 2nd serve</div><div class="c">of ${sv.second_serve_points} points</div></div>` : ""}
           <div class="tile"><div class="v">${pct(rt.return_points_won_pct)}</div><div class="l">Won on return</div><div class="c">of ${rt.return_points} points</div></div>
         </div>
         ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3><ol class="fixes">${fixes.slice(3).map((p, i) => fixCard(p, i + 4, false)).join("")}</ol>` : ""}
