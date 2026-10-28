@@ -437,9 +437,10 @@ def get_table_position(ball_df, frame, window=MAX_TABLE_LOOKUP_WINDOW):
 def is_on_table(table_x, table_y, tolerance=TABLE_EDGE_TOLERANCE_UNITS):
     if pd.isna(table_x) or pd.isna(table_y):
         return None
+    y_lo, y_hi = config.rally_width_bounds()   # alleys count in doubles
     return (
         -tolerance <= table_x <= TABLE_LENGTH_UNITS + tolerance
-        and -tolerance <= table_y <= TABLE_WIDTH_UNITS + tolerance
+        and y_lo - tolerance <= table_y <= y_hi + tolerance
     )
 
 

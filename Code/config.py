@@ -37,6 +37,18 @@ TABLE_H = 823    # sideline to sideline
 SERVICE_LINE_OFFSET_FROM_BASELINE = 549   # baseline -> service line (18ft)
 NET_POSITION_OFFSET = TABLE_W / 2         # net at court's horizontal midpoint
 
+# Doubles (2026-10-28): rallies may land in the alleys (1.37 m each side of the
+# singles court); serves still use the singles service boxes. Set per job
+# (modal_app reads the job's match.json) BEFORE running the CPU chain.
+MATCH_TYPE = "singles"        # "singles" | "doubles"
+DOUBLES_ALLEY = 137
+
+
+def rally_width_bounds():
+    """Across-court in-bounds range for rally shots (court-space y, cm)."""
+    alley = DOUBLES_ALLEY if MATCH_TYPE == "doubles" else 0
+    return -alley, TABLE_H + alley
+
 # ── Detection / tracking parameters ──────────────────────────────────────
 BALL_CONF_THRESHOLD   = 0.3
 PLAYER_CONF_THRESHOLD = 0.5

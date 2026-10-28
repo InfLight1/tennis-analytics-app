@@ -426,6 +426,9 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .check-label { display: flex; gap: 10px; align-items: center; margin-top: var(--space-3); color: var(--ink); font-weight: 600; }
 .check-label input { width: 22px; height: 22px; accent-color: var(--accent); }
 .names { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-5); }
+.match-type { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: var(--space-5) 0 0; padding: 0; border: 0; }
+.match-type legend { padding: 0; font-weight: 650; }
+.match-type .check-label { min-height: var(--tap); margin-top: 0; }
 .names > div { display: flex; flex-direction: column; justify-content: flex-end; }
 .names label { font-size: var(--text-sm); }
 .names input { width: 100%; }
@@ -573,11 +576,16 @@ body.photo-hero .topbar { margin-bottom: -64px; }
             <div class="warn hidden" id="checkWarn"></div>
             <label class="check-label"><input type="checkbox" id="looksRight"> The lines match the court</label>
           </div>
+          <fieldset class="match-type">
+            <legend>Match type</legend>
+            <label class="check-label"><input type="radio" name="matchType" value="singles" checked> Singles</label>
+            <label class="check-label"><input type="radio" name="matchType" value="doubles"> Doubles <span class="muted">(stats per team; alleys count as in)</span></label>
+          </fieldset>
           <div class="names">
-            <div><label for="player1Name">Player at the <b>near</b> end at the start (closest to the camera)</label>
-              <input type="text" id="player1Name" maxlength="40" placeholder="e.g. Alex"></div>
-            <div><label for="player2Name">Player at the <b>far</b> end at the start</label>
-              <input type="text" id="player2Name" maxlength="40" placeholder="e.g. Sam"></div>
+            <div><label for="player1Name" data-singles="Player at the &lt;b&gt;near&lt;/b&gt; end at the start (closest to the camera)" data-doubles="Team at the &lt;b&gt;near&lt;/b&gt; end at the start (closest to the camera)">Player at the <b>near</b> end at the start (closest to the camera)</label>
+              <input type="text" id="player1Name" maxlength="40" placeholder="e.g. Alex" data-singles="e.g. Alex" data-doubles="e.g. Alex &amp; Jo"></div>
+            <div><label for="player2Name" data-singles="Player at the &lt;b&gt;far&lt;/b&gt; end at the start" data-doubles="Team at the &lt;b&gt;far&lt;/b&gt; end at the start">Player at the <b>far</b> end at the start</label>
+              <input type="text" id="player2Name" maxlength="40" placeholder="e.g. Sam" data-singles="e.g. Sam" data-doubles="e.g. Sam &amp; Lee"></div>
           </div>
           <div class="row calib-submit">
             <button type="button" class="btn btn-primary" id="submitCalibrationBtn" disabled>Start analysis</button>
@@ -1755,6 +1763,15 @@ $("resetPointsBtn").addEventListener("click", () => {
   showFrame(frame);
 })();
 
+// Singles or doubles: in doubles each side is a team, so the name boxes ask for teams.
+document.querySelectorAll('input[name="matchType"]').forEach((r) => r.addEventListener("change", () => {
+  const mode = document.querySelector('input[name="matchType"]:checked').value;
+  document.querySelectorAll(".names [data-singles]").forEach((el) => {
+    if (el.tagName === "INPUT") el.placeholder = el.dataset[mode];
+    else el.innerHTML = el.dataset[mode];
+  });
+}));
+
 $("submitCalibrationBtn").addEventListener("click", async () => {
   if (!jobId) { alert("No job: this is the offline preview. Upload a video to calibrate for real."); return; }
   $("submitCalibrationBtn").disabled = true;
@@ -1764,6 +1781,7 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
   form.append("points_json", JSON.stringify(pointsForServer()));
   form.append("player1_name", $("player1Name").value);
   form.append("player2_name", $("player2Name").value);
+  form.append("match_type", document.querySelector('input[name="matchType"]:checked')?.value || "singles");
 
   try {
     const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });

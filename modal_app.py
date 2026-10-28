@@ -751,6 +751,8 @@ def run_cpu_pipeline_remote(job_id: str):
     if not real_height:
         raise RuntimeError(f"Could not read frame height from {p['video_path']}")
     config.FRAME_HEIGHT = real_height
+    # singles or doubles, chosen at court marking (match.json); older jobs = singles
+    config.MATCH_TYPE = (_read_json(f"{p['job_dir']}/match.json", {}) or {}).get("type", "singles")
     analysis = importlib.reload(analysis)  # rebinds get_*_prominence defaults
     print(f"[job {job_id}] detected FRAME_HEIGHT={real_height}, analysis.py reloaded against it")
 
@@ -841,6 +843,7 @@ def run_cpu_pipeline_remote(job_id: str):
     cap.release()
     profile = mods["player_profile"].build_profiles(resolved_events_df, match_data_df, names, end_swaps,
                                                     fps=video_fps)
+    profile.setdefault("match", {})["type"] = config.MATCH_TYPE   # doubles: each "player" is a team
     with open(p["profile_json_path"], "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2, default=str)
 
@@ -1829,12 +1832,16 @@ def web_app():
 
     @fastapi_app.post("/api/calibrate")
     async def calibrate_safe(request: Request, job_id: str = Form(...), points_json: str = Form(...),
-                             player1_name: str = Form(""), player2_name: str = Form("")):
+                             player1_name: str = Form(""), player2_name: str = Form(""),
+                             match_type: str = Form("singles")):
         """Saving the court marking must never answer with a bare crash page: log it, explain it."""
         import traceback
         if request.state.user and not accts.can_change(request.state.user, job_id):
             return JSONResponse({"error": "This match belongs to someone else."}, status_code=403)
         try:
+            os.makedirs(_job_paths(job_id)["job_dir"], exist_ok=True)
+            with open(f"{_job_paths(job_id)['job_dir']}/match.json", "w", encoding="utf-8") as f:
+                json.dump({"type": "doubles" if match_type == "doubles" else "singles"}, f)
             return await calibrate(job_id, points_json, player1_name, player2_name)
         except Exception as e:
             print(f"[job {job_id}] calibrate failed:\n{traceback.format_exc()}")

@@ -47,7 +47,8 @@ def classify_error_type(hit_table_x, bounce_table_x, bounce_table_y, hitter_side
         return "net"
     if bounce_table_x < 0 or bounce_table_x > COURT_W:
         return "long"
-    if bounce_table_y < 0 or bounce_table_y > COURT_H:
+    y_lo, y_hi = config.rally_width_bounds()   # alleys count in doubles
+    if bounce_table_y < y_lo or bounce_table_y > y_hi:
         return "wide"
     return "unclassified"
 
