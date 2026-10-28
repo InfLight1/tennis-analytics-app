@@ -160,6 +160,55 @@ class Accounts:
     def unclaim(self, username, job_id):
         self.s[f"jobs:{username}"] = [j for j in self.s.get(f"jobs:{username}", []) if j["job_id"] != job_id]
 
+    def match_names(self, team_id, names):
+        """Which teammates the typed player names are: {slot: username}.
+        A name matches a player's full name, username, or first name when
+        only one player on the team has that first name. Not case-sensitive."""
+        players = [self.user(u) for u in (self.team(team_id) or {}).get("players", [])]
+        players = [p for p in players if p]
+        firsts = {}
+        for p in players:
+            firsts.setdefault(p["name"].split()[0].lower() if p["name"].split() else "", []).append(p)
+        out = {}
+        for slot, typed in names.items():
+            t = " ".join((typed or "").lower().split())
+            if not t:
+                continue
+            hit = next((p for p in players if t in (p["name"].lower(), p["username"])), None)
+            if not hit and len(firsts.get(t, [])) == 1:
+                hit = firsts[t][0]
+            if hit and hit["username"] not in out.values():
+                out[slot] = hit["username"]
+        return out
+
+    def auto_claim(self, job_id, names, date=None):
+        """Add the report to each named teammate's matches (the uploader's
+        team). Re-run after a rename: players no longer named are taken off."""
+        owner = self.user(self.owner(job_id))
+        if not owner:
+            return {}
+        found = self.match_names(owner["team_id"], names)
+        for u in (self.team(owner["team_id"]) or {}).get("players", []):
+            slot = next((s for s, name in found.items() if name == u), None)
+            had = next((j for j in self.claims(u) if j["job_id"] == job_id), None)
+            if slot:
+                self.claim(u, job_id, slot, (had or {}).get("date") or date)
+                if had and had.get("result"):
+                    self.set_result(u, job_id, had["result"])
+            elif had:
+                self.unclaim(u, job_id)
+        return found
+
+    def set_result(self, username, job_id, result):
+        """The player's own Win/Loss for a match (the video often stops before the match ends)."""
+        if result not in ("win", "loss", None):
+            raise AccountError("Result is win or loss.")
+        jobs = self.claims(username)
+        for j in jobs:
+            if j["job_id"] == job_id:
+                j["result"] = result
+        self.s[f"jobs:{username}"] = jobs
+
     def claims(self, username):
         return list(self.s.get(f"jobs:{username}", []))
 

@@ -46,6 +46,22 @@
       save([entry, ...list.filter((r) => r.job !== job)]);
     },
     forgetReport(job) { save(load().filter((r) => r.job !== job)); },
+    // Signed in: player-name boxes suggest teammates' names. Typing a teammate's
+    // name adds the match to their progress, so exact names matter.
+    async teamNameHints(inputs) {
+      if (!window.Site.session()) return false;
+      const data = await fetch("/api/team/names").then((r) => r.json()).catch(() => ({}));
+      if (!data.names || !data.names.length) return false;
+      let list = document.getElementById("teamNames");
+      if (!list) {
+        list = document.createElement("datalist");
+        list.id = "teamNames";
+        document.body.appendChild(list);
+      }
+      list.replaceChildren(...data.names.map((n) => Object.assign(document.createElement("option"), { value: n })));
+      inputs.forEach((i) => i && i.setAttribute("list", "teamNames"));
+      return true;
+    },
     // Delete a report for good (report, stats and its video on the server), then drop it here.
     async deleteReport(job) {
       const res = await fetch(`/api/job/${encodeURIComponent(job)}`, { method: "DELETE" });

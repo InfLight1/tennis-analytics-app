@@ -1843,6 +1843,8 @@ def web_app():
             os.makedirs(_job_paths(job_id)["job_dir"], exist_ok=True)
             with open(f"{_job_paths(job_id)['job_dir']}/match.json", "w", encoding="utf-8") as f:
                 json.dump({"type": "doubles" if match_type == "doubles" else "singles"}, f)
+            if match_type != "doubles":   # doubles boxes hold team names, not one player each
+                accts.auto_claim(job_id, {"player_1": player1_name, "player_2": player2_name})
             return await calibrate(job_id, points_json, player1_name, player2_name)
         except Exception as e:
             print(f"[job {job_id}] calibrate failed:\n{traceback.format_exc()}")
@@ -2005,6 +2007,8 @@ def web_app():
             with open(p["profile_json_path"], "w", encoding="utf-8") as f:
                 json.dump(profile, f, indent=2, default=str)
         volume.commit()
+        if ((profile or {}).get("match") or {}).get("type") != "doubles":
+            accts.auto_claim(job_id, names)
         return JSONResponse({"job_id": job_id, "names": names})
 
     # ── Accounts, progress and the coach's team view (2026-10-28) ─────────
@@ -2049,9 +2053,11 @@ def web_app():
         accts.sign_out(request.headers.get("x-session", "").strip())
         return JSONResponse({"signed_out": True})
 
-    def _player_in(job_id, slot):
-        prof = _read_json(_job_paths(job_id)["profile_json_path"])
-        return (prof or {}).get("players", {}).get(slot)
+    def _match_row(claim):
+        prof = _read_json(_job_paths(claim["job_id"])["profile_json_path"]) or {}
+        return {"job_id": claim["job_id"], "date": claim["date"], "slot": claim["slot"],
+                "player": prof.get("players", {}).get(claim["slot"]), "match": prof.get("match"),
+                "result": claim.get("result"), "advice": _advice_in(claim["job_id"], claim["slot"])}
 
     def _advice_in(job_id, slot):
         """The report's AI tips for this player, by pattern id."""
@@ -2061,10 +2067,7 @@ def web_app():
 
     def _progress_for(username):
         volume.reload()
-        rows = [{"job_id": c["job_id"], "date": c["date"], "player": _player_in(c["job_id"], c["slot"]),
-                 "advice": _advice_in(c["job_id"], c["slot"])}
-                for c in accts.claims(username)]
-        return progress_mod.build(rows)
+        return progress_mod.build([_match_row(c) for c in accts.claims(username)])
 
     @fastapi_app.get("/api/me")
     def me(request: Request):
@@ -2078,28 +2081,28 @@ def web_app():
             out["team"]["code"] = team.get("code")
         return JSONResponse(out)
 
-    @fastapi_app.post("/api/me/claim")
-    def me_claim(request: Request, job_id: str = Form(...), slot: str = Form(...), date: str = Form("")):
-        """'This is me' on a report."""
+    # Matches reach a player's progress by name: typing a teammate's name at court
+    # marking (or renaming on the report) adds it for them (accts.auto_claim).
+    @fastapi_app.post("/api/me/result")
+    def me_result(request: Request, job_id: str = Form(...), result: str = Form("")):
+        """The player taps Win or Loss on a match in their history."""
         u = request.state.user
         if not u:
             return JSONResponse({"error": "Sign in first."}, status_code=401)
-        if not (accts.owner(job_id) == u["username"] or accts.can_see(u, job_id)
-                or accts.owner(job_id) is None):
-            return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
         try:
-            accts.claim(u["username"], job_id, slot, date[:10] or None)
+            accts.set_result(u["username"], job_id, result or None)
         except accounts_mod.AccountError as e:
             return _account_error(e)
-        return JSONResponse({"claims": accts.claims(u["username"])})
+        return JSONResponse({"job_id": job_id, "result": result or None})
 
-    @fastapi_app.post("/api/me/unclaim")
-    def me_unclaim(request: Request, job_id: str = Form(...)):
+    @fastapi_app.get("/api/team/names")
+    def team_names(request: Request):
+        """Teammates' names, offered while typing player names at court marking."""
         u = request.state.user
-        if not u:
-            return JSONResponse({"error": "Sign in first."}, status_code=401)
-        accts.unclaim(u["username"], job_id)
-        return JSONResponse({"claims": accts.claims(u["username"])})
+        team = accts.team(u["team_id"]) if u else None
+        if not team:
+            return JSONResponse({"names": []})
+        return JSONResponse({"names": [p["name"] for p in map(accts.user, team.get("players", [])) if p]})
 
     @fastapi_app.get("/api/progress")
     def my_progress(request: Request, player: str = ""):
@@ -2131,12 +2134,14 @@ def web_app():
                             "latest": latest, "focus": prog["focus"],
                             # coach view stays high level: problem names and trends, no tips
                             "problems": [{k: f[k] for k in ("id", "title", "trend", "points")} for f in prog["fixes"]],
-                            "fixes": prog["fixes"]})
+                            "fixes": prog["fixes"], "strengths": prog["strengths"]})
         focus = progress_mod.team_focus(players)
+        good = progress_mod.team_strengths(players)
         for pl in players:
             pl.pop("fixes")
+            pl.pop("strengths")
         return JSONResponse({"team": {"name": team.get("name"), "code": team.get("code")}, "players": players,
-                             "team_focus": focus})
+                             "team_focus": focus, "team_strengths": good})
 
     @fastapi_app.post("/api/team/reset-password")
     def team_reset_password(request: Request, player: str = Form(...), new_password: str = Form(...)):

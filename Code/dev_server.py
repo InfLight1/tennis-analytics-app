@@ -78,6 +78,9 @@ def seed(profile_path):
         for w in pf["players"]["player_1"]["weaknesses"]:
             if w["id"] == "errors_net":
                 w["points"] = max(1, round(w["points"] * scale))
+        if i == 2:   # one finished match, so set scores and the app's win show
+            pf["match"]["score"] = {"sets_won": {"player_1": 2, "player_2": 0},
+                                    "completed_sets": [[6, 4], [6, 3]], "match_winner": "player_1"}
         d = Path(TMP) / job
         d.mkdir(parents=True, exist_ok=True)
         (d / "profile.json").write_text(json.dumps(pf), encoding="utf-8")
@@ -91,6 +94,7 @@ def seed(profile_path):
             a.claim("sam", job, "player_2", "2026-11-01")
         a.set_owner(job, "rudra")
         a.claim("rudra", job, "player_1", f"2026-11-0{1 + 7 * i}" if i == 0 else f"2026-11-{1 + 7 * i:02d}")
+    a.set_result("rudra", "dev000000001", "loss")
     print(f"Demo team code {team['code']}; sign in as coachk / rudra / sam with password1")
 
 

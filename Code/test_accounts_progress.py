@@ -50,6 +50,23 @@ def test_accounts():
     check(not a.can_see(other_coach, "job1"), "another team's coach can't")
     check(a.can_change(coach, "job1") and not a.can_change(p2, "job1"), "only uploader or coach can delete")
 
+    a.join_team(team["code"], "sam2", "password2", "Sam Lee")
+    a.join_team(team["code"], "jo1", "password2", "Jo Park")
+    check(a.match_names(team["id"], {"player_1": "rudra", "player_2": "jo"}) == {"player_1": "rudra", "player_2": "jo1"},
+          "names match username or a unique first name")
+    check(a.match_names(team["id"], {"player_1": "sam lee", "player_2": "Stranger"}) == {"player_1": "sam2"},
+          "full name matches; strangers don't")
+    check(a.match_names(team["id"], {"player_1": "Rudra", "player_2": "rudra"}) == {"player_1": "rudra"},
+          "one player is never both sides")
+    a.set_owner("job9", "rudra")
+    a.auto_claim("job9", {"player_1": "Jo", "player_2": "Rudra"}, "2026-11-20")
+    check(any(j["job_id"] == "job9" and j["slot"] == "player_2" for j in a.claims("rudra"))
+          and a.can_see(a.user("jo1"), "job9"), "auto-claim: both named teammates get the match")
+    a.set_result("jo1", "job9", "win")
+    a.auto_claim("job9", {"player_1": "Jo", "player_2": "Someone"})
+    check(not any(j["job_id"] == "job9" for j in a.claims("rudra"))
+          and a.claims("jo1")[-1]["result"] == "win", "rename takes it off; a kept player's result stays")
+
     a.reset_password(coach, "sam", "newpass99")
     check(bool(a.sign_in("sam", "newpass99")), "coach resets a player's password")
     check(raises(lambda: a.reset_password(other_coach, "sam", "hackhack1")), "not for other teams' players")
@@ -91,6 +108,19 @@ def test_progress():
     check(tf[0]["id"] == "errors_net" and tf[0]["players"] == ["A", "B"] and tf[0]["points"] == 8,
           "team focus: the problem most players share comes first")
     check(tf[0]["drill"] == "drill B", "team drill = the one written for whoever lost most to it")
+    finished = {"score": {"completed_sets": [[4, 6], [6, 3]], "match_winner": "player_2"}}
+    pl = _pl(8, 4, 20) | {"strengths": [{"id": "winners", "title": "Winners", "detail": "3 of 10", "points": 3, "top": True}]}
+    r = progress.build([{"job_id": "a", "date": "2026-11-01", "player": pl, "slot": "player_2", "match": finished},
+                        {"job_id": "b", "date": "2026-11-08", "player": pl, "slot": "player_1", "result": "loss"},
+                        {"job_id": "c", "date": "2026-11-09", "player": pl, "slot": "player_1"}])
+    a, b, c = r["matches"]
+    check(a["result"] == "win" and a["result_from"] == "app" and a["sets"] == ["6-4", "3-6"],
+          "finished match: win and set scores from the player's side")
+    check(b["result"] == "loss" and b["result_from"] == "player" and c["result"] is None,
+          "player's own result; unknown stays blank (never guessed)")
+    check(r["strengths"][0]["title"] == "Winners", "what went well = latest report's strengths")
+    ts = progress.team_strengths([{"name": "A", "strengths": r["strengths"]}, {"name": "B", "strengths": r["strengths"]}])
+    check(ts[0]["players"] == ["A", "B"], "team strengths pooled by player count")
     one = progress.build([{"job_id": "a", "date": "2026-11-01", "player": _pl(8, 4, 20)}])
     check(one["weaknesses"][0]["trend"] == "not enough yet", "one match: no trend claimed")
     check(progress.build([])["focus"] is None, "no matches: no focus")

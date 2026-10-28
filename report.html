@@ -124,9 +124,6 @@ p { margin: 0; text-wrap: pretty; }
 .page-head .score b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
 .tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
-.me-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3);
-  margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px dashed var(--line); border-radius: var(--radius-md); }
-@media print { .me-bar { display: none !important; } }
 .tabs button { min-height: 56px; border: 0; background: transparent; cursor: pointer; color: var(--dim);
   font: 500 var(--text-xl)/1 var(--font-serif); letter-spacing: -0.01em; position: relative; border-radius: 0;
   transition: color var(--dur) var(--ease-out); }
@@ -369,7 +366,6 @@ details.fold > summary svg { color: var(--muted); }
   </form>
   <div id="error" class="hidden" role="alert"></div>
   <div class="tabs hidden" role="tablist" aria-label="Player" id="tabs"></div>
-  <div id="meBar" class="me-bar hidden" aria-live="polite"></div>
   <div id="player" role="tabpanel"></div>
   <div id="printView" aria-hidden="true"></div>
   <details class="fold hidden" id="coverageBox">
@@ -426,6 +422,7 @@ async function load() {
       $("deleteBtn").classList.remove("hidden");
     }
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
+    Site.teamNameHints([$("n1"), $("n2")]);
     render();
     $("pdfBtn").classList.remove("hidden");
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
@@ -541,43 +538,7 @@ $("tabs").addEventListener("keydown", (e) => {
 
 function renderPlayer(pl) {
   $("player").innerHTML = playerHtml(pl);
-  renderMe();
 }
-
-// "This is me" (accounts, 2026-10-28): a signed-in player adds this match to their progress.
-let myClaim, meLoaded = false;
-async function renderMe() {
-  const bar = $("meBar");
-  if (!Site.session() || !JOB || JOB === Site.EXAMPLE_JOB || params.get("file")) return;
-  if (!meLoaded) {
-    meLoaded = true;
-    const me = await fetch(`${BACKEND}/api/me`).then((r) => r.json()).catch(() => ({}));
-    if (!me.user || me.user.role !== "player") return;
-    myClaim = (me.claims || []).find((c) => c.job_id === JOB) || null;
-  }
-  if (myClaim === undefined) return;
-  const name = esc(DATA.players[current]?.name || "this player");
-  bar.innerHTML = myClaim && myClaim.slot === current
-    ? `<span>✓ ${name} is you. This match is in <a href="/account">your progress</a>.</span><button type="button" class="btn" data-me="undo">Not me</button>`
-    : myClaim ? "" : `<span>Is ${name} you?</span><button type="button" class="btn" data-me="claim">This is me</button>`;
-  bar.classList.toggle("hidden", !bar.innerHTML);
-}
-$("meBar").addEventListener("click", async (e) => {
-  const b = e.target.closest("[data-me]");
-  if (!b) return;
-  b.disabled = true;
-  const fd = new FormData();
-  fd.set("job_id", JOB);
-  if (b.dataset.me === "claim") {
-    fd.set("slot", current);
-    const added = Site.reports().find((r) => r.job === JOB)?.added;
-    fd.set("date", (added || new Date().toISOString()).slice(0, 10));
-  }
-  const res = await fetch(`${BACKEND}/api/me/${b.dataset.me === "claim" ? "claim" : "unclaim"}`, { method: "POST", body: fd });
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) myClaim = (data.claims || []).find((c) => c.job_id === JOB) || null;
-  renderMe();
-});
 
 // One player's report as HTML. print: both Lost and Won bars (no switch), ids made unique.
 function playerHtml(pl, print = false) {

@@ -586,6 +586,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
               <input type="text" id="player1Name" maxlength="40" placeholder="e.g. Alex" data-singles="e.g. Alex" data-doubles="e.g. Alex &amp; Jo"></div>
             <div><label for="player2Name" data-singles="Player at the &lt;b&gt;far&lt;/b&gt; end at the start" data-doubles="Team at the &lt;b&gt;far&lt;/b&gt; end at the start">Player at the <b>far</b> end at the start</label>
               <input type="text" id="player2Name" maxlength="40" placeholder="e.g. Sam" data-singles="e.g. Sam" data-doubles="e.g. Sam &amp; Lee"></div>
+            <p class="muted hidden" id="namesHint" style="grid-column:1/-1;margin:0">Pick teammates from the suggestions: the match goes straight into their progress.</p>
           </div>
           <div class="row calib-submit">
             <button type="button" class="btn btn-primary" id="submitCalibrationBtn" disabled>Start analysis</button>
@@ -769,6 +770,7 @@ const $ = (id) => document.getElementById(id);
 // ?backend=<url> points the page at another server.
 const BACKEND = (new URLSearchParams(location.search).get("backend") || "").replace(/\/$/, "");
 function backendUrl() { return BACKEND; }
+Site.teamNameHints([$("player1Name"), $("player2Name")]).then((ok) => ok && $("namesHint").classList.remove("hidden"));
 
 function setStage(el, state) {
   el.classList.remove("active", "done");

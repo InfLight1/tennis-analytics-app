@@ -8,12 +8,17 @@ matches with enough points; with less, the trend says "not enough yet"
 instead of guessing (same honesty rule as the report's low_sample).
 
 build(matches) -> {
-  "matches":  [{job_id, date, points_played, points_won_pct, first_serve_in_pct,
-                second_serve_in_pct, double_faults, top_fix}],   oldest first
+  "matches":  [{job_id, date, points_played, points_won, points_lost, points_won_pct,
+                result (win/loss/None), result_from (player/app), sets,
+                first_serve_in_pct, second_serve_in_pct, double_faults, top_fix}],   oldest first
   "weaknesses": [{id, title, rates: [per match, None if absent], trend,
                   change}],                                     worst latest first
   "focus":    {id, title, why} or None   -- "the one thing this week"
+  "fixes":    latest report's top 3 fixes with advice and trend
+  "strengths": latest report's top strengths [{id, title, detail, points}]
 }
+Each input match may also carry "slot", "match" (profile["match"]) and the
+player's own "result", for the win/loss tag.
 """
 
 MIN_POINTS = 10        # a match with fewer decided points says too little
@@ -53,7 +58,9 @@ def build(matches):
         top = next((w for w in pl.get("weaknesses", []) if w.get("top")), None)
         out_matches.append({
             "job_id": m["job_id"], "date": m.get("date"), "points_played": played,
+            "points_won": st.get("points_won"), "points_lost": st.get("points_lost"),
             "points_won_pct": st.get("points_won_pct"),
+            **_result(m),
             "first_serve_in_pct": sv.get("first_serve_in_pct"),
             "second_serve_in_pct": sv.get("second_serve_in_pct"),
             "double_faults": sv.get("double_faults"),
@@ -94,7 +101,42 @@ def build(matches):
         else:
             why += "."
         focus = {"id": w["id"], "title": w["title"], "why": why}
-    return {"matches": out_matches, "weaknesses": weaknesses, "focus": focus, "fixes": _fixes(rows, usable, weaknesses)}
+    return {"matches": out_matches, "weaknesses": weaknesses, "focus": focus,
+            "fixes": _fixes(rows, usable, weaknesses), "strengths": _strengths(rows, usable)}
+
+
+def _result(m):
+    """Win/loss: the player's own answer first; else the app's score, only
+    when it counted the match to the end. Set scores from the player's side."""
+    slot, score = m.get("slot"), (m.get("match") or {}).get("score") or {}
+    other = "player_2" if slot == "player_1" else "player_1"
+    sets = [f"{a}-{b}" if slot == "player_1" else f"{b}-{a}" for a, b in score.get("completed_sets") or []]
+    result, source = m.get("result"), "player" if m.get("result") else None
+    if not result and slot and score.get("match_winner") in (slot, other):
+        result, source = ("win" if score["match_winner"] == slot else "loss"), "app"
+    return {"result": result, "result_from": source, "sets": sets}
+
+
+def _strengths(rows, usable, limit=3):
+    """What went well in the latest report (its top strengths, same order)."""
+    src = usable[-1][0] if usable else (rows[-1] if rows else None)
+    if not src:
+        return []
+    good = [s for s in src["player"].get("strengths", []) if s.get("top")] or src["player"].get("strengths", [])
+    return [{"id": s["id"], "title": s["title"], "detail": s.get("detail"), "points": s.get("points", 0)}
+            for s in good[:limit]]
+
+
+def team_strengths(players, limit=3):
+    """What the team does well: each player's latest strengths pooled by
+    pattern, ranked by how many players have it, then points won."""
+    pool = {}
+    for p in players:
+        for s in p.get("strengths") or []:
+            e = pool.setdefault(s["id"], {"id": s["id"], "title": s["title"], "players": [], "points": 0})
+            e["players"].append(p["name"])
+            e["points"] += s.get("points", 0)
+    return sorted(pool.values(), key=lambda e: (-len(e["players"]), -e["points"]))[:limit]
 
 
 def team_focus(players, limit=3):
