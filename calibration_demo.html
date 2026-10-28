@@ -426,7 +426,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .check-label { display: flex; gap: 10px; align-items: center; margin-top: var(--space-3); color: var(--ink); font-weight: 600; }
 .check-label input { width: 22px; height: 22px; accent-color: var(--accent); }
 .names { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-5); }
-.match-type { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: var(--space-5) 0 0; padding: 0; border: 0; }
+.match-type { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0 0 var(--space-4); padding: 0; border: 0; }
 .match-type legend { padding: 0; font-weight: 650; }
 .match-type .check-label { min-height: var(--tap); margin-top: 0; }
 .names > div { display: flex; flex-direction: column; justify-content: flex-end; }
@@ -555,8 +555,13 @@ body.photo-hero .topbar { margin-bottom: -64px; }
       </li>
       <li class="step is-upcoming" data-step="2">
         <h3 class="step-title"><span class="step-n" id="badge2">2</span>Mark the court</h3>
-        <p>Tap 7 points on the court in a frame from your video, then name both players.</p>
+        <p>Choose singles or doubles, tap 7 points on the court in a frame from your video, then name both sides.</p>
         <div class="step-body hidden" id="calibratePanel">
+          <fieldset class="match-type">
+            <legend>Match type</legend>
+            <label class="check-label"><input type="radio" name="matchType" value="singles" checked> Singles</label>
+            <label class="check-label"><input type="radio" name="matchType" value="doubles"> Doubles <span class="muted">(mark the outer corners; stats per team)</span></label>
+          </fieldset>
           <div id="autoBanner" class="auto-banner hidden" role="status">
             <span class="ab-icon" aria-hidden="true"></span>
             <div><b id="abTitle"></b> <span id="abText"></span></div>
@@ -576,11 +581,6 @@ body.photo-hero .topbar { margin-bottom: -64px; }
             <div class="warn hidden" id="checkWarn"></div>
             <label class="check-label"><input type="checkbox" id="looksRight"> The lines match the court</label>
           </div>
-          <fieldset class="match-type">
-            <legend>Match type</legend>
-            <label class="check-label"><input type="radio" name="matchType" value="singles" checked> Singles</label>
-            <label class="check-label"><input type="radio" name="matchType" value="doubles"> Doubles <span class="muted">(stats per team; alleys count as in)</span></label>
-          </fieldset>
           <div class="names">
             <div><label for="player1Name" data-singles="Player at the &lt;b&gt;near&lt;/b&gt; end at the start (closest to the camera)" data-doubles="Team at the &lt;b&gt;near&lt;/b&gt; end at the start (closest to the camera)">Player at the <b>near</b> end at the start (closest to the camera)</label>
               <input type="text" id="player1Name" maxlength="40" placeholder="e.g. Alex" data-singles="e.g. Alex" data-doubles="e.g. Alex &amp; Jo"></div>
@@ -740,10 +740,22 @@ const FRIENDLY_POINTS = {
 // One extra sentence per point, shown with a small court picture of where to tap.
 const POINT_TIPS = {
   corner: "Where the baseline meets the inner (singles) sideline. The outer corner works too.",
+  cornerDoubles: "Where the baseline meets the outer (doubles) sideline, the very corner of the court. If it's outside the picture, tap the inner corner instead.",
   service: "Where the service line meets the inner sideline.",
+  serviceDoubles: "Where the service line ends, on the inner (singles) sideline. In doubles too: the service line stops there.",
   net_center: "The bottom of the net, in the middle.",
 };
-const tipFor = (l) => (l.startsWith("baseline_") ? POINT_TIPS.corner : l.startsWith("service_") ? POINT_TIPS.service : POINT_TIPS[l] || "");
+const tipFor = (l) => (l.startsWith("baseline_") ? POINT_TIPS[isDoubles() ? "cornerDoubles" : "corner"]
+  : l.startsWith("service_") ? POINT_TIPS[isDoubles() ? "serviceDoubles" : "service"] : POINT_TIPS[l] || "");
+// Doubles (Rudra, 2026-10-28): the four baseline corners are the OUTER (doubles) corners.
+const isDoubles = () => document.querySelector('input[name="matchType"]:checked')?.value === "doubles";
+const SINGLES_CORNER_NAMES = Object.fromEntries(Object.entries(FRIENDLY_POINTS).filter(([k]) => k.startsWith("baseline_")));
+function applyCornerNames() {
+  for (const [k, v] of Object.entries(SINGLES_CORNER_NAMES)) {
+    FRIENDLY_POINTS[k] = isDoubles() ? v.replace("inner", "outer") : v;
+    INSTRUCTIONS[k] = FRIENDLY_POINTS[k];
+  }
+}
 let INSTRUCTIONS = { ...FRIENDLY_POINTS };
 
 let jobId = null;
@@ -1423,13 +1435,15 @@ function refit() {
   const labels = POINT_LABELS.filter((l) => l in clickedPoints && l in COURT_POINTS);
   if (labels.length < POINT_LABELS.length || labels.length < 4) return;
   const corners = Object.keys(OUTER_CORNERS).filter((l) => labels.includes(l));
-  const inner = fitWith(labels, []);
-  let best = inner;
-  for (let m = 1; m < 1 << corners.length; m++) {
+  // The expected corners: inner for singles, outer for doubles. Any mix is tried too
+  // (forgiving taps), but only kept when it clearly explains the taps better.
+  const expected = fitWith(labels, isDoubles() ? corners : []);
+  let best = expected;
+  for (let m = 0; m < 1 << corners.length; m++) {
     const f = fitWith(labels, corners.filter((_, i) => m & (1 << i)));
     if (f && (!best || f.total < best.total)) best = f;
   }
-  if (inner && best !== inner && best.total > OUTER_BETTER * inner.total) best = inner;
+  if (expected && best !== expected && best.total > OUTER_BETTER * expected.total) best = expected;
   if (!best) return;
   fit = { imgToCourt: best.imgToCourt, courtToImg: inv3(best.imgToCourt), errors: best.errors, outer: best.outer };
 }
@@ -1453,7 +1467,7 @@ function courtDiagram(label) {
     ...COURT_LINES.filter((l) => !l[2]).map((l) => line(l)),
     line([[NET, -ALLEY - 40], [NET, COURT_H + ALLEY + 40]], "net"),
   ].join("");
-  const [cx, cy] = P(...COURT_POINTS[label]);
+  const [cx, cy] = P(...(isDoubles() && OUTER_CORNERS[label] ? OUTER_CORNERS[label] : COURT_POINTS[label]));
   return `<svg class="court-mini" viewBox="0 0 184 140" width="184" height="140" aria-hidden="true">${lines}` +
     `<circle class="ring" cx="${cx}" cy="${cy}" r="9"/><circle class="dot" cx="${cx}" cy="${cy}" r="4.5"/></svg>`;
 }
@@ -1470,8 +1484,10 @@ function updateInstruction() {
       $("submitCalibrationBtn").disabled = !(fit && !POINT_LABELS.some((l) => fit.errors[l] > BLOCK_POINT_ERROR_CM) && $("looksRight").checked);
       return;
     }
-    const adjusted = fit && fit.outer.length
-      ? ` You tapped the outer corner for ${fit.outer.length === 1 ? "one corner" : `${fit.outer.length} corners`}; that's adjusted for you.` : "";
+    const odd = !fit ? 0 : isDoubles()
+      ? Object.keys(OUTER_CORNERS).filter((l) => !fit.outer.includes(l)).length : fit.outer.length;
+    const adjusted = odd
+      ? ` You tapped the ${isDoubles() ? "inner" : "outer"} corner for ${odd === 1 ? "one corner" : `${odd} corners`}; that's adjusted for you.` : "";
     $("instruction").textContent = fit
       ? `All points placed. Check the drawn court lines below, then start the analysis.${adjusted}`
       : "All points placed, but the court fit failed. Re-click the points.";
@@ -1524,9 +1540,10 @@ function redrawFrame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(canvas._img, 0, 0, canvas.width, canvas.height);
   if (fit) {
-    ctx.strokeStyle = "rgba(34, 211, 238, .55)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
+    // doubles: the alleys are part of the court, so draw them as solid as the rest
+    ctx.strokeStyle = isDoubles() ? "#22d3ee" : "rgba(34, 211, 238, .55)";
+    ctx.lineWidth = isDoubles() ? 1.5 : 1;
+    ctx.setLineDash(isDoubles() ? [] : [3, 4]);
     for (const [from, to] of DOUBLES_LINES) {
       const [x1, y1] = applyH(fit.courtToImg, ...from), [x2, y2] = applyH(fit.courtToImg, ...to);
       ctx.beginPath();
@@ -1665,6 +1682,8 @@ async function guessCourt() {
       clickOrder = POINT_LABELS.filter((l) => l in clickedPoints);
       autoPlaced = true;
       state = "found";
+      // the court finder answers with the singles corners; in doubles, show the dots on the outer ones
+      if (isDoubles()) { refit(); moveCornersTo(true); }
       pointsChanged();
     }
   } catch (e) { /* tapping still works */ }
@@ -1763,13 +1782,26 @@ $("resetPointsBtn").addEventListener("click", () => {
   showFrame(frame);
 })();
 
-// Singles or doubles: in doubles each side is a team, so the name boxes ask for teams.
+// Move the four baseline-corner dots onto the outer (doubles) or inner (singles) corners,
+// using the current court fit, so switching match type keeps the marking.
+function moveCornersTo(outer) {
+  if (!fit) return;
+  for (const l of Object.keys(OUTER_CORNERS)) {
+    if (l in clickedPoints) clickedPoints[l] = applyH(fit.courtToImg, ...(outer ? OUTER_CORNERS[l] : COURT_POINTS[l]));
+  }
+}
+
+// Singles or doubles: in doubles each side is a team (name boxes ask for teams) and the
+// corners to mark are the outer ones.
 document.querySelectorAll('input[name="matchType"]').forEach((r) => r.addEventListener("change", () => {
-  const mode = document.querySelector('input[name="matchType"]:checked').value;
+  const mode = isDoubles() ? "doubles" : "singles";
   document.querySelectorAll(".names [data-singles]").forEach((el) => {
     if (el.tagName === "INPUT") el.placeholder = el.dataset[mode];
     else el.innerHTML = el.dataset[mode];
   });
+  applyCornerNames();
+  moveCornersTo(isDoubles());
+  pointsChanged();
 }));
 
 $("submitCalibrationBtn").addEventListener("click", async () => {

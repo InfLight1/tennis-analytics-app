@@ -54,6 +54,17 @@ modal_app.volume = type("V", (), {"reload": lambda s: None, "commit": lambda s: 
 modal_app._start_r2_puller = lambda job_id: None
 modal_app._r2 = lambda: None
 
+# Automatic court finding runs right here instead of on a Modal container.
+_guess_local = modal_app.guess_court_remote.get_raw_f()
+
+
+async def _guess_aio(job_id):
+    return _guess_local(job_id)
+
+
+modal_app.guess_court_remote = type("G", (), {"remote": type("R", (), {"aio": staticmethod(_guess_aio)})()})()
+FRAME_JOB = "abcdef000001"   # --frame: resume this job code on Home to open court marking
+
 
 def seed(profile_path):
     a = accounts.Accounts(_store)
@@ -84,7 +95,14 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8770)
     ap.add_argument("--demo", help="profile.json to seed demo matches from")
+    ap.add_argument("--frame", help="a court picture (jpg): job abcdef000001 opens court marking on it")
     a = ap.parse_args()
+    if a.frame:
+        d = Path(TMP) / FRAME_JOB / "input"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "calib_frame.jpg").write_bytes(Path(a.frame).read_bytes())
+        modal_app._write_status(FRAME_JOB, stage="uploaded", message="Video uploaded, ready to calibrate.")
+        print(f"Court marking: on Home, continue job code {FRAME_JOB}")
     if a.demo:
         accounts.PW_ROUNDS = 1000
         seed(a.demo)
