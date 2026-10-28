@@ -85,28 +85,43 @@ th { color: var(--dim); font-weight: 600; }
 .spark i { display: block; width: 8px; min-height: 2px; border-radius: 2px; background: var(--line-strong); }
 .spark i:last-child { background: var(--accent); }
 .muted { color: var(--muted); }
-/* Fixes (the app's main promise): numbered cards with the report's tips */
-.fixes { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; gap: var(--space-3); }
-.fix { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-md); }
-.fix-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
-.fix-head h3 { flex: 1 1 12rem; font: 500 var(--text-lg)/1.25 var(--font-serif); }
-.rank { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft);
-  color: var(--accent-strong); font-weight: 700; }
-.pts { padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(224,144,127,.16); color: var(--bad); font-weight: 650; font-size: .9rem; }
-.try { margin: var(--space-3) 0 0; }
-.steps { margin: var(--space-3) 0 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-4); }
+/* Short rows that open for detail (fixes, players, history) */
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary .chev { flex: none; margin-left: auto; color: var(--dim); transition: transform 200ms; }
+details[open] > summary .chev { transform: rotate(180deg); }
+.fold > summary { display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap); }
+.fixes, .roster, .trends, .history, .team-focus, .r-problems { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+.fix, .roster > li { border-top: 1px solid var(--line); }
+.fix summary, .roster summary { display: flex; align-items: center; gap: var(--space-3); min-height: 56px; padding: var(--space-2) 0; }
+.rank { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft);
+  color: var(--accent-strong); font-weight: 700; font-size: .95rem; }
+.fix-title { font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.try { margin: 0 0 var(--space-2); }
+.steps { margin: 0 0 var(--space-4); display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-4); }
 .steps dt { color: var(--dim); font-weight: 600; }
 .steps dd { margin: 0; }
-/* Coach: a player's progress folds away */
-.prog-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
-  cursor: pointer; list-style: none; min-height: var(--tap); }
-.prog-fold > summary::-webkit-details-marker { display: none; }
-.prog-fold .chev { flex: none; transition: transform 200ms; }
-.prog-fold[open] .chev { transform: rotate(180deg); }
-.prog-fold .panel { background: var(--bg); }
+.more { margin: var(--space-3) 0 0; }
+.trends li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); }
+.t-title { flex: 1; }
+.history li { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); padding: var(--space-2) 0; border-top: 1px solid var(--line); }
+.team-focus li { padding: var(--space-3) 0; border-top: 1px solid rgba(166,223,178,.25); }
+.team-focus li:first-child { border-top: 0; }
+.tf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.tf-head h3 { font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.tf-drill { margin: var(--space-1) 0 0; color: var(--ink-2); }
+.r-name { font-weight: 650; min-width: 6rem; }
+.r-top { flex: 1; color: var(--ink-2); }
+.r-body { padding: 0 0 var(--space-3); }
+.r-problems { margin: 0 0 var(--space-2); padding-left: 1.4em; list-style: decimal; }
+.r-problems li { padding: 2px 0; }
+.r-actions { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+.linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
 @media (max-width: 559px) {
   .steps { grid-template-columns: 1fr; gap: 0; }
   .steps dd { margin-bottom: var(--space-2); }
+  .roster summary { flex-wrap: wrap; }
+  .r-top { flex-basis: 100%; order: 3; }
   .panel { padding: var(--space-4); }
   .hide-phone { display: none; }
 }
@@ -162,13 +177,10 @@ th { color: var(--dim); font-weight: 600; }
       <button class="btn ghost small" id="signOut" type="button">Sign out</button>
     </div>
     <div id="coachBox" class="hidden">
+      <p class="lead">Team code <span class="code" id="teamCode"></span> <span class="muted">· players join with it</span></p>
+      <div id="teamFocus"></div>
       <div class="panel">
-        <h2>Team code</h2>
-        <p class="lead">Players join your team with this code (Account → Join my team).</p>
-        <p class="code" id="teamCode"></p>
-      </div>
-      <div class="panel">
-        <h2>Your team</h2>
+        <h2>Players</h2>
         <div id="teamTable"><p class="muted">Loading…</p></div>
       </div>
     </div>
@@ -251,77 +263,77 @@ function fmtDate(d) {
   const t = new Date(d + "T12:00:00");
   return isNaN(t) ? esc(d) : t.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-function progressHtml(p, who) {
+const CHEV = `<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+const TREND_WORDS = { shrinking: "↓ shrinking", growing: "↑ growing", "about the same": "→ same", "not enough yet": "new" };
+const trendPill = (t) => `<span class="trend ${t === "shrinking" ? "shrinking" : t === "growing" ? "growing" : ""}">${esc(TREND_WORDS[t] || t)}</span>`;
+
+// Player dashboard: short. This week's one thing, 3 fixes (details fold), trends, history folded.
+function progressHtml(p) {
   if (!p.matches.length) {
-    return `<div class="panel"><h2>${who ? esc(who) + "'s progress" : "Your progress"}</h2>
+    return `<div class="panel"><h2>Your progress</h2>
       <p class="lead">No matches yet. Open a report and press <strong>This is me</strong> on your tab to add it here.</p></div>`;
   }
-  const usable = p.matches.filter((m) => m.enough).length;
-  const focus = p.focus ? `<div class="panel focus"><div class="eyebrow">The one thing this week</div>
-      <h2>${esc(p.focus.title)}</h2><p class="lead">${esc(p.focus.why)}</p></div>` : "";
-  const rows = p.weaknesses.slice(0, 6).map((w) => `<tr><td>${esc(w.title)}</td>
-      <td>${spark(w.rates)} <span class="muted">${w.rates[w.rates.length - 1]}</span></td>
-      <td><span class="trend ${w.trend === "shrinking" ? "shrinking" : w.trend === "growing" ? "growing" : ""}">${esc(w.trend)}</span></td></tr>`).join("");
-  const matches = p.matches.slice().reverse().map((m) => `<tr>
-      <td><a href="${Site.reportUrl(m.job_id)}">${fmtDate(m.date)}</a></td>
-      <td>${m.points_won_pct ?? "–"}%</td>
-      <td class="hide-phone">${m.first_serve_in_pct ?? "–"}% / ${m.second_serve_in_pct ?? "–"}%</td>
-      <td>${m.top_fix ? esc(m.top_fix.title) : "–"}${m.enough ? "" : ' <span class="muted">(short match)</span>'}</td></tr>`).join("");
-  const fixes = (p.fixes || []).length ? `<div class="panel"><h2>${who ? "Their" : "Your"} fixes</h2>
-      <p class="lead">From ${who ? "their" : "your"} latest report, biggest first. <a href="${Site.reportUrl(p.fixes[0].job_id)}">Open the full report</a></p>
-      <ol class="fixes">${p.fixes.map((f, i) => {
+  const fixes = p.fixes || [];
+  const focusFix = p.focus && fixes.find((f) => f.id === p.focus.id);
+  const focusTry = focusFix && focusFix.advice.try_this;
+  const focus = p.focus ? `<div class="panel focus"><div class="eyebrow">This week</div>
+      <h2>${esc(p.focus.title)}</h2>${focusTry ? `<p class="lead"><strong>Try this:</strong> ${esc(focusTry)}</p>` : ""}</div>` : "";
+  const fixList = fixes.length ? `<div class="panel"><h2>Your fixes</h2>
+      <ol class="fixes">${fixes.map((f, i) => {
         const a = f.advice || {};
-        const steps = [["In matches", a.match_strategy], ["Habit to build", a.habit], ["Practice drill", a.practice_drill]].filter(([, t]) => t);
-        return `<li class="fix">
-          <div class="fix-head"><span class="rank">${i + 1}</span><h3>${esc(a.headline || f.title)}</h3>
-            ${f.points ? `<span class="pts">−${f.points} pts</span>` : ""}
-            <span class="trend ${f.trend === "shrinking" ? "shrinking" : f.trend === "growing" ? "growing" : ""}">${esc(f.trend)}</span></div>
+        const steps = [["In matches", a.match_strategy], ["Habit", a.habit], ["Drill", a.practice_drill]].filter(([, t]) => t);
+        return `<li class="fix"><details><summary>
+            <span class="rank">${i + 1}</span><span class="fix-title">${esc(a.headline || f.title)}</span>${trendPill(f.trend)}${CHEV}</summary>
           ${a.try_this ? `<p class="try"><strong>Try this:</strong> ${esc(a.try_this)}</p>` : ""}
-          ${steps.length ? `<dl class="steps">${steps.map(([k, t]) => `<dt>${k}</dt><dd>${esc(t)}</dd>`).join("")}</dl>`
-            : (a.try_this ? "" : `<p class="muted">Tips for this one are in the full report.</p>`)}
-        </li>`;
-      }).join("")}</ol></div>` : "";
-  const body = `${focus}${fixes}
-    <div class="panel"><h2>What's costing points, match by match</h2>
-      <p class="lead">Points lost to each problem per 10 points played${usable < 2 ? ". Trends show once you have two full matches." : ", oldest to newest."}</p>
-      ${rows ? `<table><thead><tr><th>Problem</th><th>Per 10 points</th><th>Trend</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">Nothing ranked yet.</p>'}</div>
-    <div class="panel"><h2>Matches</h2>
-      <table><thead><tr><th>Date</th><th>Points won</th><th class="hide-phone">1st / 2nd serves in</th><th>#1 fix</th></tr></thead><tbody>${matches}</tbody></table></div>`;
-  // Coach looking at a player: one section that folds away
-  return who ? `<details class="panel prog-fold" open><summary><h2>${esc(who)}'s progress</h2>${CHEV}</summary>${body}</details>` : body;
+          ${steps.length ? `<dl class="steps">${steps.map(([k, t]) => `<dt>${k}</dt><dd>${esc(t)}</dd>`).join("")}</dl>` : ""}
+        </details></li>`;
+      }).join("")}</ol>
+      <p class="more"><a href="${Site.reportUrl(fixes[0].job_id)}">Open the full report</a></p></div>` : "";
+  const trends = p.weaknesses.slice(0, 4).map((w) => `<li><span class="t-title">${esc(w.title)}</span>${spark(w.rates)}${trendPill(w.trend)}</li>`).join("");
+  const history = p.matches.slice().reverse().map((m) => `<li><a href="${Site.reportUrl(m.job_id)}">${fmtDate(m.date)}</a>
+      <span>${m.points_won_pct ?? "–"}% points won</span>${m.top_fix ? `<span class="muted">#1 ${esc(m.top_fix.title)}</span>` : ""}</li>`).join("");
+  return `${focus}${fixList}
+    ${trends ? `<div class="panel"><h2>Trends</h2><ul class="trends">${trends}</ul></div>` : ""}
+    <details class="panel fold"><summary><h2>Match history (${p.matches.length})</h2>${CHEV}</summary><ul class="history">${history}</ul></details>`;
 }
-const CHEV = `<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 
-async function showProgress(username, name) {
+async function showProgress() {
   const box = $("progressBox");
   box.innerHTML = '<p class="muted">Loading progress…</p>';
-  const res = await fetch("/api/progress" + (username ? `?player=${encodeURIComponent(username)}` : ""));
+  const res = await fetch("/api/progress");
   const data = await res.json().catch(() => ({}));
-  box.innerHTML = res.ok ? progressHtml(data, name) : `<p class="msg">${esc(data.error || "Couldn't load progress.")}</p>`;
-  if (username) box.scrollIntoView({ behavior: "smooth", block: "start" });
+  box.innerHTML = res.ok ? progressHtml(data) : `<p class="msg">${esc(data.error || "Couldn't load progress.")}</p>`;
 }
 
+// Coach: high level only. Team weak spots with a drill each, then one line per player.
 async function showTeam() {
   const res = await fetch("/api/team");
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { $("teamTable").innerHTML = `<p class="msg">${esc(data.error || "Couldn't load the team.")}</p>`; return; }
   if (!data.players.length) {
+    $("teamFocus").innerHTML = "";
     $("teamTable").innerHTML = '<p class="muted">No players yet. Share the team code above.</p>';
     return;
   }
-  $("teamTable").innerHTML = `<table><thead><tr><th>Player</th><th class="hide-phone">Matches</th><th>Latest #1 fix</th><th>Focus this week</th><th></th></tr></thead><tbody>
-    ${data.players.map((p) => `<tr>
-      <td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.username)}</span></td>
-      <td class="hide-phone">${p.matches}${p.latest ? `<br><span class="muted">last ${fmtDate(p.latest.date)}</span>` : ""}</td>
-      <td>${p.latest && p.latest.top_fix ? `<a href="${Site.reportUrl(p.latest.job_id)}">${esc(p.latest.top_fix.title)}</a>` : '<span class="muted">No report yet</span>'}</td>
-      <td>${p.focus ? esc(p.focus.title) : "–"}${p.trends.length ? `<br>${p.trends.map((t) => `<span class="trend ${t.trend === "shrinking" ? "shrinking" : t.trend === "growing" ? "growing" : ""}">${esc(t.trend)}</span>`)[0]}` : ""}</td>
-      <td><button class="btn ghost small" type="button" data-progress="${esc(p.username)}" data-name="${esc(p.name)}">Progress</button>
-        <button class="btn ghost small" type="button" data-reset="${esc(p.username)}" data-name="${esc(p.name)}">New password</button></td></tr>`).join("")}
-    </tbody></table>`;
+  const withReports = data.players.filter((p) => p.matches).length;
+  $("teamFocus").innerHTML = data.team_focus.length ? `<div class="panel focus"><div class="eyebrow">Team weak spots</div>
+      <ol class="team-focus">${data.team_focus.map((t) => `<li>
+        <div class="tf-head"><h3>${esc(t.title)}</h3><span class="muted">${t.players.length} of ${withReports} players</span></div>
+        ${t.drill ? `<p class="tf-drill"><strong>Team drill:</strong> ${esc(t.drill)}</p>` : ""}</li>`).join("")}</ol></div>` : "";
+  $("teamTable").innerHTML = `<ul class="roster">${data.players.map((p) => {
+    const top = p.problems[0];
+    return `<li><details><summary>
+        <span class="r-name">${esc(p.name)}</span>
+        <span class="r-top">${top ? esc(top.title) : '<span class="muted">No report yet</span>'}</span>
+        ${top ? trendPill(top.trend) : ""}${CHEV}</summary>
+      <div class="r-body">
+        ${p.problems.length ? `<ol class="r-problems">${p.problems.map((x) => `<li>${esc(x.title)} ${trendPill(x.trend)}</li>`).join("")}</ol>` : ""}
+        <p class="r-actions">${p.latest ? `<a href="${Site.reportUrl(p.latest.job_id)}">Latest report (${fmtDate(p.latest.date)})</a> · ` : ""}${p.matches} match${p.matches === 1 ? "" : "es"} ·
+          <button class="linkish" type="button" data-reset="${esc(p.username)}" data-name="${esc(p.name)}">New password</button></p>
+      </div></details></li>`;
+  }).join("")}</ul>`;
 }
 $("teamTable").addEventListener("click", async (e) => {
-  const prog = e.target.closest("[data-progress]");
-  if (prog) return showProgress(prog.dataset.progress, prog.dataset.name);
   const reset = e.target.closest("[data-reset]");
   if (reset) {
     const pw = prompt(`New password for ${reset.dataset.name} (at least 8 characters). Tell them in person.`);
@@ -348,6 +360,7 @@ async function render() {
   if (coach) {
     $("teamCode").textContent = me.team.code;
     $("progressBox").innerHTML = "";
+    $("teamLine").textContent = `Coach of ${me.team?.name || "your team"}`;
     showTeam();
   } else {
     showProgress();

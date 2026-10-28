@@ -97,6 +97,26 @@ def build(matches):
     return {"matches": out_matches, "weaknesses": weaknesses, "focus": focus, "fixes": _fixes(rows, usable, weaknesses)}
 
 
+def team_focus(players, limit=3):
+    """The team's shared weak spots, for the coach: each player's latest top
+    fixes pooled by problem, ranked by how many players have it, then points
+    lost. Each comes with one practice drill from the players' own reports
+    (the one written for whoever lost the most points to it).
+    players: [{"name", "fixes": progress fixes list}]."""
+    pool = {}
+    for p in players:
+        for f in p.get("fixes") or []:
+            e = pool.setdefault(f["id"], {"id": f["id"], "title": f["title"], "players": [], "points": 0,
+                                          "drill": None, "_best": -1})
+            e["players"].append(p["name"])
+            e["points"] += f.get("points", 0)
+            drill = (f.get("advice") or {}).get("practice_drill")
+            if drill and f.get("points", 0) > e["_best"]:
+                e["drill"], e["_best"] = drill, f.get("points", 0)
+    ranked = sorted(pool.values(), key=lambda e: (-len(e["players"]), -e["points"]))
+    return [{k: v for k, v in e.items() if k != "_best"} for e in ranked[:limit]]
+
+
 ADVICE_KEYS = ("headline", "try_this", "match_strategy", "habit", "practice_drill")
 
 

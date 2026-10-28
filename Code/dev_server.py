@@ -81,10 +81,14 @@ def seed(profile_path):
         d = Path(TMP) / job
         d.mkdir(parents=True, exist_ok=True)
         (d / "profile.json").write_text(json.dumps(pf), encoding="utf-8")
-        tips = [{"pattern_id": w["id"], "headline": f"(demo) {w['title']}", "try_this": "(demo tip) one thing to try.",
-                 "match_strategy": "(demo) a tactic for matches.", "habit": "(demo) a habit to build.",
-                 "practice_drill": "(demo) a drill for practice."} for w in pf["players"]["player_1"]["weaknesses"]]
-        (d / "insights.json").write_text(json.dumps({"players": {"player_1": {"insights": tips}}}), encoding="utf-8")
+        def tips(pid):
+            return [{"pattern_id": w["id"], "headline": f"(demo) {w['title']}", "try_this": "(demo tip) one thing to try.",
+                     "match_strategy": "(demo) a tactic for matches.", "habit": "(demo) a habit to build.",
+                     "practice_drill": f"(demo) a drill for {w['title'].lower()}."} for w in pf["players"][pid]["weaknesses"]]
+        (d / "insights.json").write_text(json.dumps({"players": {p: {"insights": tips(p)} for p in ("player_1", "player_2")}}),
+                                         encoding="utf-8")
+        if i == 0:
+            a.claim("sam", job, "player_2", "2026-11-01")
         a.set_owner(job, "rudra")
         a.claim("rudra", job, "player_1", f"2026-11-0{1 + 7 * i}" if i == 0 else f"2026-11-{1 + 7 * i:02d}")
     print(f"Demo team code {team['code']}; sign in as coachk / rudra / sam with password1")

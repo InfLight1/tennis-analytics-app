@@ -2129,8 +2129,14 @@ def web_app():
             latest = prog["matches"][-1] if prog["matches"] else None
             players.append({"username": name, "name": p.get("name", name), "matches": len(prog["matches"]),
                             "latest": latest, "focus": prog["focus"],
-                            "trends": [{k: w[k] for k in ("id", "title", "trend")} for w in prog["weaknesses"][:3]]})
-        return JSONResponse({"team": {"name": team.get("name"), "code": team.get("code")}, "players": players})
+                            # coach view stays high level: problem names and trends, no tips
+                            "problems": [{k: f[k] for k in ("id", "title", "trend", "points")} for f in prog["fixes"]],
+                            "fixes": prog["fixes"]})
+        focus = progress_mod.team_focus(players)
+        for pl in players:
+            pl.pop("fixes")
+        return JSONResponse({"team": {"name": team.get("name"), "code": team.get("code")}, "players": players,
+                             "team_focus": focus})
 
     @fastapi_app.post("/api/team/reset-password")
     def team_reset_password(request: Request, player: str = Form(...), new_password: str = Form(...)):

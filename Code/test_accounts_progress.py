@@ -83,6 +83,14 @@ def test_progress():
     check(len(fx) == 1 and fx[0]["id"] == "errors_net" and fx[0]["job_id"] == "b", "fixes come from the latest report")
     check(fx[0]["advice"] == {"headline": "Clear the net", "practice_drill": "Aim 1 m over the tape"}
           and fx[0]["trend"] == "shrinking", "each fix carries its drill/tactic and trend")
+    tf = progress.team_focus([
+        {"name": "A", "fixes": [{"id": "errors_net", "title": "Net", "points": 3, "advice": {"practice_drill": "drill A"}},
+                                {"id": "double_faults", "title": "DF", "points": 9}]},
+        {"name": "B", "fixes": [{"id": "errors_net", "title": "Net", "points": 5, "advice": {"practice_drill": "drill B"}}]},
+    ])
+    check(tf[0]["id"] == "errors_net" and tf[0]["players"] == ["A", "B"] and tf[0]["points"] == 8,
+          "team focus: the problem most players share comes first")
+    check(tf[0]["drill"] == "drill B", "team drill = the one written for whoever lost most to it")
     one = progress.build([{"job_id": "a", "date": "2026-11-01", "player": _pl(8, 4, 20)}])
     check(one["weaknesses"][0]["trend"] == "not enough yet", "one match: no trend claimed")
     check(progress.build([])["focus"] is None, "no matches: no focus")
