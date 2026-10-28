@@ -260,6 +260,7 @@ cpu_image = (
     .add_local_file("report.html", "/root/web/report.html")
     .add_local_file("calibration_demo.html", "/root/web/calibration_demo.html")
     .add_local_file("camera_test.html", "/root/web/camera_test.html")
+    .add_local_file("account.html", "/root/web/account.html")
     # passcode.js, manifest + icons (install-on-phone). Served at the site root.
     .add_local_dir("web_assets", remote_path="/root/web/assets")
 )
@@ -1924,6 +1925,12 @@ def web_app():
     @fastapi_app.get("/report.html")
     def report_page():
         return FileResponse("/root/web/report.html", media_type="text/html",
+                            headers={"Cache-Control": "no-store"})
+
+    @fastapi_app.get("/account")
+    def account_page():
+        """Sign in / join a team / create a team; then progress, or the coach's team view."""
+        return FileResponse("/root/web/account.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
     @fastapi_app.get("/camera-test")

@@ -23,7 +23,8 @@
           <input type="password" autocomplete="current-password" aria-label="Passcode" required
             style="width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #c9c8c2;box-sizing:border-box">
           <button type="submit" style="margin-top:12px;width:100%;font:inherit;font-weight:700;padding:10px;border:0;
-            border-radius:10px;background:#1c7a4a;color:#fff;cursor:pointer;min-height:44px">Continue</button></form>`;
+            border-radius:10px;background:#1c7a4a;color:#fff;cursor:pointer;min-height:44px">Continue</button>
+          <a href="/account" style="display:block;margin-top:12px;text-align:center;color:#1c7a4a;font-size:.95rem">On a team? Sign in instead</a></form>`;
       document.body.appendChild(box);
       const input = box.querySelector("input");
       input.focus();
@@ -45,15 +46,23 @@
   // The example report's data is public: no prompt for first-time visitors.
   const isPublic = (url) => /\/api\/profile\/76a383379d90$/.test(String(url instanceof Request ? url.url : url));
 
+  // Accounts (2026-10-28): a signed-in player or coach sends their session (X-Session) instead,
+  // and is never asked for the passcode. Sign-in routes need neither.
+  const session = () => (window.Site && Site.session()) || null;
+  const isAuth = (url) => /\/api\/auth\/(signin|join|create-team)/.test(String(url instanceof Request ? url.url : url));
+
   window.fetch = async (url, opts = {}) => {
     if (!isApi(url)) return realFetch(url, opts);
-    if (!code && isPublic(url) && (opts.method || "GET").toUpperCase() === "GET") return realFetch(url, opts);
-    if (!code) await ask(false);
+    if (isAuth(url)) return realFetch(url, opts);
+    if (!code && !session() && isPublic(url) && (opts.method || "GET").toUpperCase() === "GET") return realFetch(url, opts);
+    if (!code && !session()) await ask(false);
     for (;;) {
       const headers = new Headers(opts.headers || {});
-      headers.set("X-Passcode", code);
+      if (code) headers.set("X-Passcode", code);
+      if (session()) headers.set("X-Session", session());
       const res = await realFetch(url, { ...opts, headers });
       if (res.status !== 401) return res;
+      if (session() && !code) Site.setSession(null);    // expired or signed out elsewhere
       code = null;
       try { localStorage.removeItem(KEY); } catch (e) {}
       await ask(true);
@@ -61,5 +70,8 @@
   };
 
   // For XMLHttpRequest callers (upload pieces): call after xhr.open().
-  window.passcodeHeader = (xhr) => { if (code) xhr.setRequestHeader("X-Passcode", code); };
+  window.passcodeHeader = (xhr) => {
+    if (code) xhr.setRequestHeader("X-Passcode", code);
+    if (session()) xhr.setRequestHeader("X-Session", session());
+  };
 })();

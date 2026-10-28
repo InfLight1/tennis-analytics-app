@@ -75,7 +75,7 @@ def test_progress():
     beaten = next(w for w in r["weaknesses"] if w["id"] == "opponent_winners")
     check(beaten["trend"] == "about the same", "same rate = about the same")
     check(not r["matches"][2]["enough"], "a 4-point match is too small to count in trends")
-    check(r["focus"]["id"] == "opponent_winners", "focus = biggest cost in the latest usable match")
+    check(r["focus"]["id"] == "errors_net", "focus = the latest full match's #1 fix, like its report")
     one = progress.build([{"job_id": "a", "date": "2026-11-01", "player": _pl(8, 4, 20)}])
     check(one["weaknesses"][0]["trend"] == "not enough yet", "one match: no trend claimed")
     check(progress.build([])["focus"] is None, "no matches: no focus")

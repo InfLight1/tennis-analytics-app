@@ -25,9 +25,16 @@
   try { dev = dev || localStorage.getItem(DEV_KEY) === "1"; } catch (e) {}
   if (load().some((r) => r.job === EXAMPLE_JOB)) save(load().filter((r) => r.job !== EXAMPLE_JOB));
 
+  // Signed-in session (accounts, 2026-10-28); passcode.js sends it as X-Session.
+  const SESSION_KEY = "advantage_session";
+
   window.Site = {
     EXAMPLE_JOB,
     dev,
+    session() { try { return localStorage.getItem(SESSION_KEY); } catch (e) { return null; } },
+    setSession(token) {
+      try { token ? localStorage.setItem(SESSION_KEY, token) : localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    },
     reportUrl: (job) => `/report?job=${encodeURIComponent(job)}`,
     reports: load,
     // Add or update a report (newest first). Keeps the first "added" date.
@@ -82,6 +89,7 @@
         <nav class="nav" aria-label="Main">
           <a href="/#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
           <a href="/#reports">My reports</a>
+          <a href="/account"${bar.dataset.page === "account" ? ' aria-current="page"' : ""}>${window.Site.session() ? "Account" : "Sign in"}</a>
         </nav>${bar.dataset.page === "report" ? themeButton : ""}</div>`;
       bar.querySelector(".theme-btn")?.addEventListener("click", toggleTheme);
     }

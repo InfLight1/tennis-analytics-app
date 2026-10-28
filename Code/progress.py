@@ -78,9 +78,13 @@ def build(matches):
         weaknesses.append({"id": wid, "title": titles[wid], "rates": rates, "trend": trend, "change": change})
     weaknesses.sort(key=lambda w: -(w["rates"][-1] if w["rates"] else 0))
 
+    # Focus = the latest full match's "#1 fix" (same as its report says), with its trend.
     focus = None
-    if weaknesses and weaknesses[0]["rates"][-1] > 0:
-        w = weaknesses[0]
+    latest_top = next((w["id"] for w in usable[-1][0]["player"].get("weaknesses", []) if w.get("top")),
+                      None) if usable else None
+    pick = next((w for w in weaknesses if w["id"] == latest_top), None) or (weaknesses[0] if weaknesses else None)
+    if pick and pick["rates"][-1] > 0:
+        w = pick
         why = f"It cost about {w['rates'][-1]} of every 10 points in your latest match"
         if w["trend"] == "shrinking":
             why += ", and it's shrinking: keep at it."
