@@ -1453,14 +1453,41 @@ def web_app():
     # visitors can see a full report (read only; renaming still needs it).
     public_api = {f"/api/profile/{EXAMPLE_JOB_ID}"}
 
+    # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
+    # gets in with their session instead of the shared passcode, but only to
+    # their own (or their team's) reports. The passcode still opens everything
+    # (beta testers and Claude's checks) and is needed to create a team.
+    import accounts as accounts_mod
+    import progress as progress_mod
+    accts = accounts_mod.Accounts(modal.Dict.from_name("advantage-accounts", create_if_missing=True))
+    auth_public = {"/api/auth/signin", "/api/auth/join", "/api/auth/create-team"}
+    import re as _re
+    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug)/([0-9a-f]{12})(?:/|$)")
+    job_writes = ("/api/names/", "/api/job/")
+
     @fastapi_app.middleware("http")
     async def require_passcode(request, call_next):
-        is_public = request.method == "GET" and request.url.path in public_api
-        if request.url.path.startswith("/api/") and request.method != "OPTIONS" and not is_public:
+        path = request.url.path
+        token = request.headers.get("x-session", "").strip() if path.startswith("/api/") else ""
+        request.state.user = accts.session_user(token) if token else None
+        request.state.full_access = False
+        is_public = (request.method == "GET" and path in public_api) or path in auth_public
+        if path.startswith("/api/") and request.method != "OPTIONS" and not is_public:
             given = request.headers.get("x-passcode", "").strip().encode()
-            if not passcode or not hmac.compare_digest(given, passcode):
-                await asyncio.sleep(0.5)              # slows guessing
-                return JSONResponse({"error": "passcode required"}, status_code=401)
+            if passcode and given and hmac.compare_digest(given, passcode):
+                request.state.full_access = True
+            else:
+                user = request.state.user
+                if not user:
+                    await asyncio.sleep(0.5)          # slows guessing
+                    return JSONResponse({"error": "passcode required"}, status_code=401)
+                m = job_in_path.match(path)
+                if m:
+                    job = m.group(1)
+                    allowed = (accts.can_change(user, job) if path.startswith(job_writes) and request.method != "GET"
+                               else accts.can_see(user, job))
+                    if not allowed:
+                        return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
         return await call_next(request)
 
     # Added after the passcode check so CORS wraps it (a 401 still carries
@@ -1559,8 +1586,10 @@ def web_app():
         return f"{_job_paths(job_id)['job_dir']}/input/parts"
 
     @fastapi_app.post("/api/upload/init")
-    def upload_init(size: int = Form(...), chunk_size: int = Form(...)):
+    def upload_init(request: Request, size: int = Form(...), chunk_size: int = Form(...)):
         job_id = uuid.uuid4().hex[:12]
+        if request.state.user:
+            accts.set_owner(job_id, request.state.user["username"])
         os.makedirs(_parts_dir(job_id), exist_ok=True)
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"size": size, "chunk_size": chunk_size}, f)
@@ -1683,8 +1712,10 @@ def web_app():
 
     # ── Record match (2026-10-14): see finish_recording_remote ──────────────
     @fastapi_app.post("/api/record/init")
-    def record_init(mime: str = Form("")):
+    def record_init(request: Request, mime: str = Form("")):
         job_id = uuid.uuid4().hex[:12]
+        if request.state.user:
+            accts.set_owner(job_id, request.state.user["username"])
         os.makedirs(_parts_dir(job_id), exist_ok=True)
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"mode": "record", "mime": mime[:80]}, f)
@@ -1796,10 +1827,12 @@ def web_app():
         return Response(content=buf.tobytes(), media_type="image/jpeg")
 
     @fastapi_app.post("/api/calibrate")
-    async def calibrate_safe(job_id: str = Form(...), points_json: str = Form(...),
+    async def calibrate_safe(request: Request, job_id: str = Form(...), points_json: str = Form(...),
                              player1_name: str = Form(""), player2_name: str = Form("")):
         """Saving the court marking must never answer with a bare crash page: log it, explain it."""
         import traceback
+        if request.state.user and not accts.can_change(request.state.user, job_id):
+            return JSONResponse({"error": "This match belongs to someone else."}, status_code=403)
         try:
             return await calibrate(job_id, points_json, player1_name, player2_name)
         except Exception as e:
@@ -1958,6 +1991,135 @@ def web_app():
                 json.dump(profile, f, indent=2, default=str)
         volume.commit()
         return JSONResponse({"job_id": job_id, "names": names})
+
+    # ── Accounts, progress and the coach's team view (2026-10-28) ─────────
+    def _account_error(e):
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+    def _signed_in(user, token):
+        return JSONResponse({"session": token, "user": accounts_mod.public_user(user)})
+
+    @fastapi_app.post("/api/auth/create-team")
+    async def auth_create_team(app_passcode: str = Form(...), team_name: str = Form(...), username: str = Form(...),
+                               password: str = Form(...), name: str = Form("")):
+        """A coach signs up and creates a team. Needs the app passcode (from Rudra)."""
+        if not passcode or not hmac.compare_digest(app_passcode.strip().encode(), passcode):
+            await asyncio.sleep(0.5)
+            return JSONResponse({"error": "That app passcode isn't right."}, status_code=401)
+        try:
+            user, _ = accts.create_team(team_name, username, password, name)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return _signed_in(user, accts.new_session(user["username"]))
+
+    @fastapi_app.post("/api/auth/join")
+    def auth_join(code: str = Form(...), username: str = Form(...), password: str = Form(...), name: str = Form("")):
+        try:
+            user = accts.join_team(code, username, password, name)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return _signed_in(user, accts.new_session(user["username"]))
+
+    @fastapi_app.post("/api/auth/signin")
+    async def auth_signin(username: str = Form(...), password: str = Form(...)):
+        try:
+            token = accts.sign_in(username, password)
+        except accounts_mod.AccountError as e:
+            await asyncio.sleep(0.5)
+            return _account_error(e)
+        return _signed_in(accts.session_user(token), token)
+
+    @fastapi_app.post("/api/auth/signout")
+    def auth_signout(request: Request):
+        accts.sign_out(request.headers.get("x-session", "").strip())
+        return JSONResponse({"signed_out": True})
+
+    def _player_in(job_id, slot):
+        prof = _read_json(_job_paths(job_id)["profile_json_path"])
+        return (prof or {}).get("players", {}).get(slot)
+
+    def _progress_for(username):
+        volume.reload()
+        rows = [{"job_id": c["job_id"], "date": c["date"], "player": _player_in(c["job_id"], c["slot"])}
+                for c in accts.claims(username)]
+        return progress_mod.build(rows)
+
+    @fastapi_app.get("/api/me")
+    def me(request: Request):
+        u = request.state.user
+        if not u:
+            return JSONResponse({"user": None})
+        team = accts.team(u["team_id"]) or {}
+        out = {"user": accounts_mod.public_user(u), "team": {"name": team.get("name")},
+               "claims": accts.claims(u["username"])}
+        if u["role"] == "coach":
+            out["team"]["code"] = team.get("code")
+        return JSONResponse(out)
+
+    @fastapi_app.post("/api/me/claim")
+    def me_claim(request: Request, job_id: str = Form(...), slot: str = Form(...), date: str = Form("")):
+        """'This is me' on a report."""
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        if not (accts.owner(job_id) == u["username"] or accts.can_see(u, job_id)
+                or accts.owner(job_id) is None):
+            return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
+        try:
+            accts.claim(u["username"], job_id, slot, date[:10] or None)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return JSONResponse({"claims": accts.claims(u["username"])})
+
+    @fastapi_app.post("/api/me/unclaim")
+    def me_unclaim(request: Request, job_id: str = Form(...)):
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        accts.unclaim(u["username"], job_id)
+        return JSONResponse({"claims": accts.claims(u["username"])})
+
+    @fastapi_app.get("/api/progress")
+    def my_progress(request: Request, player: str = ""):
+        """A player's own progress; a coach may pass ?player=<username> from their team."""
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        who = u["username"]
+        if player and player.lower() != who:
+            p = accts.user(player)
+            if u["role"] != "coach" or not p or p["team_id"] != u["team_id"]:
+                return JSONResponse({"error": "That player isn't on your team."}, status_code=403)
+            who = p["username"]
+        return JSONResponse(_progress_for(who) | {"player": who})
+
+    @fastapi_app.get("/api/team")
+    def team_view(request: Request):
+        """Coach: every player, their latest report and #1 fix, and this week's focus."""
+        u = request.state.user
+        if not u or u["role"] != "coach":
+            return JSONResponse({"error": "Only coaches have a team view."}, status_code=403)
+        team = accts.team(u["team_id"]) or {}
+        players = []
+        for name in team.get("players", []):
+            p = accts.user(name) or {}
+            prog = _progress_for(name)
+            latest = prog["matches"][-1] if prog["matches"] else None
+            players.append({"username": name, "name": p.get("name", name), "matches": len(prog["matches"]),
+                            "latest": latest, "focus": prog["focus"],
+                            "trends": [{k: w[k] for k in ("id", "title", "trend")} for w in prog["weaknesses"][:3]]})
+        return JSONResponse({"team": {"name": team.get("name"), "code": team.get("code")}, "players": players})
+
+    @fastapi_app.post("/api/team/reset-password")
+    def team_reset_password(request: Request, player: str = Form(...), new_password: str = Form(...)):
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        try:
+            accts.reset_password(u, player, new_password)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return JSONResponse({"reset": True})
 
     return fastapi_app
 
