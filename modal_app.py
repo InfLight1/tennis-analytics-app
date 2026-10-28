@@ -1464,7 +1464,8 @@ def web_app():
     import accounts as accounts_mod
     import progress as progress_mod
     accts = accounts_mod.Accounts(modal.Dict.from_name("advantage-accounts", create_if_missing=True))
-    auth_public = {"/api/auth/signin", "/api/auth/join", "/api/auth/create-team"}
+    # create-team is NOT public: it needs the passcode header, checked like every other route
+    auth_public = {"/api/auth/signin", "/api/auth/join"}
     import re as _re
     job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug)/([0-9a-f]{12})(?:/|$)")
     job_writes = ("/api/names/", "/api/job/")
@@ -2014,12 +2015,12 @@ def web_app():
         return JSONResponse({"session": token, "user": accounts_mod.public_user(user)})
 
     @fastapi_app.post("/api/auth/create-team")
-    async def auth_create_team(app_passcode: str = Form(...), team_name: str = Form(...), username: str = Form(...),
+    async def auth_create_team(request: Request, team_name: str = Form(...), username: str = Form(...),
                                password: str = Form(...), name: str = Form("")):
-        """A coach signs up and creates a team. Needs the app passcode (from Rudra)."""
-        if not passcode or not hmac.compare_digest(app_passcode.strip().encode(), passcode):
-            await asyncio.sleep(0.5)
-            return JSONResponse({"error": "That app passcode isn't right."}, status_code=401)
+        """A coach signs up and creates a team. Needs the app passcode (X-Passcode, from Rudra);
+        a signed-in player's session is not enough."""
+        if not request.state.full_access:
+            return JSONResponse({"error": "Creating a team needs the app passcode."}, status_code=401)
         try:
             user, _ = accts.create_team(team_name, username, password, name)
         except accounts_mod.AccountError as e:

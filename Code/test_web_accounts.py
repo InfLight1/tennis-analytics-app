@@ -53,11 +53,10 @@ def fake_report(job_id, net):
 
 
 if __name__ == "__main__":
-    r = form("/api/auth/create-team", {"app_passcode": "wrong", "team_name": "Varsity", "username": "coachk",
-                                      "password": "secret123", "name": "Coach K"})
+    team_form = {"team_name": "Varsity", "username": "coachk", "password": "secret123", "name": "Coach K"}
+    r = form("/api/auth/create-team", team_form, **{"x-passcode": "wrong"})
     check(r.status_code == 401, "creating a team needs the app passcode")
-    r = form("/api/auth/create-team", {"app_passcode": "test-1234", "team_name": "Varsity", "username": "coachk",
-                                      "password": "secret123", "name": "Coach K"})
+    r = form("/api/auth/create-team", team_form, **{"x-passcode": "test-1234"})
     coach = r.json()["session"]
     code = client.get("/api/me", headers={"x-session": coach}).json()["team"]["code"]
     check(r.status_code == 200 and len(code) == 6, "coach signs up and sees the team code")
@@ -65,6 +64,8 @@ if __name__ == "__main__":
     rudra = form("/api/auth/join", {"code": code, "username": "rudra", "password": "password1"}).json()["session"]
     sam = form("/api/auth/join", {"code": code, "username": "sam", "password": "password2"}).json()["session"]
     check(bool(rudra and sam), "two players join with the code")
+    r = form("/api/auth/create-team", {**team_form, "username": "sneaky"}, **{"x-session": rudra})
+    check(r.status_code == 401, "a signed-in player can't create a team without the passcode")
     check(client.get("/api/me").json() == {"error": "passcode required"}, "no session, no passcode: locked")
 
     r = form("/api/upload/init", {"size": 100, "chunk_size": 50}, **{"x-session": rudra})

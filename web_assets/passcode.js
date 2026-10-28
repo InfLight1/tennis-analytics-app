@@ -49,13 +49,15 @@
   // Accounts (2026-10-28): a signed-in player or coach sends their session (X-Session) instead,
   // and is never asked for the passcode. Sign-in routes need neither.
   const session = () => (window.Site && Site.session()) || null;
-  const isAuth = (url) => /\/api\/auth\/(signin|join|create-team)/.test(String(url instanceof Request ? url.url : url));
+  const isAuth = (url) => /\/api\/auth\/(signin|join)/.test(String(url instanceof Request ? url.url : url));
 
   window.fetch = async (url, opts = {}) => {
     if (!isApi(url)) return realFetch(url, opts);
     if (isAuth(url)) return realFetch(url, opts);
     if (!code && !session() && isPublic(url) && (opts.method || "GET").toUpperCase() === "GET") return realFetch(url, opts);
-    if (!code && !session()) await ask(false);
+    // creating a team always needs the passcode, even for someone already signed in
+    const needsCode = /\/api\/auth\/create-team/.test(String(url instanceof Request ? url.url : url));
+    if (!code && (!session() || needsCode)) await ask(false);
     for (;;) {
       const headers = new Headers(opts.headers || {});
       if (code) headers.set("X-Passcode", code);

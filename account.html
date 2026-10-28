@@ -127,7 +127,7 @@ th { color: var(--dim); font-weight: 600; }
         <label>Your name <input name="name" autocomplete="name" required maxlength="40"></label>
         <label>Username <input name="username" autocomplete="username" required autocapitalize="none"></label>
         <label>Password <small>at least 8 characters</small><input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
-        <label>App passcode <small id="pcNote">from Rudra; only coaches need it</small><input name="app_passcode" id="appPasscode" type="password" required autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true"></label>
+        <p class="muted">You'll be asked for the app passcode (from Rudra) if this device doesn't have it yet.</p>
         <button class="btn" type="submit">Create team</button>
         <p class="msg" role="alert"></p>
       </form>
@@ -192,12 +192,6 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
   });
   wrap.appendChild(b);
 });
-
-// The app passcode this device already uses (asked for once on other pages): fill it in.
-try {
-  const saved = localStorage.getItem("tennis_passcode");
-  if (saved) { $("appPasscode").value = saved; $("pcNote").textContent = "filled in from this device"; }
-} catch (e) {}
 if (location.hash === "#join") showTab("join");
 
 // Sign in / join / create team: all three answer {session, user}
