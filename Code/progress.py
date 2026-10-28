@@ -41,7 +41,8 @@ def _trend(rates):
 
 
 def build(matches):
-    """matches: [{"job_id", "date" (ISO string), "player": profile player dict}]."""
+    """matches: [{"job_id", "date" (ISO string), "player": profile player dict,
+    "advice": optional {pattern_id: AI advice dict} from that report's insights}]."""
     rows = sorted((m for m in matches if m.get("player")), key=lambda m: m.get("date") or "")
     out_matches, rates_by_id, titles = [], {}, {}
     usable = []
@@ -93,4 +94,23 @@ def build(matches):
         else:
             why += "."
         focus = {"id": w["id"], "title": w["title"], "why": why}
-    return {"matches": out_matches, "weaknesses": weaknesses, "focus": focus}
+    return {"matches": out_matches, "weaknesses": weaknesses, "focus": focus, "fixes": _fixes(rows, usable, weaknesses)}
+
+
+ADVICE_KEYS = ("headline", "try_this", "match_strategy", "habit", "practice_drill")
+
+
+def _fixes(rows, usable, weaknesses):
+    """The latest report's top fixes (same order as the report) with its AI
+    advice (tactic, habit, drill) and each one's trend across matches."""
+    src = usable[-1][0] if usable else (rows[-1] if rows else None)
+    if not src:
+        return []
+    advice = src.get("advice") or {}
+    trends = {w["id"]: w["trend"] for w in weaknesses}
+    tops = sorted((w for w in src["player"].get("weaknesses", []) if w.get("top")),
+                  key=lambda w: w.get("rank", 99))
+    return [{"id": w["id"], "title": w["title"], "points": w.get("points", 0), "job_id": src["job_id"],
+             "trend": trends.get(w["id"], "not enough yet"),
+             "advice": {k: advice[w["id"]][k] for k in ADVICE_KEYS if advice.get(w["id"], {}).get(k)}}
+            for w in tops[:3]]

@@ -85,7 +85,28 @@ th { color: var(--dim); font-weight: 600; }
 .spark i { display: block; width: 8px; min-height: 2px; border-radius: 2px; background: var(--line-strong); }
 .spark i:last-child { background: var(--accent); }
 .muted { color: var(--muted); }
+/* Fixes (the app's main promise): numbered cards with the report's tips */
+.fixes { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; gap: var(--space-3); }
+.fix { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-md); }
+.fix-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.fix-head h3 { flex: 1 1 12rem; font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.rank { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft);
+  color: var(--accent-strong); font-weight: 700; }
+.pts { padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(224,144,127,.16); color: var(--bad); font-weight: 650; font-size: .9rem; }
+.try { margin: var(--space-3) 0 0; }
+.steps { margin: var(--space-3) 0 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-4); }
+.steps dt { color: var(--dim); font-weight: 600; }
+.steps dd { margin: 0; }
+/* Coach: a player's progress folds away */
+.prog-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  cursor: pointer; list-style: none; min-height: var(--tap); }
+.prog-fold > summary::-webkit-details-marker { display: none; }
+.prog-fold .chev { flex: none; transition: transform 200ms; }
+.prog-fold[open] .chev { transform: rotate(180deg); }
+.prog-fold .panel { background: var(--bg); }
 @media (max-width: 559px) {
+  .steps { grid-template-columns: 1fr; gap: 0; }
+  .steps dd { margin-bottom: var(--space-2); }
   .panel { padding: var(--space-4); }
   .hide-phone { display: none; }
 }
@@ -246,13 +267,30 @@ function progressHtml(p, who) {
       <td>${m.points_won_pct ?? "–"}%</td>
       <td class="hide-phone">${m.first_serve_in_pct ?? "–"}% / ${m.second_serve_in_pct ?? "–"}%</td>
       <td>${m.top_fix ? esc(m.top_fix.title) : "–"}${m.enough ? "" : ' <span class="muted">(short match)</span>'}</td></tr>`).join("");
-  return `${focus}
+  const fixes = (p.fixes || []).length ? `<div class="panel"><h2>${who ? "Their" : "Your"} fixes</h2>
+      <p class="lead">From ${who ? "their" : "your"} latest report, biggest first. <a href="${Site.reportUrl(p.fixes[0].job_id)}">Open the full report</a></p>
+      <ol class="fixes">${p.fixes.map((f, i) => {
+        const a = f.advice || {};
+        const steps = [["In matches", a.match_strategy], ["Habit to build", a.habit], ["Practice drill", a.practice_drill]].filter(([, t]) => t);
+        return `<li class="fix">
+          <div class="fix-head"><span class="rank">${i + 1}</span><h3>${esc(a.headline || f.title)}</h3>
+            ${f.points ? `<span class="pts">−${f.points} pts</span>` : ""}
+            <span class="trend ${f.trend === "shrinking" ? "shrinking" : f.trend === "growing" ? "growing" : ""}">${esc(f.trend)}</span></div>
+          ${a.try_this ? `<p class="try"><strong>Try this:</strong> ${esc(a.try_this)}</p>` : ""}
+          ${steps.length ? `<dl class="steps">${steps.map(([k, t]) => `<dt>${k}</dt><dd>${esc(t)}</dd>`).join("")}</dl>`
+            : (a.try_this ? "" : `<p class="muted">Tips for this one are in the full report.</p>`)}
+        </li>`;
+      }).join("")}</ol></div>` : "";
+  const body = `${focus}${fixes}
     <div class="panel"><h2>What's costing points, match by match</h2>
       <p class="lead">Points lost to each problem per 10 points played${usable < 2 ? ". Trends show once you have two full matches." : ", oldest to newest."}</p>
       ${rows ? `<table><thead><tr><th>Problem</th><th>Per 10 points</th><th>Trend</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">Nothing ranked yet.</p>'}</div>
     <div class="panel"><h2>Matches</h2>
       <table><thead><tr><th>Date</th><th>Points won</th><th class="hide-phone">1st / 2nd serves in</th><th>#1 fix</th></tr></thead><tbody>${matches}</tbody></table></div>`;
+  // Coach looking at a player: one section that folds away
+  return who ? `<details class="panel prog-fold" open><summary><h2>${esc(who)}'s progress</h2>${CHEV}</summary>${body}</details>` : body;
 }
+const CHEV = `<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 
 async function showProgress(username, name) {
   const box = $("progressBox");

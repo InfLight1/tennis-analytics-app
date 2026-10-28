@@ -2053,9 +2053,16 @@ def web_app():
         prof = _read_json(_job_paths(job_id)["profile_json_path"])
         return (prof or {}).get("players", {}).get(slot)
 
+    def _advice_in(job_id, slot):
+        """The report's AI tips for this player, by pattern id."""
+        ins = _read_json(_job_paths(job_id)["insights_json_path"]) or {}
+        tips = ((ins.get("players") or {}).get(slot) or {}).get("insights") or []
+        return {t.get("pattern_id"): t for t in tips if t.get("pattern_id")}
+
     def _progress_for(username):
         volume.reload()
-        rows = [{"job_id": c["job_id"], "date": c["date"], "player": _player_in(c["job_id"], c["slot"])}
+        rows = [{"job_id": c["job_id"], "date": c["date"], "player": _player_in(c["job_id"], c["slot"]),
+                 "advice": _advice_in(c["job_id"], c["slot"])}
                 for c in accts.claims(username)]
         return progress_mod.build(rows)
 

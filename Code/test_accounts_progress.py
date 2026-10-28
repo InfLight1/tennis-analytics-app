@@ -76,6 +76,13 @@ def test_progress():
     check(beaten["trend"] == "about the same", "same rate = about the same")
     check(not r["matches"][2]["enough"], "a 4-point match is too small to count in trends")
     check(r["focus"]["id"] == "errors_net", "focus = the latest full match's #1 fix, like its report")
+    tips = {"errors_net": {"headline": "Clear the net", "practice_drill": "Aim 1 m over the tape", "other": "x"}}
+    r = progress.build([{"job_id": "a", "date": "2026-11-01", "player": _pl(8, 4, 20)},
+                        {"job_id": "b", "date": "2026-11-08", "player": _pl(3, 4, 20), "advice": tips}])
+    fx = r["fixes"]
+    check(len(fx) == 1 and fx[0]["id"] == "errors_net" and fx[0]["job_id"] == "b", "fixes come from the latest report")
+    check(fx[0]["advice"] == {"headline": "Clear the net", "practice_drill": "Aim 1 m over the tape"}
+          and fx[0]["trend"] == "shrinking", "each fix carries its drill/tactic and trend")
     one = progress.build([{"job_id": "a", "date": "2026-11-01", "player": _pl(8, 4, 20)}])
     check(one["weaknesses"][0]["trend"] == "not enough yet", "one match: no trend claimed")
     check(progress.build([])["focus"] is None, "no matches: no focus")
