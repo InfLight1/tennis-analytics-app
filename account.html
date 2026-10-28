@@ -59,6 +59,15 @@ input { font: inherit; min-height: var(--tap); padding: 0 var(--space-3); border
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
 .btn.small { min-height: 40px; padding: 0 var(--space-4); font-size: var(--text-sm); }
 .msg { min-height: 1.5em; margin: 0; color: var(--bad); }
+/* Show/hide eye inside password boxes */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { width: 100%; padding-right: var(--tap); }
+.pw-eye { position: absolute; top: 0; right: 0; width: var(--tap); height: 100%; display: grid; place-items: center;
+  border: 0; background: none; color: var(--dim); cursor: pointer; border-radius: var(--radius-sm); }
+.pw-eye:hover { color: var(--ink); }
+.pw-eye .eye-off { display: none; }
+.pw-eye[aria-pressed="true"] .eye-on { display: none; }
+.pw-eye[aria-pressed="true"] .eye-off { display: block; }
 .hidden { display: none !important; }
 .who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .code { font: 650 var(--text-xl)/1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .12em; color: var(--accent-strong); }
@@ -118,7 +127,7 @@ th { color: var(--dim); font-weight: 600; }
         <label>Your name <input name="name" autocomplete="name" required maxlength="40"></label>
         <label>Username <input name="username" autocomplete="username" required autocapitalize="none"></label>
         <label>Password <small>at least 8 characters</small><input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
-        <label>App passcode <small>from Rudra; only coaches need it</small><input name="app_passcode" type="password" required></label>
+        <label>App passcode <small id="pcNote">from Rudra; only coaches need it</small><input name="app_passcode" id="appPasscode" type="password" required autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true"></label>
         <button class="btn" type="submit">Create team</button>
         <p class="msg" role="alert"></p>
       </form>
@@ -159,6 +168,36 @@ function showTab(name) {
   });
 }
 tabs.forEach((t) => $(`tab-${t}`).addEventListener("click", () => showTab(t)));
+
+// Eye button on every password box, to check what was typed.
+const EYE = `<svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+  <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+document.querySelectorAll('input[type="password"]').forEach((input) => {
+  const wrap = document.createElement("span");
+  wrap.className = "pw-wrap";
+  input.replaceWith(wrap);
+  wrap.appendChild(input);
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "pw-eye";
+  b.setAttribute("aria-label", "Show what I typed");
+  b.setAttribute("aria-pressed", "false");
+  b.innerHTML = EYE;
+  b.addEventListener("click", () => {
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    b.setAttribute("aria-pressed", String(show));
+    b.setAttribute("aria-label", show ? "Hide what I typed" : "Show what I typed");
+    input.focus();
+  });
+  wrap.appendChild(b);
+});
+
+// The app passcode this device already uses (asked for once on other pages): fill it in.
+try {
+  const saved = localStorage.getItem("tennis_passcode");
+  if (saved) { $("appPasscode").value = saved; $("pcNote").textContent = "filled in from this device"; }
+} catch (e) {}
 if (location.hash === "#join") showTab("join");
 
 // Sign in / join / create team: all three answer {session, user}
