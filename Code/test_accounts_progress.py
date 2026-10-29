@@ -117,7 +117,15 @@ def test_progress():
     check(a["result"] == "win" and a["result_from"] == "app" and a["sets"] == ["6-4", "3-6"],
           "finished match: win and set scores from the player's side")
     check(b["result"] == "loss" and b["result_from"] == "player" and c["result"] is None,
-          "player's own result; unknown stays blank (never guessed)")
+          "player's own result; no points and no score stays blank")
+    more = _pl(8, 4, 20)
+    more["stats"] |= {"points_won": 12, "points_lost": 8}
+    tie = _pl(8, 4, 20)
+    tie["stats"] |= {"points_won": 10, "points_lost": 10}
+    d, e = progress.build([{"job_id": "d", "date": "2026-11-01", "player": more, "slot": "player_1"},
+                           {"job_id": "e", "date": "2026-11-02", "player": tie, "slot": "player_1"}])["matches"]
+    check(d["result"] == "win" and d["result_from"] == "points" and e["result"] is None,
+          "more points won = win; a tie stays blank")
     check(r["strengths"][0]["title"] == "Winners", "what went well = latest report's strengths")
     ts = progress.team_strengths([{"name": "A", "strengths": r["strengths"]}, {"name": "B", "strengths": r["strengths"]}])
     check(ts[0]["players"] == ["A", "B"], "team strengths pooled by player count")

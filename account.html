@@ -340,7 +340,7 @@ async function showProgress(keepHistoryOpen) {
   box.innerHTML = res.ok ? progressHtml(data) : `<p class="msg">${esc(data.error || "Couldn't load progress.")}</p>`;
   if (keepHistoryOpen) box.querySelector("details.fold")?.setAttribute("open", "");
 }
-// Win/Loss: the player taps it once (videos often stop before the match ends).
+// Win/Loss: set from the score or points; the player can change it (videos often stop before the match ends).
 $("progressBox").addEventListener("click", async (e) => {
   const b = e.target.closest("[data-result]");
   if (!b) return;

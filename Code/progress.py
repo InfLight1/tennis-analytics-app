@@ -9,7 +9,7 @@ instead of guessing (same honesty rule as the report's low_sample).
 
 build(matches) -> {
   "matches":  [{job_id, date, points_played, points_won, points_lost, points_won_pct,
-                result (win/loss/None), result_from (player/app), sets,
+                result (win/loss/None), result_from (player/app/points), sets,
                 first_serve_in_pct, second_serve_in_pct, double_faults, top_fix}],   oldest first
   "weaknesses": [{id, title, rates: [per match, None if absent], trend,
                   change}],                                     worst latest first
@@ -106,14 +106,19 @@ def build(matches):
 
 
 def _result(m):
-    """Win/loss: the player's own answer first; else the app's score, only
-    when it counted the match to the end. Set scores from the player's side."""
+    """Win/loss: the player's own answer first; else the app's score, when it
+    counted the match to the end; else whoever won more points (a tie stays
+    blank). Set scores from the player's side."""
     slot, score = m.get("slot"), (m.get("match") or {}).get("score") or {}
     other = "player_2" if slot == "player_1" else "player_1"
     sets = [f"{a}-{b}" if slot == "player_1" else f"{b}-{a}" for a, b in score.get("completed_sets") or []]
     result, source = m.get("result"), "player" if m.get("result") else None
+    st = (m.get("player") or {}).get("stats", {})
+    won, lost = st.get("points_won"), st.get("points_lost")
     if not result and slot and score.get("match_winner") in (slot, other):
         result, source = ("win" if score["match_winner"] == slot else "loss"), "app"
+    elif not result and won is not None and lost is not None and won != lost:
+        result, source = ("win" if won > lost else "loss"), "points"
     return {"result": result, "result_from": source, "sets": sets}
 
 
