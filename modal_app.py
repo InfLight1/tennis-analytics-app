@@ -1420,8 +1420,10 @@ def guess_court_remote(job_id: str) -> dict:
 # Hands-free aiming (2026-10-29, Code/aim_guide.py): the page sends a small camera
 # picture every few seconds while the phone is up on the fence and says the tip out
 # loud. Nothing is saved; a few seconds of CPU per picture.
+# Doubles (same day): doubles=True also needs the alleys in view, and "H" (court -> picture)
+# comes back so /api/aim can count the players people_remote found standing on the court.
 @app.function(image=cpu_image, cpu=2.0, timeout=60, scaledown_window=300)
-def aim_check_remote(jpeg: bytes) -> dict:
+def aim_check_remote(jpeg: bytes, doubles: bool = False) -> dict:
     import sys
     sys.path.insert(0, "/root/Code")
     import cv2
@@ -1431,7 +1433,23 @@ def aim_check_remote(jpeg: bytes) -> dict:
     frame = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
     if frame is None:
         return {"ok": False, "code": "no_court", "tip": aim_guide.TIPS["no_court"], "score": 0.0, "points": None}
-    return aim_guide.aim_check(frame)
+    out = aim_guide.aim_check(frame, doubles=doubles)
+    out["H"] = None if out["H"] is None else np.asarray(out["H"]).tolist()
+    return out
+
+
+# Doubles detection: the people in the aiming picture (person model, CPU only; the GPU image
+# has ultralytics). Runs next to aim_check_remote; /api/aim doesn't wait long for it.
+@app.function(image=gpu_image, cpu=2.0, volumes={VOLUME_PATH: volume}, timeout=60, scaledown_window=300)
+def people_remote(jpeg: bytes) -> list:
+    import sys
+    sys.path.insert(0, "/root/Code")
+    import cv2
+    import numpy as np
+    import people_finder
+
+    frame = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+    return [] if frame is None else people_finder.feet(frame, f"{MODELS_DIR}/{PLAYER_MODEL_NAME}")
 
 
 # ---------------------------------------------------------------------------
@@ -1799,16 +1817,29 @@ def web_app():
             return JSONResponse({"ok": False, "error": "court finding failed"})
 
     @fastapi_app.post("/api/aim")
-    async def aim(file: UploadFile = File(...)):
-        """Hands-free aiming: one camera picture in, one spoken tip out (see aim_check_remote)."""
+    async def aim(file: UploadFile = File(...), doubles: str = Form("0")):
+        """Hands-free aiming: one camera picture in, one spoken tip out (see aim_check_remote),
+        plus "on_court" (players standing on the court, for noticing doubles) when the person
+        finder answers in time; null otherwise."""
+        import aim_guide
         data = await file.read()
         if len(data) > 4 * 1024 * 1024:
             return JSONResponse({"error": "Picture too large"}, status_code=413)
+        people = asyncio.ensure_future(people_remote.remote.aio(data))
         try:
-            return JSONResponse(await aim_check_remote.remote.aio(data))
+            out = await aim_check_remote.remote.aio(data, doubles == "1")
         except Exception as e:
+            people.cancel()
             print(f"aim check failed: {e}")
             return JSONResponse({"error": "aim check failed"}, status_code=502)
+        H = out.pop("H", None)
+        try:
+            feet = await asyncio.wait_for(people, timeout=3)
+            out["on_court"] = aim_guide.players_on_court(H, feet) if H else None
+        except Exception as e:   # slow start or failure: aiming goes on without the count
+            print(f"people finder skipped: {type(e).__name__}")
+            out["on_court"] = None
+        return JSONResponse(out)
 
     # ── Delete a report (2026-10-14): the player removes a match for good ────
     # Removes the job folder (report, stats, the uploaded video and every working

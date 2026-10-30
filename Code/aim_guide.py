@@ -6,11 +6,18 @@ its screen, so the page sends a small camera picture every few seconds and says
 the answer out loud ("Tilt the phone up a little", "Good spot"). Uses the court
 finder (court_detect.py) and then checks where the court sits in the picture.
 
-aim_check(frame_bgr) -> {"ok": bool, "code": str, "tip": str, "score": float,
-                         "points": the 7 marking points or None}
-"ok" is True only when the whole court (alleys too) is in view, the court finder
-is confident, and the court is roughly centred and level: the same picture can
-then be used for court marking without anyone checking it.
+aim_check(frame_bgr, doubles=False, feet=None) -> {"ok": bool, "code": str, "tip": str,
+    "score": float, "points": the 7 marking points or None, "on_court": players or None,
+    "H": the court fit (court cm -> picture) or None; not for the page}
+"ok" is True only when the court is in view, the court finder is confident, and
+the court is roughly centred and level: the same picture can then be used for
+court marking without anyone checking it. Doubles (2026-10-29): the alleys are in
+play, so the outer sidelines must be in view from the near service line on (the
+near outer corners themselves often sit just off the picture, as in singles).
+
+Doubles detection: `feet` are the bottom-middle points of the people the person
+detector found (pixels). players_on_court counts those standing on the court
+(alleys plus a margin behind the baselines); 3 or more means doubles.
 
 Codes (one tip at a time, most important first): portrait, no_court, tilt_up,
 tilt_down, too_close, turn_left, turn_right, too_small, level, unsure, good.
@@ -29,6 +36,11 @@ import court_detect as cd
 # and court marking already allows that). Far: the outer (doubles) corners.
 OUTER = np.array([[0, 0], [0, cd.COURT_H],
                   [cd.COURT_W, cd.COURT_H + cd.ALLEY], [cd.COURT_W, -cd.ALLEY]], float)
+# Doubles also: where the near service line meets the outer sidelines (left, right).
+DOUBLES_SIDES = np.array([[cd.SERVICE, -cd.ALLEY], [cd.SERVICE, cd.COURT_H + cd.ALLEY]], float)
+BEHIND = 300.0       # cm behind each baseline still counted as on court (returners stand back)
+BESIDE = 150.0       # cm outside the doubles sidelines still counted
+DOUBLES_PLAYERS = 3  # this many on court -> doubles (one may be hidden behind another)
 EDGE = 0.02          # corners must sit this far inside the picture (share of width/height)
 CENTRE_OFF = 0.12    # court centre further than this from the picture centre -> turn
 MIN_NEAR_W = 0.45    # near baseline narrower than this share of the width -> court too small
@@ -50,16 +62,35 @@ TIPS = {
 
 
 def _answer(code, score=0.0, points=None):
-    return {"ok": code == "good", "code": code, "tip": TIPS[code], "score": round(float(score), 3), "points": points}
+    return {"ok": code == "good", "code": code, "tip": TIPS[code], "score": round(float(score), 3), "points": points,
+            "on_court": None, "H": None}
 
 
-def aim_check(frame_bgr):
+def players_on_court(H, feet):
+    """How many of the feet points (image pixels) stand on the court, given H (court cm -> image)."""
+    if H is None or feet is None or len(feet) == 0:
+        return 0
+    c = cd._project(np.linalg.inv(np.asarray(H, float)), np.asarray(feet, float).reshape(-1, 2))
+    inside = ((c[:, 0] > -BEHIND) & (c[:, 0] < cd.COURT_W + BEHIND)
+              & (c[:, 1] > -cd.ALLEY - BESIDE) & (c[:, 1] < cd.COURT_H + cd.ALLEY + BESIDE))
+    return int(inside.sum())
+
+
+def aim_check(frame_bgr, doubles=False, feet=None):
     h, w = frame_bgr.shape[:2]
     if h > w:
         return _answer("portrait")
     res = cd.detect_court(frame_bgr)
     if res["H"] is None:
         return _answer("no_court")
+    out = _aim(res, w, h, doubles)
+    out["H"] = res["H"]
+    if feet is not None:
+        out["on_court"] = players_on_court(res["H"], feet)
+    return out
+
+
+def _aim(res, w, h, doubles):
     c = cd._project(res["H"], OUTER)
     x, y = c[:, 0] / w, c[:, 1] / h
     # An unsure fit with a corner hugging the edge usually means the real line is just past it
@@ -75,6 +106,10 @@ def aim_check(frame_bgr):
         return _answer("tilt_down", res["score"])
     left_cut = (x[0] < EDGE) or (x[3] < EDGE)
     right_cut = (x[1] > 1 - EDGE) or (x[2] > 1 - EDGE)
+    if doubles:
+        sx = cd._project(res["H"], DOUBLES_SIDES)[:, 0] / w
+        left_cut |= sx[0] < EDGE
+        right_cut |= sx[1] > 1 - EDGE
     if left_cut and right_cut:
         return _answer("too_close", res["score"])
     if left_cut:
@@ -101,5 +136,5 @@ if __name__ == "__main__":
 
     import cv2
     t0 = time.time()
-    out = aim_check(cv2.imread(sys.argv[1]))
+    out = aim_check(cv2.imread(sys.argv[1]), doubles="--doubles" in sys.argv)
     print(f"{out['code']} (score {out['score']}) in {time.time() - t0:.1f}s: {out['tip']}")

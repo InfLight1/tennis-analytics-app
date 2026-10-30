@@ -4,7 +4,8 @@ test_aim_guide.py
 Checks the hands-free aiming tips (aim_guide.py) on the hand-checked test frame
 Diagnostics/calib_test_frame_clip2.jpg (skips if that local file isn't there):
 the real view must be "good", and pictures cut or shifted from it must get the
-right tip (far end cut off -> tilt up, and so on).
+right tip (far end cut off -> tilt up, and so on). The same in doubles, plus the
+player count used to notice a doubles match (feet placed on and off the court).
 
 Run directly:
     python Code/test_aim_guide.py
@@ -47,12 +48,27 @@ if __name__ == "__main__":
         ("aimed too far right (court cut off on the left)", shifted(img, -0.30, 0), {"turn_left"}),
         ("blank picture", np.full_like(img, 90), {"no_court"}),
     ]
+    cases += [(f"doubles: {n}", f, w, True) for n, f, w in cases if n != "phone upright"]
     ok = True
-    for name, frame, want in cases:
+    for name, frame, want, *dbl in cases:
         t0 = time.time()
-        out = aim_guide.aim_check(frame)
+        out = aim_guide.aim_check(frame, doubles=bool(dbl))
         good = out["code"] in want
         ok &= good
         print(f"{'PASS' if good else 'FAIL'}  {name}: {out['code']} (score {out['score']}, {time.time() - t0:.1f}s), want {sorted(want)}")
+    # Doubles detection: feet put at court spots (cm) through the court the finder found.
+    import court_detect as cd
+    H = cd.detect_court(img)["H"]
+    at = lambda *spots: cd._project(H, np.array(spots, float)).tolist()
+    count_cases = [
+        ("singles: one player each end", at((-80, 400), (2450, 500)), 2),
+        ("doubles: four players, two in the alleys", at((-50, -60), (-50, 700), (1800, 880), (2300, 100)), 4),
+        ("someone at the back fence and one beside the court", at((-600, 400), (1000, 1300)), 0),
+    ]
+    for name, feet, want in count_cases:
+        out = aim_guide.aim_check(img, feet=feet)
+        good = out["on_court"] == want
+        ok &= good
+        print(f"{'PASS' if good else 'FAIL'}  players on court, {name}: {out['on_court']}, want {want}")
     print("ALL PASS" if ok else "SOME FAILED")
     sys.exit(0 if ok else 1)

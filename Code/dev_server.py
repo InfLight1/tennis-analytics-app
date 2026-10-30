@@ -75,11 +75,26 @@ modal_app.guess_court_remote = type("G", (), {"remote": type("R", (), {"aio": st
 _aim_local = modal_app.aim_check_remote.get_raw_f()
 
 
-async def _aim_aio(jpeg):
-    return _aim_local(jpeg)
+async def _aim_aio(jpeg, doubles=False):
+    return _aim_local(jpeg, doubles)
 
 
 modal_app.aim_check_remote = type("A", (), {"remote": type("R", (), {"aio": staticmethod(_aim_aio)})()})()
+# Doubles detection: no person model here, so --players N stands N people on the court
+# found in the picture (default 2, a singles match; 4 tries the switch to doubles).
+DEV_PLAYERS = [2]
+
+
+async def _people_aio(jpeg):
+    import cv2
+    import numpy as np
+    import court_detect
+    H = court_detect.detect_court(cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR))["H"]
+    spots = [(-80, 400), (2450, 500), (-50, -60), (2300, 880)][:DEV_PLAYERS[0]]
+    return [] if H is None else court_detect._project(H, np.array(spots, float)).tolist()
+
+
+modal_app.people_remote = type("P", (), {"remote": type("R", (), {"aio": staticmethod(_people_aio)})()})()
 FRAME_JOB = "abcdef000001"   # --frame: resume this job code on Home to open court marking
 
 
@@ -121,7 +136,9 @@ if __name__ == "__main__":
     ap.add_argument("--port", type=int, default=8770)
     ap.add_argument("--demo", help="profile.json to seed demo matches from")
     ap.add_argument("--frame", help="a court picture (jpg): job abcdef000001 opens court marking on it")
+    ap.add_argument("--players", type=int, default=2, help="people on court in hands-free pictures (4 = doubles)")
     a = ap.parse_args()
+    DEV_PLAYERS[0] = a.players
     if a.frame:
         d = Path(TMP) / FRAME_JOB / "input"
         d.mkdir(parents=True, exist_ok=True)

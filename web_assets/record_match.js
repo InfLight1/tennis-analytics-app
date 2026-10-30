@@ -380,6 +380,7 @@
       $("openCameraBtn").classList.add("hidden");
       $("useViewBtn").classList.remove("hidden");
       $("handsFreeBtn").classList.remove("hidden");
+      $("hfType").classList.remove("hidden");
       $("useViewBtn").scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       $("recStatus").classList.add("error");
@@ -443,7 +444,16 @@
   // Every few seconds a small picture goes to /api/aim (Code/aim_guide.py) and the tip is
   // said out loud. Two "good" answers in a row (the phone has stopped moving) mark the court
   // from the court finder's points, then a spoken countdown starts the recording.
-  const HF = { on: false, run: null, lastCode: "", lastSpoke: 0, goods: 0 };
+  const HF = { on: false, run: null, lastCode: "", lastSpoke: 0, goods: 0, crowd: 0 };
+  const DOUBLES_SEEN = 2;   // pictures in a row with 3+ players on court -> switch to doubles
+
+  // Singles/doubles: the picker next to Hands-free and the one on the court-marking screen agree.
+  function setMatchType(type) {
+    const main = document.querySelector(`input[name="matchType"][value="${type}"]`);
+    if (main && !main.checked) { main.checked = true; main.dispatchEvent(new Event("change", { bubbles: true })); }
+    const hf = document.querySelector(`input[name="hfMatchType"][value="${type}"]`);
+    if (hf) hf.checked = true;
+  }
   const AIM_W = 1280, REPEAT_MS = 9000;
 
   function say(text) {
@@ -473,6 +483,7 @@
     $("aimTip").classList.toggle("hidden", !on);
     $("handsFreeStopBtn").classList.toggle("hidden", !on);
     $("handsFreeBtn").classList.toggle("hidden", on);
+    $("hfType").classList.toggle("hidden", on);
     $("useViewBtn").classList.toggle("hidden", on);
   }
 
@@ -488,7 +499,7 @@
     if (!S.cam) return;
     const run = { stop: false };
     HF.run = run;
-    Object.assign(HF, { lastCode: "", lastSpoke: 0, goods: 0 });
+    Object.assign(HF, { lastCode: "", lastSpoke: 0, goods: 0, crowd: 0 });
     showHandsFree(true);
     keepAwake(true);
     $("recStatus").textContent = "";
@@ -500,12 +511,23 @@
       try {
         const form = new FormData();
         form.append("file", await aimPicture($("recPreview")), "aim.jpg");
+        form.append("doubles", isDoubles() ? "1" : "0");
         const res = await fetch(`${backendUrl()}/api/aim`, { method: "POST", body: form });
         if (res.ok) ans = await res.json();
       } catch (e) { /* weak signal: try again */ }
       if (run.stop) return;
       if (!ans || !ans.tip) {
         if (Date.now() - HF.lastSpoke > REPEAT_MS) { say("I can't reach the server. Check the signal."); HF.lastSpoke = Date.now(); }
+        await pause(3000, run);
+        continue;
+      }
+      // Doubles detection: four players on court (3+ in case one hides another) two pictures
+      // in a row -> doubles. Only ever switches to doubles; singles is chosen by hand.
+      if (!isDoubles() && ans.on_court != null) HF.crowd = ans.on_court >= 3 ? HF.crowd + 1 : 0;
+      if (!isDoubles() && HF.crowd >= DOUBLES_SEEN) {
+        setMatchType("doubles");
+        say("I see four players, so this is doubles. I'll check the alleys are in view too.");
+        Object.assign(HF, { goods: 0, lastCode: "doubles", lastSpoke: Date.now() });
         await pause(3000, run);
         continue;
       }
@@ -519,11 +541,11 @@
       await pause(ans.ok ? 500 : 1500, run);
     }
     if (run.stop) return;
-    say("Good spot. Getting ready.");
+    say(`Good spot. Marking the ${isDoubles() ? "doubles" : "singles"} court.`);
     $("recPreview").pause();
     const ready = await useView();
     if (run.stop) return;
-    if (ready && autoPlaced && !isDoubles()) {
+    if (ready && autoPlaced) {   // doubles too: the dots sit on the outer corners (guessCourt)
       $("looksRight").checked = true;
       updateInstruction();
       if (!$("submitCalibrationBtn").disabled) {
@@ -651,6 +673,11 @@
     $("openCameraBtn").addEventListener("click", openCamera);
     $("useViewBtn").addEventListener("click", useView);
     $("handsFreeBtn").addEventListener("click", handsFree);
+    document.querySelectorAll('input[name="hfMatchType"]').forEach((r) => r.addEventListener("change", () => setMatchType(r.value)));
+    document.querySelectorAll('input[name="matchType"]').forEach((r) => r.addEventListener("change", () => {
+      const hf = document.querySelector(`input[name="hfMatchType"][value="${r.value}"]`);
+      if (hf) hf.checked = true;
+    }));
     $("handsFreeStopBtn").addEventListener("click", () => stopHandsFree("Hands-free stopped."));
     $("recStartBtn").addEventListener("click", startRecording);
     $("recContinueBtn").addEventListener("click", startRecording);
