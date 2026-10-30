@@ -20,6 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import court_detect  # noqa: E402
 
 FRAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Diagnostics", "calib_test_frame_clip2.jpg")
+if not os.path.exists(FRAME):   # the test-site worktree has no Diagnostics folder: use the main checkout's
+    FRAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Tennis Performance App",
+                         "Diagnostics", "calib_test_frame_clip2.jpg")
 CHECKED = {   # 3840x2160 pixels, overlay checked by eye on the painted lines
     "baseline_near_left": (286, 1478), "baseline_near_right": (3168, 1405),
     "service_line_near_left": (1020, 962), "service_line_near_right": (2706, 891),

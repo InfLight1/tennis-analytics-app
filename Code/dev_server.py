@@ -24,6 +24,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "Code"))
 os.environ.setdefault("APP_PASSCODE", "test-1234")
+os.environ["MPLBACKEND"] = "Agg"      # Windows defaults to Tk windows, which crash when drawn from server threads
+for _s in (sys.stdout, sys.stderr):   # server logs carry non-ASCII (arrows, dashes); Windows consoles choke on them
+    _s.reconfigure(encoding="utf-8", errors="replace")
 
 import fastapi.responses  # noqa: E402
 import modal  # noqa: E402
@@ -51,6 +54,12 @@ import accounts  # noqa: E402
 TMP = tempfile.mkdtemp(prefix="advantage_dev_")
 modal_app._job_paths.__globals__["JOBS_DIR"] = TMP
 modal_app.volume = type("V", (), {"reload": lambda s: None, "commit": lambda s: None})()
+# Empty stand-ins for the model files, so court marking passes its "models uploaded" check
+# (nothing is analysed here).
+(Path(TMP) / "models").mkdir()
+for _name in (modal_app.BALL_MODEL_NAME, modal_app.PLAYER_MODEL_NAME):
+    (Path(TMP) / "models" / _name).write_bytes(b"")
+modal_app.MODELS_DIR = str(Path(TMP) / "models")
 modal_app._start_r2_puller = lambda job_id: None
 modal_app._r2 = lambda: None
 
@@ -63,6 +72,14 @@ async def _guess_aio(job_id):
 
 
 modal_app.guess_court_remote = type("G", (), {"remote": type("R", (), {"aio": staticmethod(_guess_aio)})()})()
+_aim_local = modal_app.aim_check_remote.get_raw_f()
+
+
+async def _aim_aio(jpeg):
+    return _aim_local(jpeg)
+
+
+modal_app.aim_check_remote = type("A", (), {"remote": type("R", (), {"aio": staticmethod(_aim_aio)})()})()
 FRAME_JOB = "abcdef000001"   # --frame: resume this job code on Home to open court marking
 
 

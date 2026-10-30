@@ -340,6 +340,9 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .record-intro { color: var(--ink); max-width: 56ch; }
 .record-tips { margin: var(--space-3) 0 var(--space-5); padding-left: 1.2em; color: var(--ink-2); max-width: 60ch; }
 .record-tips li + li { margin-top: var(--space-1); }
+.aim-tip { margin: var(--space-3) 0 var(--space-2); padding: var(--space-3) var(--space-4); border-radius: 12px;
+  background: var(--accent-soft, var(--surface-2)); color: var(--ink); font-size: 1.25rem; font-weight: 600; line-height: 1.35; }
+#handsFreeBtn { margin-top: var(--space-2); }
 .rec-preview { display: block; width: 100%; max-width: 640px; margin-top: var(--space-4); border-radius: var(--radius-md); background: #000; }
 #useViewBtn { margin-top: var(--space-4); }
 #recStatus { margin-top: var(--space-3); color: var(--ink-2); }
@@ -543,11 +546,15 @@ body.photo-hero .topbar { margin-bottom: -64px; }
               <li>Phone sideways, high on the fence behind one baseline, whole court in view.</li>
               <li>Use mobile data or court Wi-Fi. For long matches, plug in a battery pack.</li>
               <li>You mark the court first, then press Start when the first point begins. Up to 60 minutes.</li>
+              <li>Phone too high to see? Choose <b>Hands-free</b>: it says how to aim, marks the court and starts by itself (turn the volume up).</li>
             </ul>
             <button type="button" class="btn btn-primary" id="openCameraBtn">Open camera</button>
             <video id="recPreview" class="rec-preview hidden" muted playsinline></video>
             <p id="recQuality" class="estimate"></p>
             <button type="button" class="btn btn-primary hidden" id="useViewBtn">Use this view and mark the court</button>
+            <button type="button" class="btn hidden" id="handsFreeBtn">Hands-free: talk me through aiming and start by itself</button>
+            <p id="aimTip" class="aim-tip hidden" aria-live="polite"></p>
+            <button type="button" class="link-btn hidden" id="handsFreeStopBtn">Stop hands-free</button>
             <div id="recStatus" role="status"></div>
           </div>
         </div>

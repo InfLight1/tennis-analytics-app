@@ -379,6 +379,7 @@
       $("recStatus").textContent = "Point the phone at the whole court, then press the button below.";
       $("openCameraBtn").classList.add("hidden");
       $("useViewBtn").classList.remove("hidden");
+      $("handsFreeBtn").classList.remove("hidden");
       $("useViewBtn").scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       $("recStatus").classList.add("error");
@@ -428,12 +429,127 @@
       $("calibratePanel").classList.remove("hidden");
       $("calibratePanel").scrollIntoView({ behavior: "smooth" });
       showFrame(URL.createObjectURL(still));
-      guessCourt();
+      await guessCourt();
+      return true;
     } catch (e) {
       $("recStatus").classList.add("error");
       $("recStatus").textContent = `Couldn't get ready: ${e.message}. Check the signal and try again.`;
       $("useViewBtn").disabled = false;
+      return false;
     }
+  }
+
+  // ── Hands-free (2026-10-29): the phone is up on the fence where nobody can see the screen.
+  // Every few seconds a small picture goes to /api/aim (Code/aim_guide.py) and the tip is
+  // said out loud. Two "good" answers in a row (the phone has stopped moving) mark the court
+  // from the court finder's points, then a spoken countdown starts the recording.
+  const HF = { on: false, run: null, lastCode: "", lastSpoke: 0, goods: 0 };
+  const AIM_W = 1280, REPEAT_MS = 9000;
+
+  function say(text) {
+    $("aimTip").textContent = text;
+    if (!("speechSynthesis" in window)) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      u.rate = 1.0;
+      speechSynthesis.speak(u);
+    } catch (e) { /* the words on screen are enough */ }
+  }
+  const pause = (ms, run) => new Promise((r) => { const t = setTimeout(r, ms); if (run) run.cancel = () => { clearTimeout(t); r(); }; });
+
+  function aimPicture(video) {
+    const k = Math.min(1, AIM_W / video.videoWidth);
+    const c = document.createElement("canvas");
+    c.width = Math.round(video.videoWidth * k);
+    c.height = Math.round(video.videoHeight * k);
+    c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+    return new Promise((resolve) => c.toBlob(resolve, "image/jpeg", 0.85));
+  }
+
+  function showHandsFree(on) {
+    HF.on = on;
+    $("aimTip").classList.toggle("hidden", !on);
+    $("handsFreeStopBtn").classList.toggle("hidden", !on);
+    $("handsFreeBtn").classList.toggle("hidden", on);
+    $("useViewBtn").classList.toggle("hidden", on);
+  }
+
+  function stopHandsFree(note) {
+    if (HF.run) { HF.run.stop = true; if (HF.run.cancel) HF.run.cancel(); }
+    HF.run = null;
+    showHandsFree(false);
+    if (note) $("recStatus").textContent = note;
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+  }
+
+  async function handsFree() {
+    if (!S.cam) return;
+    const run = { stop: false };
+    HF.run = run;
+    Object.assign(HF, { lastCode: "", lastSpoke: 0, goods: 0 });
+    showHandsFree(true);
+    keepAwake(true);
+    $("recStatus").textContent = "";
+    say("Put the phone up on the fence, sideways, pointing at the court. I'll tell you how to aim it.");   // said inside the tap, so phones allow the voice
+    await pause(6000, run);
+    while (!run.stop) {
+      if (!S.cam || S.cam.track.readyState === "ended") { stopHandsFree("The camera stopped. Press Open camera to try again."); return; }
+      let ans = null;
+      try {
+        const form = new FormData();
+        form.append("file", await aimPicture($("recPreview")), "aim.jpg");
+        const res = await fetch(`${backendUrl()}/api/aim`, { method: "POST", body: form });
+        if (res.ok) ans = await res.json();
+      } catch (e) { /* weak signal: try again */ }
+      if (run.stop) return;
+      if (!ans || !ans.tip) {
+        if (Date.now() - HF.lastSpoke > REPEAT_MS) { say("I can't reach the server. Check the signal."); HF.lastSpoke = Date.now(); }
+        await pause(3000, run);
+        continue;
+      }
+      HF.goods = ans.ok ? HF.goods + 1 : 0;
+      if (HF.goods >= 2) break;
+      if (ans.code !== HF.lastCode || Date.now() - HF.lastSpoke > REPEAT_MS) {
+        say(ans.tip);
+        HF.lastCode = ans.code;
+        HF.lastSpoke = Date.now();
+      }
+      await pause(ans.ok ? 500 : 1500, run);
+    }
+    if (run.stop) return;
+    say("Good spot. Getting ready.");
+    $("recPreview").pause();
+    const ready = await useView();
+    if (run.stop) return;
+    if (ready && autoPlaced && !isDoubles()) {
+      $("looksRight").checked = true;
+      updateInstruction();
+      if (!$("submitCalibrationBtn").disabled) {
+        HF.marked = false;
+        $("submitCalibrationBtn").click();                // -> courtMarked() counts down
+        await pause(20000, run);
+        if (!run.stop && !HF.marked) { stopHandsFree(""); say("Something went wrong. Please take the phone down and check the screen."); }
+        return;
+      }
+    }
+    stopHandsFree("");
+    say("Please take the phone down and check the court lines on the screen.");
+  }
+
+  async function countdownAndStart() {
+    const run = HF.run || { stop: false };
+    for (const [n, words] of [[10, "Recording starts in 10 seconds."], [5, "5"], [3, "3"], [2, "2"], [1, "1"]]) {
+      if (run.stop || S.recording) return;
+      $("recNote").textContent = `Hands-free: recording starts in ${n}…`;
+      say(words);
+      await pause(n === 10 ? 5000 : n === 5 ? 2000 : 1000, run);
+    }
+    if (run.stop || S.recording) return;
+    await startRecording();
+    say("Recording. Good luck!");
+    stopHandsFree("");
   }
 
   // Called by the Home page once /api/calibrate answers "recording".
@@ -446,6 +562,7 @@
     keepAwake(true);
     render();
     $("recStartBtn").focus();
+    if (HF.on) { HF.marked = true; countdownAndStart(); }
   }
 
   // "Not now" on the Ready to record screen: nothing was filmed, so drop it and start again.
@@ -533,6 +650,8 @@
     $("modeRecord").addEventListener("click", () => { if (!(upload && upload.running)) setMode(true); });
     $("openCameraBtn").addEventListener("click", openCamera);
     $("useViewBtn").addEventListener("click", useView);
+    $("handsFreeBtn").addEventListener("click", handsFree);
+    $("handsFreeStopBtn").addEventListener("click", () => stopHandsFree("Hands-free stopped."));
     $("recStartBtn").addEventListener("click", startRecording);
     $("recContinueBtn").addEventListener("click", startRecording);
     $("recCancelBtn").addEventListener("click", cancelBeforeStart);

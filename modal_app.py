@@ -1417,6 +1417,23 @@ def guess_court_remote(job_id: str) -> dict:
     return out
 
 
+# Hands-free aiming (2026-10-29, Code/aim_guide.py): the page sends a small camera
+# picture every few seconds while the phone is up on the fence and says the tip out
+# loud. Nothing is saved; a few seconds of CPU per picture.
+@app.function(image=cpu_image, cpu=2.0, timeout=60, scaledown_window=300)
+def aim_check_remote(jpeg: bytes) -> dict:
+    import sys
+    sys.path.insert(0, "/root/Code")
+    import cv2
+    import numpy as np
+    import aim_guide
+
+    frame = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+    if frame is None:
+        return {"ok": False, "code": "no_court", "tip": aim_guide.TIPS["no_court"], "score": 0.0, "points": None}
+    return aim_guide.aim_check(frame)
+
+
 # ---------------------------------------------------------------------------
 # Demo web UI backend -- FastAPI app served as a Modal web endpoint.
 # See the module docstring's "DEMO WEB UI" section for the full flow.
@@ -1443,6 +1460,7 @@ def web_app():
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse, JSONResponse, Response
 
+    os.environ.setdefault("MPLBACKEND", "Agg")   # no windows on a server; court marking draws its check picture off the main thread
     mods = _import_pipeline()
     calibration = mods["calibration"]
 
@@ -1464,6 +1482,9 @@ def web_app():
     import accounts as accounts_mod
     import progress as progress_mod
     accts = accounts_mod.Accounts(modal.Dict.from_name("advantage-accounts", create_if_missing=True))
+    # Daily cap on new analyses (2026-10-29, Code/usage_limits.py); Modal's budget is the hard cap.
+    import usage_limits
+    limits = usage_limits.UsageLimits(modal.Dict.from_name("advantage-usage", create_if_missing=True))
     # create-team is NOT public: it needs the passcode header, checked like every other route
     auth_public = {"/api/auth/signin", "/api/auth/join"}
     import re as _re
@@ -1745,7 +1766,7 @@ def web_app():
             return JSONResponse({"error": "Picture too large"}, status_code=413)
         with open(_calib_frame_path(job_id), "wb") as f:
             f.write(data)
-        volume.commit()
+        await asyncio.to_thread(volume.commit)   # can take seconds; don't hold up other players (load test 2026-10-29)
         return JSONResponse({
             "job_id": job_id,
             "point_labels": calibration.EXTENDED_POINT_LABELS,
@@ -1776,6 +1797,18 @@ def web_app():
         except Exception as e:
             print(f"[job {job_id}] court guess failed: {e}")
             return JSONResponse({"ok": False, "error": "court finding failed"})
+
+    @fastapi_app.post("/api/aim")
+    async def aim(file: UploadFile = File(...)):
+        """Hands-free aiming: one camera picture in, one spoken tip out (see aim_check_remote)."""
+        data = await file.read()
+        if len(data) > 4 * 1024 * 1024:
+            return JSONResponse({"error": "Picture too large"}, status_code=413)
+        try:
+            return JSONResponse(await aim_check_remote.remote.aio(data))
+        except Exception as e:
+            print(f"aim check failed: {e}")
+            return JSONResponse({"error": "aim check failed"}, status_code=502)
 
     # ── Delete a report (2026-10-14): the player removes a match for good ────
     # Removes the job folder (report, stats, the uploaded video and every working
@@ -1831,6 +1864,8 @@ def web_app():
             return JSONResponse({"error": "Could not encode frame"}, status_code=500)
         return Response(content=buf.tobytes(), media_type="image/jpeg")
 
+    calibrate_lock = threading.Lock()
+
     @fastapi_app.post("/api/calibrate")
     async def calibrate_safe(request: Request, job_id: str = Form(...), points_json: str = Form(...),
                              player1_name: str = Form(""), player2_name: str = Form(""),
@@ -1839,19 +1874,29 @@ def web_app():
         import traceback
         if request.state.user and not accts.can_change(request.state.user, job_id):
             return JSONResponse({"error": "This match belongs to someone else."}, status_code=403)
+        user = request.state.user
+        allowed, why = limits.try_start(job_id, user["username"] if user else None)
+        if not allowed:
+            return JSONResponse({"error": why}, status_code=429)
         try:
             os.makedirs(_job_paths(job_id)["job_dir"], exist_ok=True)
             with open(f"{_job_paths(job_id)['job_dir']}/match.json", "w", encoding="utf-8") as f:
                 json.dump({"type": "doubles" if match_type == "doubles" else "singles"}, f)
             if match_type != "doubles":   # doubles boxes hold team names, not one player each
                 accts.auto_claim(job_id, {"player_1": player1_name, "player_2": player2_name})
-            return await calibrate(job_id, points_json, player1_name, player2_name)
+            # Off the event loop, so uploads and pages keep flowing while a court is marked
+            # (load test 2026-10-29: 30 players at once stalled everything for up to 14 s).
+            # One at a time: the bird's-eye check picture uses matplotlib, which isn't thread-safe.
+            def _locked():
+                with calibrate_lock:
+                    return calibrate(job_id, points_json, player1_name, player2_name)
+            return await asyncio.to_thread(_locked)
         except Exception as e:
             print(f"[job {job_id}] calibrate failed:\n{traceback.format_exc()}")
             return JSONResponse({"error": f"The server couldn't save the court marking ({type(e).__name__}: {e}). "
                                           "Please press Start analysis again in a moment."}, status_code=500)
 
-    async def calibrate(
+    def calibrate(
         job_id: str = Form(...),
         points_json: str = Form(...),  # {"label": [x, y], ...}
         # player_1 = the player at the NEAR end (closest to the camera) when
