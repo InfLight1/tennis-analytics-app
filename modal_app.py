@@ -267,6 +267,9 @@ cpu_image = (
 
 # Week 3 guardrails. The passcode lives in the Modal secret "app-passcode"
 # (key APP_PASSCODE); every /api/ route needs it in an X-Passcode header.
+# The test site has its own passcode (Oct 29): deploy_test_site.ps1 sets PASSCODE_SECRET to
+# "app-passcode-test", so changing it never touches the live app's passcode.
+PASSCODE_SECRET = os.environ.get("PASSCODE_SECRET", "app-passcode")
 MAX_VIDEO_MINUTES = 60
 
 # --- GPU image: adds ultralytics + torch (CUDA build) on top of a CUDA base ---
@@ -1461,7 +1464,7 @@ def people_remote(jpeg: bytes) -> list:
 # WEB_MIN_CONTAINERS=0 at deploy time lets a test copy (modal deploy --name tennis-perf-app-test) sleep when unused.
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=600,
               min_containers=int(os.environ.get("WEB_MIN_CONTAINERS", "1")),
-              secrets=[modal.Secret.from_name("app-passcode"), R2_SECRET])
+              secrets=[modal.Secret.from_name(PASSCODE_SECRET), R2_SECRET])
 @modal.concurrent(max_inputs=20)   # the page sends several upload pieces at once (2026-10-12)
 @modal.asgi_app()
 def web_app():
