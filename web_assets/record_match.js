@@ -381,6 +381,7 @@
       $("useViewBtn").classList.remove("hidden");
       $("handsFreeBtn").classList.remove("hidden");
       $("hfType").classList.remove("hidden");
+      loadClips();
       $("useViewBtn").scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       $("recStatus").classList.add("error");
@@ -456,8 +457,28 @@
   }
   const AIM_W = 1280, REPEAT_MS = 9000;
 
+  // Natural voice (2026-10-29): every line is a recorded clip in the "mild2" AI voice
+  // (Code/make_voice_clips.py -> voice-clips.json). One audio element, first played inside
+  // the Hands-free tap, so phones keep allowing it. Lines without a clip use the phone's voice.
+  let CLIPS = null;
+  const voice = new Audio();
+  async function loadClips() {
+    if (CLIPS) return;
+    try { CLIPS = await fetch("/voice-clips.json").then((r) => (r.ok ? r.json() : {})); } catch (e) { CLIPS = {}; }
+  }
   function say(text) {
     $("aimTip").textContent = text;
+    const clip = CLIPS && CLIPS[text];
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    if (clip) {
+      voice.pause();
+      voice.src = `/${clip}`;
+      voice.play().catch(() => speak(text));
+      return;
+    }
+    speak(text);
+  }
+  function speak(text) {
     if (!("speechSynthesis" in window)) return;
     try {
       speechSynthesis.cancel();
@@ -492,7 +513,6 @@
     HF.run = null;
     showHandsFree(false);
     if (note) $("recStatus").textContent = note;
-    if ("speechSynthesis" in window) speechSynthesis.cancel();
   }
 
   async function handsFree() {
@@ -678,7 +698,11 @@
       const hf = document.querySelector(`input[name="hfMatchType"][value="${r.value}"]`);
       if (hf) hf.checked = true;
     }));
-    $("handsFreeStopBtn").addEventListener("click", () => stopHandsFree("Hands-free stopped."));
+    $("handsFreeStopBtn").addEventListener("click", () => {
+      voice.pause();
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+      stopHandsFree("Hands-free stopped.");
+    });
     $("recStartBtn").addEventListener("click", startRecording);
     $("recContinueBtn").addEventListener("click", startRecording);
     $("recCancelBtn").addEventListener("click", cancelBeforeStart);

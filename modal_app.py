@@ -2037,9 +2037,12 @@ def web_app():
     @fastapi_app.get("/{name}")
     def web_asset(name: str):
         """passcode.js, the install manifest, app icons and page photos, at the site root."""
-        if name not in _assets:
+        import re
+        kind = _assets.get(name) or ("audio/mpeg" if re.fullmatch(r"voice-[a-z0-9-]+\.mp3", name) else
+                                     "application/json" if name == "voice-clips.json" else None)
+        if not kind:   # hands-free voice clips (make_voice_clips.py) are allowed by name pattern
             return JSONResponse({"error": "not found"}, status_code=404)
-        return FileResponse(f"/root/web/assets/{name}", media_type=_assets[name],
+        return FileResponse(f"/root/web/assets/{name}", media_type=kind,
                             headers={"Cache-Control": "no-cache"})
 
     @fastapi_app.get("/api/debug/{job_id}/{name}")
