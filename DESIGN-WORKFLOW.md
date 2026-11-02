@@ -1,10 +1,30 @@
 # Design workflow (unique-frontend): status
 
-Done 2026-10-13. Final rules: `DESIGN.md`. Approved static pages: `design/approved/`. References: `design/references.md`.
+Round 2 started 2026-11-02 (web app + iPhone app overhaul). Round 1 (Oct 13): references Escape Tab Hell + Northpeak, 6 versions (git 19f1242), frozen into `DESIGN.md`; old references in `design/archive-2026-10-13/`.
 
-- [x] 0–1. Project read; references picked (Escape Tab Hell, plus Northpeak for the hero).
-- [x] 2. 6 versions built and compared (removed after the pick; in git history, commit 19f1242).
-- [x] 3. Narrowed, frozen into `DESIGN.md`, moved into `calibration_demo.html` + `report.html` (+ `web_assets/site.css`, `site.js`).
-- [x] 4. Images: 3 of 5 slots (hero court, phone on fence, ball on line), WebP in `web_assets/`.
-- [ ] 5. Tweak bar: skipped (close to the Oct 19 freeze). Tokens sit in each page's `:root`.
-- [ ] 6. 21st.dev components: not needed.
+## Summary
+- Advantage AI web app: film a tennis match on a phone, get each player's top fixes ranked by points lost. Players first, coaches second. Same design will be reused by the iPhone app.
+- Screens: player dashboard (`/app`, signed-in home), new analysis (upload / record / court marking), report, sign-in, coach team view (2-3 mockups). The ad/info front page at the main address comes later (signed-in players opening the main address go to their dashboard).
+- Works today: court photo hero, calm panels, plain words. Generic today: same rounded green panel everywhere, dashboard is a plain list without visuals, Record match buried.
+- Hard rules: real numbers only, no competitor names, no AI technique advice, readable outdoors, phone first.
+- **Motion level: None** (Rudra, Nov 2): only interaction feedback.
+- Deadline: a couple of days (Rudra, Nov 2).
+
+## Subject brief
+- **Subject:** a tennis match filmed on a phone, turned into "what cost you points".
+- **Audience / job:** high school + junior players on phones, then coaches on laptops; show your #1 fix at a glance and get the next match filmed.
+- **Its world:** chain-link fence, painted court lines, fuzzy yellow ball, match scoreboard, net tape, evening court lights.
+- **Most characteristic thing:** your #1 fix as a scoreboard line ("Errors into the net · 6 of 10 points lost") next to a big Record match button.
+- **Avoid:** the usual sports-app look (black + neon green, a wall of identical cards).
+
+## Checklist
+- [x] 0. Project read, tools checked, subject brief.
+- [x] 1. References (Rudra swapped Designs That Work for Human Meet Agent + Forest): Hedging Overview, Summit Widgets, Five Elements, Human Meet Agent, Forest, Apple → 12 versions. `design/references.md`.
+- [x] 2. 12 versions (dashboard + report each) in `design/versions/` (local only, gitignored; reference screenshots in `design/references/` stay local too). Compare at `design/versions/index.html` (launch config `design-versions`, port 8780). Known gaps in all: fix #3 "Errors wide" has no tactic/habit/drill in the example data ([TODO]); Player 2 tab is short; video scoreboard score/serve dot are placeholders.
+- [ ] Rudra picks 1-2 favourites + what he likes in each.
+- [ ] 3. Narrow, quality check (apple-hig, break-ui), freeze into `DESIGN.md`, move into the real pages, coach view mockups.
+- [ ] 4. Images (5 slots, Higgsfield).
+- [ ] 5. Motion: skipped (None).
+- [ ] 6. Tweak bar.
+- [ ] 7. 21st.dev review.
+- [ ] 8. Final polish (interaction transitions, mobile-native).
