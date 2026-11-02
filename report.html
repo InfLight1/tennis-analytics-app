@@ -238,6 +238,11 @@ p { margin: 0; text-wrap: pretty; }
 .w-btn { width: var(--tap); height: var(--tap); flex: none; display: grid; place-items: center; border: 0; border-radius: var(--radius-pill);
   background: transparent; color: var(--ink); cursor: pointer; }
 .w-btn:hover { background: var(--surface-2); }
+/* slow motion: small and quiet until it's on (Rudra: "make the button subtle") */
+.w-speed { height: 32px; padding: 0 8px; flex: none; border: 1px solid transparent; border-radius: var(--radius-pill); background: transparent;
+  color: var(--dim); font: 600 var(--text-sm)/1 var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; }
+.w-speed:hover { color: var(--ink-2); }
+.w-speed[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 .w-btn:disabled { color: var(--dim); cursor: default; background: transparent; }
 .w-msg { padding: var(--space-5) var(--space-4); color: var(--ink-2); }
 body.watching .end { height: 60vh; }
@@ -436,6 +441,7 @@ details.fold > summary svg { color: var(--muted); }
   <div class="w-bar">
     <button type="button" class="w-btn" id="wPrev" aria-label="Previous point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
     <div class="w-title" id="wTitle" aria-live="polite"></div>
+    <button type="button" class="w-speed" id="wSpeed" aria-pressed="false" aria-label="Slow motion">0.5×</button>
     <button type="button" class="w-btn" id="wReplay" aria-label="Replay this point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg></button>
     <button type="button" class="w-btn" id="wNext" aria-label="Next point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
     <button type="button" class="w-btn" id="wClose" aria-label="Close the video"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -846,6 +852,11 @@ $("wPrev").addEventListener("click", () => { if (W.i > 0) { W.i--; watchSeek(); 
 $("wNext").addEventListener("click", () => { if (W.i < clipsOf(W.pat).length - 1) { W.i++; watchSeek(); } });
 $("wClose").addEventListener("click", watchClose);
 $("wReplay").addEventListener("click", () => watchSeek());
+$("wSpeed").addEventListener("click", () => {
+  const slow = $("wSpeed").getAttribute("aria-pressed") !== "true";
+  $("wSpeed").setAttribute("aria-pressed", String(slow));
+  wVideo.playbackRate = wVideo.defaultPlaybackRate = slow ? 0.5 : 1;
+});
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("watch").classList.contains("hidden")) watchClose(); });
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-w]");
