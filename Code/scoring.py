@@ -2,8 +2,6 @@
 scoring.py (reconstructed from session content for local diagnostic use)
 """
 
-import math
-
 import pandas as pd
 
 import config
@@ -64,6 +62,8 @@ def _new_match_state(players):
         "completed_sets": [],
         "in_tiebreak": False,
         "match_winner": None,
+        # player_1 at the far end; flipped by the changeover rule in _apply_point
+        "ends_swapped": False,
     }
 
 
@@ -83,6 +83,10 @@ def _close_out_set(state, set_winner):
 
 
 def _apply_point(state, winner, loser):
+    """Also keeps state["ends_swapped"] (the changeover rule): ends change
+    after every odd game of a set, counted within the set, so a set that
+    ends on an odd game carries the change into the next set; in a
+    tiebreak every 6 points and once more when it ends."""
     events = []
 
     if state["in_tiebreak"]:
@@ -94,9 +98,12 @@ def _apply_point(state, winner, loser):
             else TIEBREAK_POINTS_TO_WIN
         )
         if _wins_tiebreak(my_pts, opp_pts, target):
+            state["ends_swapped"] = not state["ends_swapped"]
             state["set_games"][winner] += 1
             events.append(f"tiebreak_won:{winner}")
             events += _close_out_set(state, winner)
+        elif (my_pts + opp_pts) % 6 == 0:
+            state["ends_swapped"] = not state["ends_swapped"]
         return events
 
     state["game_points"][winner] += 1
@@ -105,6 +112,8 @@ def _apply_point(state, winner, loser):
         state["set_games"][winner] += 1
         state["game_points"] = {p: 0 for p in state["players"]}
         events.append(f"game_won:{winner}")
+        if sum(state["set_games"].values()) % 2 == 1:
+            state["ends_swapped"] = not state["ends_swapped"]
 
         w_games, l_games = state["set_games"][winner], state["set_games"][loser]
         if _wins_set(w_games, l_games):
@@ -205,23 +214,6 @@ def score_match(outcomes_df):
     return per_point_df, summary
 
 
-def _game_swap_parity(games_completed_in_set):
-    return (math.ceil(games_completed_in_set / 2)) % 2 == 1
-
-
-def _tiebreak_swap_parity(points_played_in_tiebreak):
-    return (points_played_in_tiebreak // 6) % 2 == 1
-
-
-def _current_swap_parity(state):
-    if state["in_tiebreak"]:
-        base = _game_swap_parity(2 * TIEBREAK_AT_GAMES)
-        tb_points = sum(state["game_points"].values())
-        return base != _tiebreak_swap_parity(tb_points)
-    games_completed = sum(state["set_games"].values())
-    return _game_swap_parity(games_completed)
-
-
 def score_match_near_far(outcomes_df, end_swaps=None):
     """end_swaps: optional {rally_id: player_1_is_at_far_end} from
     player_appearance.rally_end_swaps (clothing colour). When given it
@@ -251,7 +243,7 @@ def score_match_near_far(outcomes_df, end_swaps=None):
         resolvable = not already_ambiguous and not identity_gap
 
         swap = (end_swaps.get(int(rally["rally_id"]), False) if end_swaps is not None
-                else _current_swap_parity(state))
+                else state["ends_swapped"])
         p1, p2 = players
         near_player, far_player = (p2, p1) if swap else (p1, p2)
         side_map = {"near": near_player, "far": far_player}
