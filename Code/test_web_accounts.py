@@ -77,6 +77,15 @@ if __name__ == "__main__":
     check(client.get(f"/api/profile/{job}", headers={"x-session": sam}).status_code == 403, "teammate can't")
     check(client.get(f"/api/profile/{job}", headers={"x-session": coach}).status_code == 200, "coach can")
     check(client.delete(f"/api/job/{job}", headers={"x-session": sam}).status_code == 403, "teammate can't delete it")
+    # match video needs the passcode AND a sign-in that may see the report (Nov 1)
+    pw = {"x-passcode": "test-1234"}
+    check(client.get(f"/api/watch/{job}", headers=pw).status_code == 403, "video: passcode alone isn't enough")
+    check(client.get(f"/api/watch/{job}", headers={"x-session": rudra}).status_code == 401, "video: sign-in alone isn't enough")
+    check(client.get(f"/api/watch/{job}", headers={**pw, "x-session": rudra}).status_code == 200, "video: the player with both can watch")
+    check(client.get(f"/api/watch/{job}", headers={**pw, "x-session": coach}).status_code == 200, "video: their coach with both can watch")
+    check(client.get(f"/api/watch/{job}", headers={**pw, "x-session": sam}).status_code == 403, "video: a teammate can't, even with the passcode")
+    check(client.get(f"/api/ball/{job}", headers=pw).status_code == 403, "ball positions: same rule")
+    check(client.get(f"/api/watch/{modal_app.EXAMPLE_JOB_ID}").status_code == 401, "video: the example's video isn't public")
 
     # typing teammates' names adds the match to their progress (no "This is me" button)
     form(f"/api/names/{job}", {"player1_name": "RUDRA", "player2_name": "Sam"}, **{"x-session": rudra})

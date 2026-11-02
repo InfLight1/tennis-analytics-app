@@ -1549,7 +1549,7 @@ def web_app():
     # The example report opens without the passcode, so judges and new
     # visitors can see a full report (read only; renaming still needs it).
     # Match video is never public (Rudra, Nov 1: clips show real players): /api/watch and /api/ball
-    # always need the passcode or a signed-in account, even for the example.
+    # need the passcode AND a signed-in account, even for the example (see require_passcode).
     public_api = {f"/api/profile/{job}" for job in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)}
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
@@ -1567,6 +1567,7 @@ def web_app():
     import re as _re
     job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug|watch|ball)/([0-9a-f]{12})(?:/|$)")
     job_writes = ("/api/names/", "/api/job/")
+    video_in_path = _re.compile(r"^/api/(?:watch|ball)/([^/]+)$")   # any code: fail closed
 
     @fastapi_app.middleware("http")
     async def require_passcode(request, call_next):
@@ -1591,6 +1592,18 @@ def web_app():
                                else accts.can_see(user, job))
                     if not allowed:
                         return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
+            # Match video needs BOTH (Rudra, Nov 1): the passcode and a signed-in account that may see
+            # this report (the player, or their team's coach). The example has no owner, so any account.
+            # 403 (not 401), so the page keeps the saved passcode and asks the viewer to sign in.
+            v = video_in_path.match(path)
+            if v:
+                user = request.state.user
+                if not request.state.full_access:
+                    return JSONResponse({"error": "passcode required"}, status_code=401)
+                if not user:
+                    return JSONResponse({"error": "Sign in to watch your match video.", "signin": True}, status_code=403)
+                if v.group(1) not in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID) and not accts.can_see(user, v.group(1)):
+                    return JSONResponse({"error": "Only the player and their coach can watch this video."}, status_code=403)
         return await call_next(request)
 
     # Added after the passcode check so CORS wraps it (a 401 still carries

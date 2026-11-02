@@ -795,7 +795,7 @@ async function watchUrl() {
   if (!JOB) throw new Error("There's no video for this report.");
   const res = await fetch(`${BACKEND}/api/watch/${encodeURIComponent(JOB)}`);
   const j = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(j.error || "The video isn't available right now.");
+  if (!res.ok) throw Object.assign(new Error(j.error || "The video isn't available right now."), { signin: !!j.signin });
   if (!j.ready) throw new Error(j.message || "The video isn't available right now.");
   W.url = BACKEND + j.url;
   return W.url;
@@ -832,7 +832,9 @@ async function watchOpen(patId, i) {
   } catch (e) {
     wVideo.classList.add("hidden");
     $("wMsg").textContent = e.message;
+    if (e.signin) $("wMsg").insertAdjacentHTML("beforeend", ` <a href="/account">Sign in</a>`);
     $("wMsg").classList.remove("hidden");
+    if (e.signin) return;      // no point retrying until they sign in
     // still being made: try again on its own while the player is open
     W.retry = setTimeout(() => { if (!$("watch").classList.contains("hidden")) watchOpen(W.pat.id, W.i); }, 20000);
   }
