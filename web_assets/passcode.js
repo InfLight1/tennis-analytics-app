@@ -43,8 +43,9 @@
   const isApi = (url) => String(url instanceof Request ? url.url : url).includes("/api/");
   const realFetch = window.fetch.bind(window);
 
-  // The example report's data (and its video and ball positions; also its test-site copy) is public: no prompt for first-time visitors.
-  const isPublic = (url) => /\/api\/(profile|watch|ball)\/(76a383379d90|e0e0e0e0e0e0)$/.test(String(url instanceof Request ? url.url : url));
+  // The example report's data (and its test-site copy) is public: no prompt for first-time visitors.
+  // Its video is not: clips show real players, so watching always needs the passcode or a sign-in.
+  const isPublic = (url) => /\/api\/profile\/(76a383379d90|e0e0e0e0e0e0)$/.test(String(url instanceof Request ? url.url : url));
 
   // Accounts (2026-10-28): a signed-in player or coach sends their session (X-Session) instead,
   // and is never asked for the passcode. Sign-in routes need neither.

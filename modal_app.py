@@ -1548,8 +1548,9 @@ def web_app():
 
     # The example report opens without the passcode, so judges and new
     # visitors can see a full report (read only; renaming still needs it).
-    public_api = {f"/api/{kind}/{job}" for kind in ("profile", "watch", "ball")
-                  for job in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)}
+    # Match video is never public (Rudra, Nov 1: clips show real players): /api/watch and /api/ball
+    # always need the passcode or a signed-in account, even for the example.
+    public_api = {f"/api/profile/{job}" for job in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)}
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
     # gets in with their session instead of the shared passcode, but only to
@@ -2132,7 +2133,7 @@ def web_app():
     # session header, so /api/watch (checked like every /api/ route) hands
     # out a signed link to /media/watch that works for a few hours.
     watch_key = hmac.new(passcode, b"watch-links", "sha256").digest() if passcode else b""
-    WATCH_LINK_S = 6 * 3600
+    WATCH_LINK_S = 2 * 3600       # short, so a copied video link stops working soon
 
     def _watch_sig(job_id, exp):
         return hmac.new(watch_key, f"{job_id}:{exp}".encode(), "sha256").hexdigest()[:32]
