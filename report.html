@@ -221,6 +221,17 @@ p { margin: 0; text-wrap: pretty; }
 #watch { position: fixed; z-index: 20; right: var(--space-4); bottom: var(--space-4); width: min(460px, calc(100vw - 2 * var(--space-4)));
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); overflow: hidden; }
 #watch video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.w-stage { position: relative; }
+#wBall { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* scoreboard over the video: names, finished sets, games, points; dot = server */
+.w-score { position: absolute; left: 8px; top: 8px; pointer-events: none; border-collapse: collapse; border-radius: 6px; overflow: hidden;
+  background: rgba(8, 18, 12, 0.84); color: #fff; font: 600 12px/1 var(--font-sans); font-variant-numeric: tabular-nums; }
+.w-score td { padding: 4px 6px; text-align: center; }
+.w-score td.nm { text-align: left; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-score td.sv::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #E9FF4D; vertical-align: 1px; }
+.w-score td.set { color: rgba(255, 255, 255, 0.7); }
+.w-score .end { margin-left: 5px; font-weight: 500; font-size: 10px; color: rgba(255, 255, 255, 0.65); }
+.w-score td.pt { min-width: 2.2em; background: rgba(255, 255, 255, 0.14); color: #E9FF4D; }
 .w-bar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
 .w-title { flex: 1; min-width: 0; font-weight: 650; font-size: var(--text-sm); }
 .w-title .w-sub { display: block; color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -416,11 +427,16 @@ details.fold > summary svg { color: var(--muted); }
 <footer id="sitefoot"></footer>
 <div id="tip" role="tooltip"></div>
 <section id="watch" class="hidden" aria-label="Watch your points">
-  <video id="wVideo" playsinline controls preload="metadata"></video>
+  <div class="w-stage">
+    <video id="wVideo" playsinline controls preload="metadata"></video>
+    <canvas id="wBall" aria-hidden="true"></canvas>
+    <table class="w-score hidden" id="wScore" title="The score as the app counted it. A missed point shifts it."></table>
+  </div>
   <div class="w-msg hidden" id="wMsg" role="status"></div>
   <div class="w-bar">
     <button type="button" class="w-btn" id="wPrev" aria-label="Previous point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
     <div class="w-title" id="wTitle" aria-live="polite"></div>
+    <button type="button" class="w-btn" id="wReplay" aria-label="Replay this point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg></button>
     <button type="button" class="w-btn" id="wNext" aria-label="Next point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
     <button type="button" class="w-btn" id="wClose" aria-label="Close the video"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
@@ -551,11 +567,14 @@ function matchLine(P, ids) {
   if (sets) bits.push(`Sets <b>${esc(sets)}</b>`);
   if (sc.match_winner && P[sc.match_winner]) bits.push(`<b>${esc(P[sc.match_winner].name)}</b> won`);
   if (m.length_s) bits.push(`<b>${Math.max(1, Math.round(m.length_s / 60))} min</b> of video`);
+  const c = DATA.coverage, found = c.rallies_detected - c.first_serve_faults - c.unconfirmed_serve_faults;
+  if (found > c.points_decided) bits.push(`<a href="#${current}-sure">${c.points_decided} of ${found} points called</a>`);
   return bits.join(" · ");
 }
 
-// Every stat with one plain line saying what it means (Rudra, Nov 1). Match facts only.
-const LONG_RALLY_MIN = 9;    // config.RALLY_LENGTH_LONG_MIN_HITS
+// Serve and return stats, each with one plain line saying what it means (Rudra, Nov 1).
+// Double faults, missed shots and rally length are left out: the bars and fixes above
+// already show them (pretend users, Nov 1: "it says the same thing three times").
 const wonOf = (pctWon, n) => Math.round((pctWon || 0) * n / 100);
 function statRows(s) {
   const sv = s.serve, rt = s.return, rows = [];
@@ -570,42 +589,24 @@ function statRows(s) {
   }
   if (sv.first_serve_points && sv.second_serve_points) {
     const p1 = sv.first_serve_points_won_pct, p2 = sv.second_serve_points_won_pct;
-    add(`${pct(p1)}<br>${pct(p2)}`, "Points won on 1st and 2nd serve",
+    add(`${pct(p1)}<br>${pct(p2)}`, "Points won: 1st serve, 2nd serve",
       `Won ${wonOf(p1, sv.first_serve_points)} of ${sv.first_serve_points} points on the first serve and ${wonOf(p2, sv.second_serve_points)} of ${sv.second_serve_points} on the second. ` +
       (p1 - p2 >= 15 ? "The second serve is where points slip away: the opponent can attack it." : p2 - p1 >= 15 ? "Points after a second serve went better than after a first serve this match." : "About the same on both serves."));
   }
-  add(String(sv.double_faults), "Double faults", sv.double_faults
-    ? `${sv.double_faults} free point${sv.double_faults === 1 ? "" : "s"} for the opponent. At least this many: the app can miss a serve.`
-    : "None seen. The app can miss a serve, so check the video if you remember one.");
-  if (sv.aces) add(String(sv.aces), "Serves not returned", `${sv.aces} serve${sv.aces === 1 ? "" : "s"} the opponent didn't get back: free points.`);
   if (sv.points_served) {
     const p = sv.service_points_won_pct;
     add(pct(p), "Won on serve", `Won ${wonOf(p, sv.points_served)} of ${sv.points_served} points when serving. ` +
-      (p >= 55 ? "Serving gave an edge." : p < 45 ? "Lost more than half of the points on their own serve." : "About even on serve."));
+      (p >= 55 ? "Serving gave an edge." : p < 45 ? "Lost more than half of these." : "About even on serve."));
   }
   if (rt.return_points) {
     const p = rt.return_points_won_pct;
     add(pct(p), "Won on return", `Won ${wonOf(p, rt.return_points)} of ${rt.return_points} points when the opponent served. ` +
-      (p >= 50 ? "Even or better against the opponent's serve." : "The opponent's serve won most of these points."));
-  }
-  const errs = s.lost_by.own_errors, nErr = Object.values(errs).reduce((a, b) => a + b, 0);
-  if (s.points_lost) {
-    const words = { net: "into the net", long: "long", wide: "wide", unclassified: "direction unclear" };
-    const parts = Object.entries(errs).filter(([, n]) => n).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${words[k] || k}`).join(", ");
-    add(String(nErr), "Own missed shots", `${nErr} of ${s.points_lost} points lost ended with their own shot missing${parts ? ` (${parts})` : ""}. ` +
-      (nErr * 2 > s.points_lost ? "More points were given away than taken by the opponent." : "Most points lost were won by the opponent's shots, not handed over."));
-  }
-  const rl = s.rally_length;
-  for (const [b, label] of [["short", `Short points (${s.short_point_max_shots} shots or fewer)`], ["long", `Long rallies (${LONG_RALLY_MIN}+ shots)`]]) {
-    const { played, won } = rl[b];
-    if (played < 3) continue;
-    add(pct(100 * won / played), label, `Won ${won} of ${played}. ` +
-      (won / played >= 0.6 ? "These go their way." : won / played <= 0.4 ? "These go the opponent's way." : "About even."));
+      (p >= 50 ? "Even or better when returning." : "Lost most of these: the opponent held serve well."));
   }
   return rows;
 }
 function statsHtml(s, idp) {
-  return `<section class="sec" aria-labelledby="${idp}statH"><h2 id="${idp}statH">Your stats, explained</h2>
+  return `<section class="sec" aria-labelledby="${idp}statH"><h2 id="${idp}statH">Serve and return, explained</h2>
     <ul class="stats-x">${statRows(s).map((r) => `<li><div class="v">${r.v}</div><div><div class="l">${esc(r.l)}</div><p class="x">${esc(r.x)}</p></div></li>`).join("")}</ul>
   </section>`;
 }
@@ -614,7 +615,7 @@ function statsHtml(s, idp) {
 function sureHtml(idp) {
   const c = DATA.coverage, found = c.rallies_detected - c.first_serve_faults - c.unconfirmed_serve_faults;
   const left = Math.max(0, found - c.points_decided);
-  return `<section class="sec sure" aria-labelledby="${idp}sureH"><h2 id="${idp}sureH">How sure the app is</h2>
+  return `<section class="sec sure" id="${idp || `${current}-`}sure" aria-labelledby="${idp}sureH"><h2 id="${idp}sureH">How sure the app is</h2>
     <p>The app called the winner of <b class="num">${c.points_decided} of ${found}</b> points it found. ${left
       ? `It wasn't sure about the other ${left}, so they're left out of every number on this page.` : "It was sure about all of them."}</p>
     <p>On one match labeled by hand, it named the right winner for 17 of 20 points (85%). "About this data" below lists what it can't measure yet.</p>
@@ -632,7 +633,7 @@ function render() {
   $("shareBtn").classList.remove("hidden");
   $("coverageBox").classList.remove("hidden");
   $("coverage").innerHTML = DATA.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
-    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>` +
+    `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are left out.</p>` +
     timingHtml;
 }
 
@@ -678,7 +679,6 @@ function playerHtml(pl, print = false) {
   const s = pl.stats, sv = s.serve, rt = s.return;
   const ordered = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
   const fixes = ordered(pl.weaknesses), keeps = ordered(pl.strengths);
-  const early = [...pl.weaknesses, ...pl.strengths].filter((p) => p.low_sample);
   const errs = s.lost_by.own_errors;
   const lostParts = [
     { label: "Into the net", n: errs.net || 0, slot: 1 },
@@ -748,14 +748,6 @@ function playerHtml(pl, print = false) {
 
     ${statsHtml(s, idp)}
 
-    ${fixes.length > 3 || early.length ? `<details class="fold"><summary>More to look at ${CHEV}</summary>
-      <div class="fold-body">
-        ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3><ol class="fixes">${fixes.slice(3).map((p, i) => fixCard(p, i + 4, false)).join("")}</ol>` : ""}
-        ${early.length ? `<h3 class="sub-h">Early signs (too few to rank yet)</h3><ul class="early">${early.map((p) => `<li>${esc(p.detail)}</li>`).join("")}</ul>` : ""}
-        <p class="muted playstyle">${esc(pl.playstyle.summary)}</p>
-      </div>
-    </details>` : ""}
-
     ${sureHtml(idp)}`;
 }
 $("player").addEventListener("click", (e) => {
@@ -776,8 +768,9 @@ document.addEventListener("pointermove", (e) => {
 
 // ── Watch your points (2026-11-01) ──────────────────────────────────────
 // Tapping a time or "Watch" opens a small player at the bottom. It plays that pattern's points
-// one after another (each from just before the serve to just after the point ends), with
-// previous/next. The video is the server's small watch copy, reached through a signed link.
+// one after another (each from 3 s before the moment it's decided to 2 s after), with
+// previous/next, a scoreboard and a marker on the ball. The video is the server's small watch
+// copy, reached through a signed link.
 const W = { pat: null, i: 0, url: null, retry: null };
 const wVideo = $("wVideo");
 async function watchUrl() {
@@ -792,12 +785,13 @@ async function watchUrl() {
 }
 function watchTitle() {
   const clips = clipsOf(W.pat), n = clips.length;
-  $("wTitle").innerHTML = `Point ${W.i + 1} of ${n} · <span class="num">${clock(clips[W.i][0])}</span><span class="w-sub">${esc(headlineOf(W.pat))}</span>`;
+  $("wTitle").innerHTML = `Point ${W.i + 1} of ${n} · <span class="num">${clock(W.pat.moments[W.i] ?? clips[W.i][0])}</span><span class="w-sub">${esc(headlineOf(W.pat))}</span>`;
   $("wPrev").disabled = W.i === 0;
   $("wNext").disabled = W.i >= n - 1;
   document.querySelectorAll(".tbtn").forEach((b) => b.classList.toggle("on", b.dataset.w === W.pat.id && +b.dataset.i === W.i));
 }
 function watchSeek() {
+  W.ended = false;
   const go = () => { wVideo.currentTime = clipsOf(W.pat)[W.i][0]; wVideo.play().catch(() => {}); };
   if (wVideo.readyState >= 1) go(); else wVideo.addEventListener("loadedmetadata", go, { once: true });
   watchTitle();
@@ -811,6 +805,7 @@ async function watchOpen(patId, i) {
   $("watch").classList.remove("hidden");
   document.body.classList.add("watching");
   watchTitle();
+  loadBall();
   try {
     const url = await watchUrl();
     $("wMsg").classList.add("hidden");
@@ -836,8 +831,9 @@ function watchClose() {
 wVideo.addEventListener("timeupdate", () => {
   if (!W.pat) return;
   const clips = clipsOf(W.pat), end = clips[W.i][1], t = wVideo.currentTime;
-  if (t < end || t > end + 3) return;
-  if (W.i < clips.length - 1) { W.i++; watchSeek(); } else wVideo.pause();
+  if (W.ended || t < end || t > end + 3) return;
+  wVideo.pause();             // stop on the moment; the player moves on with "next" (pretend users: clips ran away)
+  W.ended = true;
 });
 wVideo.addEventListener("error", () => {   // an expired link: get a fresh one next time
   if (!wVideo.dataset.src) return;
@@ -849,11 +845,86 @@ wVideo.addEventListener("error", () => {   // an expired link: get a fresh one n
 $("wPrev").addEventListener("click", () => { if (W.i > 0) { W.i--; watchSeek(); } });
 $("wNext").addEventListener("click", () => { if (W.i < clipsOf(W.pat).length - 1) { W.i++; watchSeek(); } });
 $("wClose").addEventListener("click", watchClose);
+$("wReplay").addEventListener("click", () => watchSeek());
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("watch").classList.contains("hidden")) watchClose(); });
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-w]");
   if (b) watchOpen(b.dataset.w, +b.dataset.i);
 });
+
+// Scoreboard: the score before the point being shown (after it, once it's over).
+const POINT_WORDS = ["0", "15", "30", "40"];
+function pointWords(a, b, tb) {
+  if (tb) return [String(a), String(b)];
+  if (a >= 3 && b >= 3) return a === b ? ["40", "40"] : a > b ? ["AD", "40"] : ["40", "AD"];
+  return [POINT_WORDS[Math.min(a, 3)], POINT_WORDS[Math.min(b, 3)]];
+}
+function drawScore(t) {
+  const pts = profile.points || [], box = $("wScore");
+  let i = -1;
+  for (let k = 0; k < pts.length && pts[k].s <= t + 0.5; k++) i = k;
+  if (i < 0 || !DATA) { box.classList.add("hidden"); return; }
+  const now = t > pts[i].e + 0.5 && pts[i + 1] ? pts[i + 1] : pts[i];
+  const ids = ["player_1", "player_2"], words = pointWords(now.pts[0], now.pts[1], now.tb);
+  const key = JSON.stringify([now, words]);
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.innerHTML = "<tbody>" + ids.map((id, r) => `<tr><td class="nm${now.server === id ? " sv" : ""}">${esc(DATA.players[id]?.name || id)}${now.near ? `<span class="end">${now.near === id ? "near" : "far"}</span>` : ""}</td>${
+    now.sets.map((g) => `<td class="set">${g[r]}</td>`).join("")}<td>${now.games[r]}</td><td class="pt">${words[r]}</td></tr>`).join("") + "</tbody>";
+  box.classList.remove("hidden");
+}
+
+// Ball marker: a bright ring where the app saw the ball, with a short fading trail.
+const BALL = { track: null, loading: null };
+function loadBall() {
+  if (BALL.track || BALL.loading || !JOB) return;
+  BALL.loading = fetch(`${BACKEND}/api/ball/${encodeURIComponent(JOB)}`).then((r) => (r.ok ? r.json() : null))
+    .then((t) => { BALL.track = t && t.f && t.f.length ? t : null; }).catch(() => {}).finally(() => { BALL.loading = null; });
+}
+function ballIndex(f) {          // last detection at or before frame f
+  const a = BALL.track.f;
+  let lo = 0, hi = a.length - 1, ans = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (a[m] <= f) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return ans;
+}
+function drawBall(t) {
+  const c = $("wBall"), ctx = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  const cw = c.clientWidth, ch = c.clientHeight;
+  if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  if (!BALL.track || !wVideo.videoWidth) return;
+  // where the picture sits inside the player (black bars if it isn't 16:9)
+  const s = Math.min(cw / wVideo.videoWidth, ch / wVideo.videoHeight);
+  const vw = wVideo.videoWidth * s, vh = wVideo.videoHeight * s, ox = (cw - vw) / 2, oy = (ch - vh) / 2;
+  const T = BALL.track, f = Math.round(t * T.fps), i = ballIndex(f);
+  if (i < 0) return;
+  const at = (k) => [ox + T.x[k] / 1000 * vw, oy + T.y[k] / 1000 * vh];
+  for (let k = Math.max(0, i - 6); k < i; k++) {            // trail
+    if (f - T.f[k] > 8) continue;
+    const [x, y] = at(k);
+    ctx.fillStyle = `rgba(233, 255, 77, ${0.15 + 0.08 * (k - i + 7)})`;
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 2 * Math.PI); ctx.fill();
+  }
+  if (f - T.f[i] > 1) return;                                // no ball seen in this frame
+  const [x, y] = at(i), r = Math.max(8, vw * 0.016);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, 2 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = "#E9FF4D";
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+}
+function onVideoFrame(now, meta) {
+  const t = meta && meta.mediaTime != null ? meta.mediaTime : wVideo.currentTime;
+  drawBall(t);
+  drawScore(t);
+  if ("requestVideoFrameCallback" in wVideo) wVideo.requestVideoFrameCallback(onVideoFrame);
+  else requestAnimationFrame(() => onVideoFrame());
+}
+if ("requestVideoFrameCallback" in wVideo) wVideo.requestVideoFrameCallback(onVideoFrame);
+else requestAnimationFrame(() => onVideoFrame());
+wVideo.addEventListener("seeking", () => { $("wScore").classList.add("hidden"); delete $("wScore").dataset.key; });
+wVideo.addEventListener("seeked", () => { drawBall(wVideo.currentTime); drawScore(wVideo.currentTime); });
 
 // Share with your coach: the phone's share sheet, or copy the link on a computer.
 // A coach opens it with their team sign-in (they see their team's reports) or the passcode.

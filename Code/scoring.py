@@ -287,6 +287,7 @@ def score_match_near_far(outcomes_df, end_swaps=None):
             "set_games": dict(state["set_games"]),
             "sets_won": dict(state["sets_won"]),
             "in_tiebreak": state["in_tiebreak"],
+            "completed_sets": list(state["completed_sets"]),
             "events": events,
             "match_winner": state["match_winner"],
         })

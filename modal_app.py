@@ -337,6 +337,7 @@ def _job_paths(job_id: str) -> dict:
         "insights_json_path": f"{d}/insights.json",
         # small copy for the report's video player (2026-11-01); deleted with the job
         "watch_path": f"{d}/watch.mp4",
+        "ball_json_path": f"{d}/ball.json",     # ball marker for that player
     }
 
 
@@ -846,7 +847,12 @@ def run_cpu_pipeline_remote(job_id: str):
     cap = cv2.VideoCapture(p["video_path"])
     video_fps = cap.get(cv2.CAP_PROP_FPS) or None      # None -> report shows no video times
     video_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+    video_w, video_h = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     cap.release()
+    if video_fps and video_w and video_h:
+        import watch_data
+        with open(p["ball_json_path"], "w") as f:
+            json.dump(watch_data.ball_track(match_data_df, video_w, video_h, video_fps), f, separators=(",", ":"))
     profile = mods["player_profile"].build_profiles(resolved_events_df, match_data_df, names, end_swaps,
                                                     fps=video_fps)
     profile.setdefault("match", {})["type"] = config.MATCH_TYPE   # doubles: each "player" is a team
@@ -1539,7 +1545,7 @@ def web_app():
 
     # The example report opens without the passcode, so judges and new
     # visitors can see a full report (read only; renaming still needs it).
-    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}", f"/api/watch/{EXAMPLE_JOB_ID}"}
+    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}", f"/api/watch/{EXAMPLE_JOB_ID}", f"/api/ball/{EXAMPLE_JOB_ID}"}
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
     # gets in with their session instead of the shared passcode, but only to
@@ -1554,7 +1560,7 @@ def web_app():
     # create-team is NOT public: it needs the passcode header, checked like every other route
     auth_public = {"/api/auth/signin", "/api/auth/join"}
     import re as _re
-    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug|watch)/([0-9a-f]{12})(?:/|$)")
+    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug|watch|ball)/([0-9a-f]{12})(?:/|$)")
     job_writes = ("/api/names/", "/api/job/")
 
     @fastapi_app.middleware("http")
@@ -2153,6 +2159,28 @@ def web_app():
                 print(f"[job {job_id}] couldn't start the watch copy: {e}")
                 return JSONResponse({"ready": False, "message": "The video isn't available right now."})
         return JSONResponse({"ready": False, "message": "Getting your video ready to watch (a few minutes)."})
+
+    @fastapi_app.get("/api/ball/{job_id}")
+    def ball_positions(job_id: str):
+        """Where the ball is in each frame (watch_data.py); older reports get it made here once."""
+        volume.reload()
+        p = _job_paths(job_id)
+        track = _read_json(p["ball_json_path"])
+        if track is None:
+            if not (os.path.exists(p["match_csv_path"]) and os.path.exists(p["video_path"])):
+                return JSONResponse({"error": "not found"}, status_code=404)
+            import pandas as pd
+            import watch_data
+            cap = cv2.VideoCapture(p["video_path"])
+            fps, w, h = (cap.get(k) for k in (cv2.CAP_PROP_FPS, cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT))
+            cap.release()
+            if not (fps and w and h):
+                return JSONResponse({"error": "not found"}, status_code=404)
+            track = watch_data.ball_track(pd.read_csv(p["match_csv_path"], usecols=["frame", "type", "pixel_x", "pixel_y"]), w, h, fps)
+            with open(p["ball_json_path"], "w") as f:
+                json.dump(track, f, separators=(",", ":"))
+            volume.commit()
+        return JSONResponse(track, headers={"Cache-Control": "private, max-age=3600"})
 
     @fastapi_app.get("/media/watch/{job_id}")
     def watch_video(job_id: str, exp: int = 0, sig: str = ""):

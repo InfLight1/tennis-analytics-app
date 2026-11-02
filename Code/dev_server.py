@@ -118,6 +118,9 @@ def seed(profile_path, watch=None):
         if i == 0 and watch:   # --watch: the first match gets a video for the report's player
             pf["match"]["length_s"] = 726
             (d / "watch.mp4").write_bytes(Path(watch).read_bytes())
+            ball = Path(watch).with_name("demo_ball.json")   # ball marker, if made for this video
+            if ball.exists():
+                (d / "ball.json").write_bytes(ball.read_bytes())
         (d / "profile.json").write_text(json.dumps(pf), encoding="utf-8")
         def tips(pid):
             return [{"pattern_id": w["id"], "headline": f"(demo) {w['title']}", "try_this": "(demo tip) one thing to try.",

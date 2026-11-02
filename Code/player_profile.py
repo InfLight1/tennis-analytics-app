@@ -248,7 +248,7 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
             # first-serve faults from the same serve list the percentage uses
             fault_rallies = my_first.loc[my_first["result"] == "fault", "rally_id"]
             first_fault_rows = pd.DataFrame({"start_frame": [int(rally_start.get(int(r), 0)) for r in fault_rallies],
-                                             "end_frame": [int(rally_end.get(int(r), 0)) for r in fault_rallies]})
+                                                                              "end_frame": [int(rally_end.get(int(r), 0)) for r in fault_rallies]})
             weak_rows = {
                 **{f"errors_{k}": own_errors[own_errors["error_type"].fillna("unclassified") == k] for k in err_by_type},
                 "double_faults": lost[lost["double_fault"]],
@@ -294,28 +294,51 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
                   "match_winner": score.get("match_winner")},
         "points_scored": int(score.get("rallies_scored", 0)),
     }
-    return {"match": match, "coverage": coverage, "players": players,
+    out = {"match": match, "coverage": coverage, "players": players,
             "min_sample": {"occurrences": MIN_OCCURRENCES, "chances": MIN_SAMPLE}}
+    if fps:
+        out["points"] = _points_timeline(per_point, side_maps, rally_start, rally_end, fps)
+    return out
 
 
-MOMENT_LEAD_S = 2   # start a moment a little before the serve, to see the set-up
+# A moment is when the point is decided: the ball into the net or out, the
+# shot the opponent couldn't reach (the rally's last event). Clips start a
+# little before it, so you see the shot happen, and stop just after
+# (Rudra, Nov 1: "a couple seconds back, but not a long time").
+CLIP_BEFORE_S = 3
+CLIP_AFTER_S = 2
 
 
 def _moments(rows, fps):
-    """Seconds into the video where these points start, in order."""
-    return sorted({max(0, int(f / fps) - MOMENT_LEAD_S) for f in rows["start_frame"]})
-
-
-MOMENT_TAIL_S = 2  # and keep watching a little after the point ends
+    """Seconds into the video where these points are decided, in order."""
+    return sorted({int(f / fps) for f in rows["end_frame"]})
 
 
 def _clips(rows, fps):
-    """[start, end] seconds of each of these points, for "play all" on the report."""
+    """[start, end] seconds around each moment, for the report's video player."""
     clips = {}
-    for a, b in zip(rows["start_frame"], rows["end_frame"]):
-        start = max(0, int(a / fps) - MOMENT_LEAD_S)
-        clips[start] = max(clips.get(start, 0), int(b / fps) + MOMENT_TAIL_S)
-    return [[s, e] for s, e in sorted(clips.items())]
+    for f in rows["end_frame"]:
+        t = f / fps
+        clips.setdefault(int(t), [round(max(0.0, t - CLIP_BEFORE_S), 1), round(t + CLIP_AFTER_S, 1)])
+    return [clips[k] for k in sorted(clips)]
+
+
+def _points_timeline(per_point, side_maps, rally_start, rally_end, fps):
+    """Every point in order with the score BEFORE it, for the video's scoreboard.
+    Scores are as the app counted them (missed points shift them)."""
+    out, before = [], None
+    for r in per_point.sort_values("rally_id").itertuples():
+        rid = int(r.rally_id)
+        if before is None:
+            before = {"pts": [0, 0], "games": [0, 0], "sets": [], "tb": False}
+        m = side_maps.get(rid, {})
+        out.append({"s": round(rally_start.get(rid, 0) / fps, 1), "e": round(rally_end.get(rid, 0) / fps, 1),
+                    "server": r.server if r.server in PLAYERS else None,
+                    "winner": r.point_winner if r.point_winner in PLAYERS else None,
+                    "near": m.get("near"), **before})
+        before = {"pts": [int(r.game_points[p]) for p in PLAYERS], "games": [int(r.set_games[p]) for p in PLAYERS],
+                  "sets": [list(map(int, x)) for x in r.completed_sets], "tb": bool(r.in_tiebreak)}
+    return out
 
 
 def _pattern(pid, kind, tier, title, detail, points, occurrences, chances):
