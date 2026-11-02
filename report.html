@@ -889,8 +889,11 @@ function drawScore(t) {
 const BALL = { track: null, loading: null };
 function loadBall() {
   if (BALL.track || BALL.loading || !JOB) return;
+  // the first request for an older report builds the file on the server, so allow it time; a failure
+  // tries again the next time a point is opened
   BALL.loading = fetch(`${BACKEND}/api/ball/${encodeURIComponent(JOB)}`).then((r) => (r.ok ? r.json() : null))
-    .then((t) => { BALL.track = t && t.f && t.f.length ? t : null; }).catch(() => {}).finally(() => { BALL.loading = null; });
+    .then((t) => { BALL.track = t && t.f && t.f.length ? t : null; if (BALL.track) drawBall(wVideo.currentTime); })
+    .catch(() => {}).finally(() => { BALL.loading = null; });
 }
 function ballIndex(f) {          // last detection at or before frame f
   const a = BALL.track.f;

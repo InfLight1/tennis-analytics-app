@@ -2428,6 +2428,30 @@ def rerun_cpu_stages(job_id: str):
     print(json.dumps(result, indent=2, default=str))
 
 
+# A copy of the example match for the test site (2026-11-01). The live app (frozen until
+# judging) shares the example's files, so new report features are tried on this copy instead.
+TEST_EXAMPLE_JOB_ID = "e0e0e0e0e0e0"
+
+
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=1800)
+def copy_job_remote(src: str, dst: str):
+    import shutil
+    volume.reload()
+    s, d = _job_paths(src)["job_dir"], _job_paths(dst)["job_dir"]
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    shutil.copytree(s, d)
+    volume.commit()
+
+
+@app.local_entrypoint()
+def copy_example_for_test():
+    """modal run modal_app.py::copy_example_for_test  ->  /report?job=e0e0e0e0e0e0 on the test site."""
+    copy_job_remote.remote(EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)
+    run_cpu_pipeline_remote.remote(TEST_EXAMPLE_JOB_ID)
+    print(f"\nDone. Open the test site at /report?job={TEST_EXAMPLE_JOB_ID}")
+
+
 # ---------------------------------------------------------------------------
 # Model-identity check, added this session -- confirms which local weights
 # file is ACTUALLY deployed on the volume as tennis_ball_best.pt, instead
