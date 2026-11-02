@@ -454,6 +454,7 @@ details.fold > summary svg { color: var(--muted); }
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const JOB = params.get("job");
+const EXAMPLES = ["76a383379d90", "e0e0e0e0e0e0"];   // read-only showcase match + its test-site copy
 const BACKEND = (params.get("backend") || "").replace(/\/$/, "");   // empty = this site
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pct = (v) => (v === null || v === undefined ? "–" : `${Math.round(v)}%`);
@@ -487,7 +488,7 @@ async function load() {
     }
     HAS_INSIGHTS = !!profile.insights;
     DATA = shape(profile);
-    if (JOB && JOB !== "76a383379d90") {   // the example report is read only
+    if (JOB && !EXAMPLES.includes(JOB)) {   // the example report (and its test-site copy) is read only
       $("editNamesBtn").classList.remove("hidden");
       $("deleteBtn").classList.remove("hidden");
     }
@@ -496,7 +497,7 @@ async function load() {
     render();
     $("pdfBtn").classList.remove("hidden");
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
-    if (Site.dev && JOB && JOB !== "76a383379d90") {   // timings: dev mode only
+    if (Site.dev && JOB && !EXAMPLES.includes(JOB)) {   // timings: dev mode only
       fetch(`${BACKEND}/api/status/${encodeURIComponent(JOB)}`).then((r) => r.json())
         .then((st) => { timingHtml = timingFrom(st); if (timingHtml) render(); }).catch(() => {});
     }

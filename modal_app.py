@@ -307,6 +307,9 @@ gpu_image = (
 volume = modal.Volume.from_name("tennis-perf-storage", create_if_missing=True)
 VOLUME_PATH = "/data"
 EXAMPLE_JOB_ID = "76a383379d90"   # showcase match; its report is public (no passcode)
+# Test site only (2026-11-01): a copy of the example match re-analysed with new code, because the
+# live app (frozen until judging) shares the example's files. Public and read only, like the example.
+TEST_EXAMPLE_JOB_ID = "e0e0e0e0e0e0"
 JOBS_DIR = f"{VOLUME_PATH}/jobs"
 MODELS_DIR = f"{VOLUME_PATH}/models"
 
@@ -1545,7 +1548,8 @@ def web_app():
 
     # The example report opens without the passcode, so judges and new
     # visitors can see a full report (read only; renaming still needs it).
-    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}", f"/api/watch/{EXAMPLE_JOB_ID}", f"/api/ball/{EXAMPLE_JOB_ID}"}
+    public_api = {f"/api/{kind}/{job}" for kind in ("profile", "watch", "ball")
+                  for job in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)}
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
     # gets in with their session instead of the shared passcode, but only to
@@ -2426,11 +2430,6 @@ def rerun_cpu_stages(job_id: str):
     result = run_cpu_pipeline_remote.remote(job_id)
     print("\n=== CPU stages complete ===")
     print(json.dumps(result, indent=2, default=str))
-
-
-# A copy of the example match for the test site (2026-11-01). The live app (frozen until
-# judging) shares the example's files, so new report features are tried on this copy instead.
-TEST_EXAMPLE_JOB_ID = "e0e0e0e0e0e0"
 
 
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=1800)
