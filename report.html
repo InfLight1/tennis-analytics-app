@@ -206,8 +206,43 @@ p { margin: 0; text-wrap: pretty; }
 .pts.won { color: var(--accent); background: var(--accent-soft); }
 .try { margin-top: var(--space-3); color: var(--ink-2); max-width: 62ch; }
 .try b { color: var(--ink); font-weight: 650; }
-.moments { margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+.moments { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 .moments .t { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* watch your points (2026-11-01): tap a time or "Watch" and a small player opens at the bottom */
+.watch-all { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 40px; padding: 0 var(--space-4); border: 0;
+  border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent); font: 650 var(--text-sm)/1 var(--font-sans); cursor: pointer; }
+.watch-all:hover { background: var(--accent-strong); }
+.tbtn { min-height: 36px; min-width: 52px; padding: 0 var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink-2); font: 600 var(--text-sm)/1 var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; }
+.tbtn:hover { border-color: var(--accent); color: var(--ink); }
+.tbtn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.ff-watch { margin-top: var(--space-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+#watch { position: fixed; z-index: 20; right: var(--space-4); bottom: var(--space-4); width: min(460px, calc(100vw - 2 * var(--space-4)));
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); overflow: hidden; }
+#watch video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.w-bar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+.w-title { flex: 1; min-width: 0; font-weight: 650; font-size: var(--text-sm); }
+.w-title .w-sub { display: block; color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-btn { width: var(--tap); height: var(--tap); flex: none; display: grid; place-items: center; border: 0; border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink); cursor: pointer; }
+.w-btn:hover { background: var(--surface-2); }
+.w-btn:disabled { color: var(--dim); cursor: default; background: transparent; }
+.w-msg { padding: var(--space-5) var(--space-4); color: var(--ink-2); }
+body.watching .end { height: 60vh; }
+@media (min-width: 560px) { body.watching .end { height: 340px; } }
+@media (max-width: 559px) { #watch { left: 0; right: 0; bottom: 0; width: auto; border-width: 1px 0 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; } }
+
+/* stats, each with one plain line (2026-11-01) */
+.stats-x { list-style: none; margin: 0; padding: 0; }
+.stats-x li { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0 var(--space-4); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+.stats-x li:first-child { border-top: 0; padding-top: 0; }
+.stats-x .v { font: 500 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.stats-x .l { font-weight: 650; }
+.stats-x .x { margin-top: 2px; color: var(--ink-2); max-width: 58ch; }
+.keep .why { display: block; margin-top: var(--space-1); color: var(--ink-2); font: 400 var(--text-base)/var(--leading-body) var(--font-sans); }
+.sure p { color: var(--ink-2); max-width: 62ch; }
+.sure p + p { margin-top: var(--space-3); }
 .fix-body { grid-column: 2; min-width: 0; }
 @media (max-width: 559px) {
   .fix { grid-template-columns: 1fr; padding-left: var(--space-4); }
@@ -298,7 +333,9 @@ details.fold > summary svg { color: var(--muted); }
   }
   html, body { background: #fff !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 1.05rem; line-height: 1.4; }
-  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg, .end { display: none !important; }
+  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg, .end, #watch, .watch-all, .ff-watch { display: none !important; }
+  .tbtn { min-height: 0; min-width: 0; padding: 0 4px; border: 0; }
+  .stats-x li { padding: 4px 0; break-inside: avoid; }
   #printView { display: block !important; }
   .print-only { display: inline !important; }
   .wrap { max-width: none; padding: 0; }
@@ -354,6 +391,7 @@ details.fold > summary svg { color: var(--muted); }
       <p class="score" id="subtitle"></p>
     </div>
     <div class="head-actions">
+      <button type="button" class="btn hidden" id="shareBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg> Share with your coach</button>
       <button type="button" class="btn hidden" id="pdfBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Save as PDF</button>
       <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
       <button type="button" class="btn btn-del hidden" id="deleteBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg> Delete report</button>
@@ -377,6 +415,16 @@ details.fold > summary svg { color: var(--muted); }
 
 <footer id="sitefoot"></footer>
 <div id="tip" role="tooltip"></div>
+<section id="watch" class="hidden" aria-label="Watch your points">
+  <video id="wVideo" playsinline controls preload="metadata"></video>
+  <div class="w-msg hidden" id="wMsg" role="status"></div>
+  <div class="w-bar">
+    <button type="button" class="w-btn" id="wPrev" aria-label="Previous point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <div class="w-title" id="wTitle" aria-live="polite"></div>
+    <button type="button" class="w-btn" id="wNext" aria-label="Next point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button type="button" class="w-btn" id="wClose" aria-label="Close the video"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+</section>
 
 <script src="site.js"></script>
 <script src="passcode.js"></script>
@@ -442,11 +490,16 @@ function clock(sec) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 const MAX_MOMENTS = 5;
-function momentsLine(moments) {
+const PLAY_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg>`;
+// Each point as [start, end] seconds; older reports only have start times.
+const clipsOf = (p) => p.clips && p.clips.length ? p.clips : (p.moments || []).map((t) => [t, t + 12]);
+function momentsLine(p) {
+  const moments = p.moments;
   if (!moments || !moments.length) return "";
-  const shown = moments.slice(0, MAX_MOMENTS).map((t) => `<span class="t">${clock(t)}</span>`).join(" · ");
-  const more = moments.length > MAX_MOMENTS ? ` and ${moments.length - MAX_MOMENTS} more` : "";
-  return `<p class="moments">Find these moments in your video: ${shown}${more}</p>`;
+  const shown = moments.slice(0, MAX_MOMENTS).map((t, i) =>
+    `<button type="button" class="tbtn" data-w="${esc(p.id)}" data-i="${i}" aria-label="Watch the point at ${clock(t)}">${clock(t)}</button>`).join("");
+  const more = moments.length > MAX_MOMENTS ? `<span>and ${moments.length - MAX_MOMENTS} more</span>` : "";
+  return `<p class="moments"><button type="button" class="watch-all" data-w="${esc(p.id)}" data-i="0">${PLAY_ICON} Watch ${moments.length === 1 ? "this point" : `these ${moments.length} points`}</button>${shown}${more}</p>`;
 }
 const firstSentence = (t) => (t || "").split(/(?<=[.!?])\s/)[0];
 const headlineOf = (p) => (p.advice && p.advice.headline) || p.title;
@@ -463,7 +516,7 @@ function fixCard(p, rank, first) {
     <div class="fix-body">
       <div class="fix-head"><h3>${esc(headlineOf(p))}</h3>${pts}</div>
       <p class="try">${line}</p>
-      ${momentsLine(p.moments)}
+      ${momentsLine(p)}
       <details class="more"><summary>${a ? "How to practise it" : "Details"} ${CHEV}</summary>
         <div class="advice">${steps.map(([h, t]) => `<div><b>${h}</b>${esc(t)}</div>`).join("")}<div><b>Why</b>${esc(p.detail)}</div></div>
       </details>
@@ -490,14 +543,93 @@ function stackedBar(parts, total, verb, palette) {
     <ul class="legend">${legend}<li class="total">Total points ${verb}<span class="n">${total}</span></li></ul>`;
 }
 
+// The match in one line: points won, sets when the app counted them, video length.
+function matchLine(P, ids) {
+  const m = profile.match || {}, sc = m.score || {};
+  const bits = [`Points won <b>${P[ids[0]].stats.points_won}–${P[ids[1]].stats.points_won}</b>`];
+  const sets = (sc.completed_sets || []).map((s) => s.join("-")).join(", ");   // [player_1 games, player_2 games]
+  if (sets) bits.push(`Sets <b>${esc(sets)}</b>`);
+  if (sc.match_winner && P[sc.match_winner]) bits.push(`<b>${esc(P[sc.match_winner].name)}</b> won`);
+  if (m.length_s) bits.push(`<b>${Math.max(1, Math.round(m.length_s / 60))} min</b> of video`);
+  return bits.join(" · ");
+}
+
+// Every stat with one plain line saying what it means (Rudra, Nov 1). Match facts only.
+const LONG_RALLY_MIN = 9;    // config.RALLY_LENGTH_LONG_MIN_HITS
+const wonOf = (pctWon, n) => Math.round((pctWon || 0) * n / 100);
+function statRows(s) {
+  const sv = s.serve, rt = s.return, rows = [];
+  const add = (v, l, x) => rows.push({ v, l, x });
+  if (sv.first_serves) {
+    const p = sv.first_serve_in_pct;
+    add(pct(p), "First serves in", `${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves} first serves went in. ` +
+      (p >= 65 ? "Reliable: most points start on a first serve." : p < 50 ? "Under half, so the opponent sees a lot of second serves." : "About half: every extra first serve in takes pressure off the second."));
+  }
+  if (sv.second_serves) {
+    add(pct(sv.second_serve_in_pct), "Second serves in", `${sv.second_serves_in} of ${sv.second_serves} second serves went in. Every miss here is a double fault.`);
+  }
+  if (sv.first_serve_points && sv.second_serve_points) {
+    const p1 = sv.first_serve_points_won_pct, p2 = sv.second_serve_points_won_pct;
+    add(`${pct(p1)}<br>${pct(p2)}`, "Points won on 1st and 2nd serve",
+      `Won ${wonOf(p1, sv.first_serve_points)} of ${sv.first_serve_points} points on the first serve and ${wonOf(p2, sv.second_serve_points)} of ${sv.second_serve_points} on the second. ` +
+      (p1 - p2 >= 15 ? "The second serve is where points slip away: the opponent can attack it." : p2 - p1 >= 15 ? "Points after a second serve went better than after a first serve this match." : "About the same on both serves."));
+  }
+  add(String(sv.double_faults), "Double faults", sv.double_faults
+    ? `${sv.double_faults} free point${sv.double_faults === 1 ? "" : "s"} for the opponent. At least this many: the app can miss a serve.`
+    : "None seen. The app can miss a serve, so check the video if you remember one.");
+  if (sv.aces) add(String(sv.aces), "Serves not returned", `${sv.aces} serve${sv.aces === 1 ? "" : "s"} the opponent didn't get back: free points.`);
+  if (sv.points_served) {
+    const p = sv.service_points_won_pct;
+    add(pct(p), "Won on serve", `Won ${wonOf(p, sv.points_served)} of ${sv.points_served} points when serving. ` +
+      (p >= 55 ? "Serving gave an edge." : p < 45 ? "Lost more than half of the points on their own serve." : "About even on serve."));
+  }
+  if (rt.return_points) {
+    const p = rt.return_points_won_pct;
+    add(pct(p), "Won on return", `Won ${wonOf(p, rt.return_points)} of ${rt.return_points} points when the opponent served. ` +
+      (p >= 50 ? "Even or better against the opponent's serve." : "The opponent's serve won most of these points."));
+  }
+  const errs = s.lost_by.own_errors, nErr = Object.values(errs).reduce((a, b) => a + b, 0);
+  if (s.points_lost) {
+    const words = { net: "into the net", long: "long", wide: "wide", unclassified: "direction unclear" };
+    const parts = Object.entries(errs).filter(([, n]) => n).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${words[k] || k}`).join(", ");
+    add(String(nErr), "Own missed shots", `${nErr} of ${s.points_lost} points lost ended with their own shot missing${parts ? ` (${parts})` : ""}. ` +
+      (nErr * 2 > s.points_lost ? "More points were given away than taken by the opponent." : "Most points lost were won by the opponent's shots, not handed over."));
+  }
+  const rl = s.rally_length;
+  for (const [b, label] of [["short", `Short points (${s.short_point_max_shots} shots or fewer)`], ["long", `Long rallies (${LONG_RALLY_MIN}+ shots)`]]) {
+    const { played, won } = rl[b];
+    if (played < 3) continue;
+    add(pct(100 * won / played), label, `Won ${won} of ${played}. ` +
+      (won / played >= 0.6 ? "These go their way." : won / played <= 0.4 ? "These go the opponent's way." : "About even."));
+  }
+  return rows;
+}
+function statsHtml(s, idp) {
+  return `<section class="sec" aria-labelledby="${idp}statH"><h2 id="${idp}statH">Your stats, explained</h2>
+    <ul class="stats-x">${statRows(s).map((r) => `<li><div class="v">${r.v}</div><div><div class="l">${esc(r.l)}</div><p class="x">${esc(r.x)}</p></div></li>`).join("")}</ul>
+  </section>`;
+}
+
+// How sure the app is: how many of the points it found it could call.
+function sureHtml(idp) {
+  const c = DATA.coverage, found = c.rallies_detected - c.first_serve_faults - c.unconfirmed_serve_faults;
+  const left = Math.max(0, found - c.points_decided);
+  return `<section class="sec sure" aria-labelledby="${idp}sureH"><h2 id="${idp}sureH">How sure the app is</h2>
+    <p>The app called the winner of <b class="num">${c.points_decided} of ${found}</b> points it found. ${left
+      ? `It wasn't sure about the other ${left}, so they're left out of every number on this page.` : "It was sure about all of them."}</p>
+    <p>On one match labeled by hand, it named the right winner for 17 of 20 points (85%). "About this data" below lists what it can't measure yet.</p>
+  </section>`;
+}
+
 function render() {
   const P = DATA.players, ids = Object.keys(P);
   $("tabs").classList.remove("hidden");
   $("title").innerHTML = ids.map((id) => esc(P[id].name)).join(' <span class="vs">vs</span> ');
-  $("subtitle").innerHTML = `Points won: <b>${P[ids[0]].stats.points_won}–${P[ids[1]].stats.points_won}</b>`;
+  $("subtitle").innerHTML = matchLine(P, ids);
   $("tabs").innerHTML = ids.map((id) => `<button type="button" role="tab" id="tab-${id}" data-id="${id}" aria-selected="${id === current}" tabindex="${id === current ? 0 : -1}">${esc(P[id].name)}</button>`).join("");
   $("player").setAttribute("aria-labelledby", `tab-${current}`);
   renderPlayer(P[current]);
+  $("shareBtn").classList.remove("hidden");
   $("coverageBox").classList.remove("hidden");
   $("coverage").innerHTML = DATA.coverage.notes.map((n) => `<p>${esc(n)}</p>`).join("") +
     `<p>Patterns need at least ${DATA.min_sample.occurrences} occurrences out of ${DATA.min_sample.chances} chances before they're ranked; smaller ones are listed as early signs.</p>` +
@@ -575,7 +707,8 @@ function playerHtml(pl, print = false) {
       <span class="ff-text">${esc(headlineOf(n1))}</span>
       ${n1.points ? `<span class="pts lost">−${n1.points} pts</span>` : ""}
       <span class="ff-go">See how to fix it <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
-    </a>` : ""}
+    </a>
+    ${!print && n1.moments && n1.moments.length ? `<div class="ff-watch"><button type="button" class="watch-all" data-w="${esc(n1.id)}" data-i="0">${PLAY_ICON} Watch the ${n1.moments.length === 1 ? "point" : `${n1.moments.length} points`}</button>See it happen in your video.</div>` : ""}` : ""}
 
     <section class="sec" aria-label="Overview">
       <div class="tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
@@ -608,26 +741,22 @@ function playerHtml(pl, print = false) {
       ${top.length ? `<ol class="fixes">${top.map((p, i) => fixCard(p, i + 1, i === 0)).join("")}</ol>` : `<p class="muted">Not enough tracked points yet to rank anything.</p>`}
     </section>
 
-    ${keeps.length ? `<section class="sec" aria-labelledby="${idp}keepH"><h2 id="${idp}keepH">Keep doing</h2>
-      <ul class="keeps">${keeps.slice(0, 3).map((p) => `<li class="keep"><h3>${esc(headlineOf(p))}</h3>${p.points ? `<span class="pts won">+${p.points} pts</span>` : ""}</li>`).join("")}</ul>
+    ${keeps.length ? `<section class="sec" aria-labelledby="${idp}keepH"><h2 id="${idp}keepH">What went well</h2>
+      <ul class="keeps">${keeps.slice(0, 3).map((p) => `<li class="keep"><h3>${esc(headlineOf(p))}<span class="why">${esc(p.detail)}</span></h3>${p.points ? `<span class="pts won">+${p.points} pts</span>` : ""}</li>`).join("")}</ul>
       ${HAS_INSIGHTS ? `<p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>` : ""}
     </section>` : ""}
 
-    <details class="fold"><summary>More stats ${CHEV}</summary>
+    ${statsHtml(s, idp)}
+
+    ${fixes.length > 3 || early.length ? `<details class="fold"><summary>More to look at ${CHEV}</summary>
       <div class="fold-body">
-        <div class="tiles">
-          <div class="tile"><div class="v">${pct(sv.first_serve_in_pct)}</div><div class="l">First serves in</div><div class="c">${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves}</div></div>
-          ${sv.second_serves != null ? `<div class="tile"><div class="v">${pct(sv.second_serve_in_pct)}</div><div class="l">Second serves in</div><div class="c">${sv.second_serves_in} of ${sv.second_serves}</div></div>` : ""}
-          <div class="tile"><div class="v">${pct(sv.service_points_won_pct)}</div><div class="l">Won on serve</div><div class="c">of ${sv.points_served} points</div></div>
-          ${sv.first_serve_points != null ? `<div class="tile"><div class="v">${pct(sv.first_serve_points_won_pct)}</div><div class="l">Won on 1st serve</div><div class="c">of ${sv.first_serve_points} points</div></div>
-          <div class="tile"><div class="v">${pct(sv.second_serve_points_won_pct)}</div><div class="l">Won on 2nd serve</div><div class="c">of ${sv.second_serve_points} points</div></div>` : ""}
-          <div class="tile"><div class="v">${pct(rt.return_points_won_pct)}</div><div class="l">Won on return</div><div class="c">of ${rt.return_points} points</div></div>
-        </div>
         ${fixes.length > 3 ? `<h3 class="sub-h">Also worth working on</h3><ol class="fixes">${fixes.slice(3).map((p, i) => fixCard(p, i + 4, false)).join("")}</ol>` : ""}
         ${early.length ? `<h3 class="sub-h">Early signs (too few to rank yet)</h3><ul class="early">${early.map((p) => `<li>${esc(p.detail)}</li>`).join("")}</ul>` : ""}
         <p class="muted playstyle">${esc(pl.playstyle.summary)}</p>
       </div>
-    </details>`;
+    </details>` : ""}
+
+    ${sureHtml(idp)}`;
 }
 $("player").addEventListener("click", (e) => {
   const b = e.target.closest(".seg button");
@@ -644,6 +773,103 @@ document.addEventListener("pointermove", (e) => {
   tip.style.top = (e.clientY - tip.offsetHeight - 12) + "px";
 });
 
+
+// ── Watch your points (2026-11-01) ──────────────────────────────────────
+// Tapping a time or "Watch" opens a small player at the bottom. It plays that pattern's points
+// one after another (each from just before the serve to just after the point ends), with
+// previous/next. The video is the server's small watch copy, reached through a signed link.
+const W = { pat: null, i: 0, url: null, retry: null };
+const wVideo = $("wVideo");
+async function watchUrl() {
+  if (W.url) return W.url;
+  if (!JOB) throw new Error("There's no video for this report.");
+  const res = await fetch(`${BACKEND}/api/watch/${encodeURIComponent(JOB)}`);
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || "The video isn't available right now.");
+  if (!j.ready) throw new Error(j.message || "The video isn't available right now.");
+  W.url = BACKEND + j.url;
+  return W.url;
+}
+function watchTitle() {
+  const clips = clipsOf(W.pat), n = clips.length;
+  $("wTitle").innerHTML = `Point ${W.i + 1} of ${n} · <span class="num">${clock(clips[W.i][0])}</span><span class="w-sub">${esc(headlineOf(W.pat))}</span>`;
+  $("wPrev").disabled = W.i === 0;
+  $("wNext").disabled = W.i >= n - 1;
+  document.querySelectorAll(".tbtn").forEach((b) => b.classList.toggle("on", b.dataset.w === W.pat.id && +b.dataset.i === W.i));
+}
+function watchSeek() {
+  const go = () => { wVideo.currentTime = clipsOf(W.pat)[W.i][0]; wVideo.play().catch(() => {}); };
+  if (wVideo.readyState >= 1) go(); else wVideo.addEventListener("loadedmetadata", go, { once: true });
+  watchTitle();
+}
+async function watchOpen(patId, i) {
+  const pl = DATA && DATA.players[current];
+  const p = pl && [...pl.weaknesses, ...pl.strengths].find((x) => x.id === patId);
+  if (!p || !(p.moments || []).length) return;
+  W.pat = p; W.i = Math.min(i, clipsOf(p).length - 1);
+  clearTimeout(W.retry);
+  $("watch").classList.remove("hidden");
+  document.body.classList.add("watching");
+  watchTitle();
+  try {
+    const url = await watchUrl();
+    $("wMsg").classList.add("hidden");
+    wVideo.classList.remove("hidden");
+    if (wVideo.dataset.src !== url) { wVideo.dataset.src = url; wVideo.src = url; }
+    watchSeek();
+  } catch (e) {
+    wVideo.classList.add("hidden");
+    $("wMsg").textContent = e.message;
+    $("wMsg").classList.remove("hidden");
+    // still being made: try again on its own while the player is open
+    W.retry = setTimeout(() => { if (!$("watch").classList.contains("hidden")) watchOpen(W.pat.id, W.i); }, 20000);
+  }
+}
+function watchClose() {
+  clearTimeout(W.retry);
+  wVideo.pause();
+  $("watch").classList.add("hidden");
+  document.body.classList.remove("watching");
+  document.querySelectorAll(".tbtn.on").forEach((b) => b.classList.remove("on"));
+}
+// At the end of a point, go on to the next one (only when it played through, not after a jump ahead).
+wVideo.addEventListener("timeupdate", () => {
+  if (!W.pat) return;
+  const clips = clipsOf(W.pat), end = clips[W.i][1], t = wVideo.currentTime;
+  if (t < end || t > end + 3) return;
+  if (W.i < clips.length - 1) { W.i++; watchSeek(); } else wVideo.pause();
+});
+wVideo.addEventListener("error", () => {   // an expired link: get a fresh one next time
+  if (!wVideo.dataset.src) return;
+  W.url = null; delete wVideo.dataset.src;
+  $("wMsg").textContent = "The video stopped loading. Tap a time to try again.";
+  $("wMsg").classList.remove("hidden");
+  wVideo.classList.add("hidden");
+});
+$("wPrev").addEventListener("click", () => { if (W.i > 0) { W.i--; watchSeek(); } });
+$("wNext").addEventListener("click", () => { if (W.i < clipsOf(W.pat).length - 1) { W.i++; watchSeek(); } });
+$("wClose").addEventListener("click", watchClose);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("watch").classList.contains("hidden")) watchClose(); });
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-w]");
+  if (b) watchOpen(b.dataset.w, +b.dataset.i);
+});
+
+// Share with your coach: the phone's share sheet, or copy the link on a computer.
+// A coach opens it with their team sign-in (they see their team's reports) or the passcode.
+$("shareBtn").addEventListener("click", async () => {
+  const url = location.href.split("#")[0];
+  if (navigator.share) {
+    try { await navigator.share({ title: `${$("title").textContent} · Advantage AI`, text: "My match report", url }); } catch (e) {}
+    return;
+  }
+  const label = $("shareBtn").lastChild;
+  try {
+    await navigator.clipboard.writeText(url);
+    label.textContent = " Link copied";
+    setTimeout(() => { label.textContent = " Share with your coach"; }, 2500);
+  } catch (e) { prompt("Copy this link and send it to your coach:", url); }
+});
 
 // ── rename players (job mode) ───────────────────────────────────────────
 // Save as PDF (2026-10-14): the browser's own print screen, which saves a PDF on phones and

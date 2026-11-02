@@ -335,6 +335,8 @@ def _job_paths(job_id: str) -> dict:
         "profile_json_path": f"{d}/profile.json",
         "names_json_path": f"{d}/names.json",
         "insights_json_path": f"{d}/insights.json",
+        # small copy for the report's video player (2026-11-01); deleted with the job
+        "watch_path": f"{d}/watch.mp4",
     }
 
 
@@ -843,10 +845,13 @@ def run_cpu_pipeline_remote(job_id: str):
     import cv2
     cap = cv2.VideoCapture(p["video_path"])
     video_fps = cap.get(cv2.CAP_PROP_FPS) or None      # None -> report shows no video times
+    video_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
     cap.release()
     profile = mods["player_profile"].build_profiles(resolved_events_df, match_data_df, names, end_swaps,
                                                     fps=video_fps)
     profile.setdefault("match", {})["type"] = config.MATCH_TYPE   # doubles: each "player" is a team
+    if video_fps and video_frames:
+        profile["match"]["length_s"] = int(video_frames / video_fps)
     with open(p["profile_json_path"], "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2, default=str)
 
@@ -873,6 +878,39 @@ def run_cpu_pipeline_remote(job_id: str):
         "pass2_scoring_summary": score_summary,
         "shot_type_summary": shot_type_summary,
     }
+
+
+# Watch copy (2026-11-01): a small 720p copy of the match for the report's
+# "watch your points" player (the 4K original is ~125 MB a minute, too big to
+# stream on a phone). Started with detection, so it's usually ready with the
+# report; for older reports /api/watch starts it on first use.
+WATCH_STARTED_NAME = "watch.started"
+WATCH_RETRY_S = 5400          # a start older than this is assumed to have failed
+
+
+@app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, cpu=4.0, timeout=3600)
+def make_watch_copy_remote(job_id: str):
+    import subprocess
+    import time
+    import uuid
+    volume.reload()
+    p = _job_paths(job_id)
+    if os.path.exists(p["watch_path"]) or not os.path.exists(p["video_path"]):
+        return
+    tmp = f"{p['watch_path']}.{uuid.uuid4().hex[:6]}.mp4"
+    started = time.time()
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", p["video_path"],
+                        "-vf", "scale=-2:720", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+                        "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", tmp],
+                       capture_output=True, text=True)
+    if r.returncode != 0 or not os.path.exists(tmp):
+        print(f"[job {job_id}] watch copy failed: {r.stderr.strip()[-500:]}")
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        return
+    os.replace(tmp, p["watch_path"])
+    volume.commit()
+    print(f"[job {job_id}] watch copy: {os.path.getsize(p['watch_path']) / 1e6:.0f} MB in {time.time() - started:.0f} s")
 
 
 def _write_status(job_id: str, **fields):
@@ -922,6 +960,13 @@ def _read_status(job_id: str) -> dict:
 def run_full_job_remote(job_id: str, ball_model_name: str, player_model_name: str):
     try:
         _write_status(job_id, stage="detecting", message="Running ball/player detection (GPU)...")
+        try:
+            import time
+            with open(f"{_job_paths(job_id)['job_dir']}/{WATCH_STARTED_NAME}", "w") as f:
+                f.write(str(time.time()))
+            make_watch_copy_remote.spawn(job_id)   # alongside detection, so it's ready with the report
+        except Exception as e:
+            print(f"[job {job_id}] couldn't start the watch copy: {e}")
         _run_detection_chunked(job_id, ball_model_name, player_model_name)
 
         _write_status(job_id, stage="analyzing",
@@ -1494,7 +1539,7 @@ def web_app():
 
     # The example report opens without the passcode, so judges and new
     # visitors can see a full report (read only; renaming still needs it).
-    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}"}
+    public_api = {f"/api/profile/{EXAMPLE_JOB_ID}", f"/api/watch/{EXAMPLE_JOB_ID}"}
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
     # gets in with their session instead of the shared passcode, but only to
@@ -1509,7 +1554,7 @@ def web_app():
     # create-team is NOT public: it needs the passcode header, checked like every other route
     auth_public = {"/api/auth/signin", "/api/auth/join"}
     import re as _re
-    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug)/([0-9a-f]{12})(?:/|$)")
+    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug|watch)/([0-9a-f]{12})(?:/|$)")
     job_writes = ("/api/names/", "/api/job/")
 
     @fastapi_app.middleware("http")
@@ -2072,6 +2117,53 @@ def web_app():
         if insights:
             profile["insights"] = insights
         return JSONResponse(profile)
+
+    # Watch your points (2026-11-01). A <video> can't send the passcode or
+    # session header, so /api/watch (checked like every /api/ route) hands
+    # out a signed link to /media/watch that works for a few hours.
+    watch_key = hmac.new(passcode, b"watch-links", "sha256").digest() if passcode else b""
+    WATCH_LINK_S = 6 * 3600
+
+    def _watch_sig(job_id, exp):
+        return hmac.new(watch_key, f"{job_id}:{exp}".encode(), "sha256").hexdigest()[:32]
+
+    @fastapi_app.get("/api/watch/{job_id}")
+    def watch_link(job_id: str):
+        volume.reload()
+        p = _job_paths(job_id)
+        if os.path.exists(p["watch_path"]):
+            if not watch_key:
+                return JSONResponse({"ready": False, "message": "Video links are switched off."})
+            exp = int(time.time()) + WATCH_LINK_S
+            return JSONResponse({"ready": True, "url": f"/media/watch/{job_id}?exp={exp}&sig={_watch_sig(job_id, exp)}"})
+        if not os.path.exists(p["video_path"]):
+            return JSONResponse({"ready": False, "gone": True, "message": "The video for this report was deleted."})
+        try:
+            with open(f"{p['job_dir']}/{WATCH_STARTED_NAME}") as f:
+                started = float(f.read().strip() or 0)
+        except (OSError, ValueError):
+            started = 0
+        if time.time() - started > WATCH_RETRY_S:
+            try:
+                with open(f"{p['job_dir']}/{WATCH_STARTED_NAME}", "w") as f:   # one start per few hours
+                    f.write(str(time.time()))
+                volume.commit()
+                make_watch_copy_remote.spawn(job_id)
+            except Exception as e:
+                print(f"[job {job_id}] couldn't start the watch copy: {e}")
+                return JSONResponse({"ready": False, "message": "The video isn't available right now."})
+        return JSONResponse({"ready": False, "message": "Getting your video ready to watch (a few minutes)."})
+
+    @fastapi_app.get("/media/watch/{job_id}")
+    def watch_video(job_id: str, exp: int = 0, sig: str = ""):
+        if not watch_key or exp < time.time() or not hmac.compare_digest(sig, _watch_sig(job_id, exp)):
+            return JSONResponse({"error": "This video link has expired. Reload the report."}, status_code=403)
+        path = _job_paths(job_id)["watch_path"]
+        if not os.path.exists(path):      # the player asks for many byte ranges: reload only when needed
+            volume.reload()
+        if not os.path.exists(path):
+            return JSONResponse({"error": "not found"}, status_code=404)
+        return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "private, max-age=3600"})
 
     @fastapi_app.post("/api/names/{job_id}")
     def set_names(job_id: str, player1_name: str = Form(""), player2_name: str = Form("")):

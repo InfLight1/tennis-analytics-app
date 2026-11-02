@@ -104,6 +104,7 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
     hits = events[events["event_type"] == "hit"]
     n_hits = hits.groupby("rally_id").size()
     rally_start = events.groupby("rally_id")["frame"].min()
+    rally_end = events.groupby("rally_id")["frame"].max()
 
     # ---- one row per rally, in player terms --------------------------------
     rows = []
@@ -120,6 +121,7 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
             "loser": m.get(o.loser) if o.loser in ("near", "far") else None,
             "shots": int(n_hits.get(rid, 0)),
             "start_frame": int(rally_start.get(rid, 0)),
+            "end_frame": int(rally_end.get(rid, 0)),
         })
     R = pd.DataFrame(rows)
     points = R[R["winner"].isin(PLAYERS) & R["loser"].isin(PLAYERS)].copy()
@@ -245,7 +247,8 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
             bucket_won = {b: won[won["bucket"] == b] for b in ("short", "long")}
             # first-serve faults from the same serve list the percentage uses
             fault_rallies = my_first.loc[my_first["result"] == "fault", "rally_id"]
-            first_fault_rows = pd.DataFrame({"start_frame": [int(rally_start.get(int(r), 0)) for r in fault_rallies]})
+            first_fault_rows = pd.DataFrame({"start_frame": [int(rally_start.get(int(r), 0)) for r in fault_rallies],
+                                             "end_frame": [int(rally_end.get(int(r), 0)) for r in fault_rallies]})
             weak_rows = {
                 **{f"errors_{k}": own_errors[own_errors["error_type"].fillna("unclassified") == k] for k in err_by_type},
                 "double_faults": lost[lost["double_fault"]],
@@ -264,6 +267,7 @@ def build_profiles(events_df, match_df=None, names=None, end_swaps=None, fps=Non
                 for pat in pats:
                     if pat["id"] in rows_by_id:
                         pat["moments"] = _moments(rows_by_id[pat["id"]], fps)
+                        pat["clips"] = _clips(rows_by_id[pat["id"]], fps)
         players[p]["weaknesses"] = weaknesses
         players[p]["strengths"] = strengths
         players[p]["playstyle"] = _playstyle(stats)
@@ -300,6 +304,18 @@ MOMENT_LEAD_S = 2   # start a moment a little before the serve, to see the set-u
 def _moments(rows, fps):
     """Seconds into the video where these points start, in order."""
     return sorted({max(0, int(f / fps) - MOMENT_LEAD_S) for f in rows["start_frame"]})
+
+
+MOMENT_TAIL_S = 2  # and keep watching a little after the point ends
+
+
+def _clips(rows, fps):
+    """[start, end] seconds of each of these points, for "play all" on the report."""
+    clips = {}
+    for a, b in zip(rows["start_frame"], rows["end_frame"]):
+        start = max(0, int(a / fps) - MOMENT_LEAD_S)
+        clips[start] = max(clips.get(start, 0), int(b / fps) + MOMENT_TAIL_S)
+    return [[s, e] for s, e in sorted(clips.items())]
 
 
 def _pattern(pid, kind, tier, title, detail, points, occurrences, chances):

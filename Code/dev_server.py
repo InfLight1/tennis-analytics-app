@@ -98,7 +98,7 @@ modal_app.people_remote = type("P", (), {"remote": type("R", (), {"aio": staticm
 FRAME_JOB = "abcdef000001"   # --frame: resume this job code on Home to open court marking
 
 
-def seed(profile_path):
+def seed(profile_path, watch=None):
     a = accounts.Accounts(_store)
     _, team = a.create_team("Varsity", "coachk", "password1", "Coach K")
     a.join_team(team["code"], "rudra", "password1", "Rudra")
@@ -115,6 +115,9 @@ def seed(profile_path):
                                     "completed_sets": [[6, 4], [6, 3]], "match_winner": "player_1"}
         d = Path(TMP) / job
         d.mkdir(parents=True, exist_ok=True)
+        if i == 0 and watch:   # --watch: the first match gets a video for the report's player
+            pf["match"]["length_s"] = 726
+            (d / "watch.mp4").write_bytes(Path(watch).read_bytes())
         (d / "profile.json").write_text(json.dumps(pf), encoding="utf-8")
         def tips(pid):
             return [{"pattern_id": w["id"], "headline": f"(demo) {w['title']}", "try_this": "(demo tip) one thing to try.",
@@ -136,6 +139,7 @@ if __name__ == "__main__":
     ap.add_argument("--port", type=int, default=8770)
     ap.add_argument("--demo", help="profile.json to seed demo matches from")
     ap.add_argument("--frame", help="a court picture (jpg): job abcdef000001 opens court marking on it")
+    ap.add_argument("--watch", help="a small mp4: the first demo match's report can play it")
     ap.add_argument("--players", type=int, default=2, help="people on court in hands-free pictures (4 = doubles)")
     a = ap.parse_args()
     DEV_PLAYERS[0] = a.players
@@ -147,5 +151,5 @@ if __name__ == "__main__":
         print(f"Court marking: on Home, continue job code {FRAME_JOB}")
     if a.demo:
         accounts.PW_ROUNDS = 1000
-        seed(a.demo)
+        seed(a.demo, a.watch)
     uvicorn.run(modal_app.web_app.get_raw_f()(), host="127.0.0.1", port=a.port, log_level="warning")
