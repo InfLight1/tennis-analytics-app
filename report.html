@@ -222,6 +222,15 @@ p { margin: 0; text-wrap: pretty; }
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); overflow: hidden; }
 #watch video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 .w-stage { position: relative; }
+/* full screen (Nov 1): the whole player grows, so the score, ball marker and point buttons stay on.
+   The video's own full-screen button is hidden because it would drop them. iPhones can't make a
+   page element full screen, so there the player just fills the window (.w-full). */
+#watch:fullscreen, #watch.w-full { display: flex; flex-direction: column; background: #000; }
+#watch.w-full { position: fixed; inset: 0; z-index: 100; width: auto; border: 0; border-radius: 0; }
+#watch:fullscreen .w-stage, #watch.w-full .w-stage { flex: 1; min-height: 0; display: flex; }
+#watch:fullscreen video, #watch.w-full video { flex: 1; width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; }
+#watch:fullscreen .w-bar, #watch.w-full .w-bar { background: var(--surface); padding-bottom: max(var(--space-2), env(safe-area-inset-bottom)); }
+#watch:fullscreen .w-score, #watch.w-full .w-score { left: 16px; top: max(16px, env(safe-area-inset-top)); font-size: 16px; }
 #wBall { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 /* scoreboard over the video: names, finished sets, games, points; dot = server */
 .w-score { position: absolute; left: 8px; top: 8px; pointer-events: none; border-collapse: collapse; border-radius: 6px; overflow: hidden;
@@ -433,7 +442,7 @@ details.fold > summary svg { color: var(--muted); }
 <div id="tip" role="tooltip"></div>
 <section id="watch" class="hidden" aria-label="Watch your points">
   <div class="w-stage">
-    <video id="wVideo" playsinline controls preload="metadata"></video>
+    <video id="wVideo" playsinline controls controlslist="nofullscreen nodownload" disablepictureinpicture preload="metadata"></video>
     <canvas id="wBall" aria-hidden="true"></canvas>
     <table class="w-score hidden" id="wScore" title="The score as the app counted it. A missed point shifts it."></table>
   </div>
@@ -444,6 +453,7 @@ details.fold > summary svg { color: var(--muted); }
     <button type="button" class="w-speed" id="wSpeed" aria-pressed="false" aria-label="Slow motion">0.5×</button>
     <button type="button" class="w-btn" id="wReplay" aria-label="Replay this point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg></button>
     <button type="button" class="w-btn" id="wNext" aria-label="Next point"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button type="button" class="w-btn" id="wFull" aria-label="Full screen" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <button type="button" class="w-btn" id="wClose" aria-label="Close the video"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
 </section>
@@ -829,6 +839,7 @@ async function watchOpen(patId, i) {
 }
 function watchClose() {
   clearTimeout(W.retry);
+  if (isFull()) toggleFull();
   wVideo.pause();
   $("watch").classList.add("hidden");
   document.body.classList.remove("watching");
@@ -853,12 +864,40 @@ $("wPrev").addEventListener("click", () => { if (W.i > 0) { W.i--; watchSeek(); 
 $("wNext").addEventListener("click", () => { if (W.i < clipsOf(W.pat).length - 1) { W.i++; watchSeek(); } });
 $("wClose").addEventListener("click", watchClose);
 $("wReplay").addEventListener("click", () => watchSeek());
+const watchBox = $("watch");
+const isFull = () => document.fullscreenElement === watchBox || document.webkitFullscreenElement === watchBox || watchBox.classList.contains("w-full");
+function fullChanged() {
+  $("wFull").setAttribute("aria-pressed", String(isFull()));
+  $("wFull").setAttribute("aria-label", isFull() ? "Leave full screen" : "Full screen");
+  document.body.style.overflow = watchBox.classList.contains("w-full") ? "hidden" : "";
+  requestAnimationFrame(() => drawBall(wVideo.currentTime));
+}
+async function toggleFull() {
+  if (isFull()) {
+    if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+    else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+    watchBox.classList.remove("w-full");
+  } else if (watchBox.requestFullscreen || watchBox.webkitRequestFullscreen) {
+    // a browser that refuses (or never answers) gets the fill-the-window view instead
+    const asked = watchBox.requestFullscreen ? watchBox.requestFullscreen() : (watchBox.webkitRequestFullscreen(), null);
+    await Promise.race([Promise.resolve(asked).catch(() => {}), new Promise((r) => setTimeout(r, 800))]);
+    if (!isFull()) watchBox.classList.add("w-full");
+  } else watchBox.classList.add("w-full");
+  fullChanged();
+}
+$("wFull").addEventListener("click", toggleFull);
+wVideo.addEventListener("dblclick", (e) => { e.preventDefault(); toggleFull(); });
+document.addEventListener("fullscreenchange", fullChanged);
+document.addEventListener("webkitfullscreenchange", fullChanged);
 $("wSpeed").addEventListener("click", () => {
   const slow = $("wSpeed").getAttribute("aria-pressed") !== "true";
   $("wSpeed").setAttribute("aria-pressed", String(slow));
   wVideo.playbackRate = wVideo.defaultPlaybackRate = slow ? 0.5 : 1;
 });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("watch").classList.contains("hidden")) watchClose(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || $("watch").classList.contains("hidden")) return;
+  if (watchBox.classList.contains("w-full")) toggleFull(); else if (!document.fullscreenElement) watchClose();
+});
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-w]");
   if (b) watchOpen(b.dataset.w, +b.dataset.i);
@@ -915,19 +954,20 @@ function drawBall(t) {
   const T = BALL.track, f = Math.round(t * T.fps), i = ballIndex(f);
   if (i < 0) return;
   const at = (k) => [ox + T.x[k] / 1000 * vw, oy + T.y[k] / 1000 * vh];
+  // the ball's own size (Rudra, Nov 1: no big circle); older files have no size
+  const rad = (k) => Math.max(2.5, (T.s && T.s[k] ? T.s[k] / 10000 : 0.005) * vw / 2);
   for (let k = Math.max(0, i - 6); k < i; k++) {            // trail
     if (f - T.f[k] > 8) continue;
     const [x, y] = at(k);
-    ctx.fillStyle = `rgba(233, 255, 77, ${0.15 + 0.08 * (k - i + 7)})`;
-    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = `rgba(233, 255, 77, ${0.1 + 0.06 * (k - i + 7)})`;
+    ctx.beginPath(); ctx.arc(x, y, rad(k) * 0.6, 0, 2 * Math.PI); ctx.fill();
   }
   if (f - T.f[i] > 1) return;                                // no ball seen in this frame
-  const [x, y] = at(i), r = Math.max(8, vw * 0.016);
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, 2 * Math.PI); ctx.stroke();
-  ctx.strokeStyle = "#E9FF4D";
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+  const [x, y] = at(i), r = rad(i);
+  ctx.fillStyle = "rgba(233, 255, 77, 0.9)";
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
 }
 function onVideoFrame(now, meta) {
   const t = meta && meta.mediaTime != null ? meta.mediaTime : wVideo.currentTime;

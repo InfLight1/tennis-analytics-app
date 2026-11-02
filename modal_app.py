@@ -2170,7 +2170,7 @@ def web_app():
         volume.reload()
         p = _job_paths(job_id)
         track = _read_json(p["ball_json_path"])
-        if track is None:
+        if track is None or "s" not in track:   # files from before Nov 1 lack the ball size
             if not (os.path.exists(p["match_csv_path"]) and os.path.exists(p["video_path"])):
                 return JSONResponse({"error": "not found"}, status_code=404)
             import pandas as pd
@@ -2180,7 +2180,7 @@ def web_app():
             cap.release()
             if not (fps and w and h):
                 return JSONResponse({"error": "not found"}, status_code=404)
-            track = watch_data.ball_track(pd.read_csv(p["match_csv_path"], usecols=["frame", "type", "pixel_x", "pixel_y"]), w, h, fps)
+            track = watch_data.ball_track(pd.read_csv(p["match_csv_path"], usecols=["frame", "type", "pixel_x", "pixel_y", "x1", "x2"]), w, h, fps)
             with open(p["ball_json_path"], "w") as f:
                 json.dump(track, f, separators=(",", ":"))
             volume.commit()
