@@ -21,7 +21,8 @@ Round 2 started 2026-11-02 (web app + iPhone app overhaul). Round 1 (Oct 13): re
 - [x] 0. Project read, tools checked, subject brief.
 - [x] 1. References (Rudra swapped Designs That Work for Human Meet Agent + Forest): Hedging Overview, Summit Widgets, Five Elements, Human Meet Agent, Forest, Apple → 12 versions. `design/references.md`.
 - [x] 2. 12 versions (dashboard + report each) in `design/versions/` (local only, gitignored; reference screenshots in `design/references/` stay local too). Compare at `design/versions/index.html` (launch config `design-versions`, port 8780). Known gaps in all: fix #3 "Errors wide" has no tactic/habit/drill in the example data ([TODO]); Player 2 tab is short; video scoreboard score/serve dot are placeholders.
-- [ ] Rudra picks 1-2 favourites + what he likes in each.
+- [x] Rudra picks (Nov 2): **Forest** wins, Apple second, Summit third. Forest taste colours + impeccable visuals; new opening line; start area (Record/Upload) separate from the weekly fix; trends a plain chart players can read; laptop layout uses the wide screen better. Phone view = iPhone app.
+- [ ] 3a. Forest v2 (`design/versions/forest-v2/`, shared `forest.css`): built Nov 2. Opening line switcher A "hi, rudra." / B "clear the net." / C "ready to play?" (preview only). Trends = labeled bars ("fewer is better"); Player 2 tab now full from the example data. Waiting on Rudra's one batch of feedback.
 - [ ] 3. Narrow, quality check (apple-hig, break-ui), freeze into `DESIGN.md`, move into the real pages, coach view mockups.
 - [ ] 4. Images (5 slots, Higgsfield).
 - [ ] 5. Motion: skipped (None).
