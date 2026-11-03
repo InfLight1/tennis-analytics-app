@@ -1,50 +1,49 @@
-# Advantage AI design (frozen 2026-10-13)
+# Advantage AI design: "Court" (frozen 2026-11-02)
 
-**Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins". Slogan: "Built by a player, for players" (small label above the home headline, and in the footer on every page).
-**Look:** dark court-green palette everywhere; the Report alone also has a light mode (sun/moon button in the header, follows the device until pressed, remembered on this device); photo-led hero, calm panels, tennis-green accent.
-**Came from:** references "Escape Tab Hell" (warm editorial, one active item at a time) and "Northpeak" (full-bleed landscape behind the title); see `design/references.md`. The approved design pages (static, sample data) are `design/approved/home.html` and `report.html`; the 6 earlier comparison versions are in git history (commit 19f1242).
+**Name and tagline:** Advantage AI, "Turn Match Data Into Match Wins". Slogan: "Built by a player, for players" (footer on every page).
+**Look:** clean, high-contrast, solid tiles on a plain page (no see-through glass); a sharp court photo across the top of each page; ball-yellow for the main action; scoreboard-style numbers. Light and dark: follows the device, plus a sun/moon toggle in the top bar that remembers the choice (every page).
+**Came from (round 2, Nov 2):** dashboard = Summit Widgets layout + Apple readability; report on laptops = Hedging Overview scoreboard strip + point-by-point chart; report on phones = Apple, made more tennis. References in `design/references.md`. Approved static pages: `design/versions/court-v3/` (`index.html` dashboard, `report.html` report, `court.css`, `court.js`; local only). Round 1 (Oct 13, dark green + serif) is in git history.
+**Same screens on the iPhone app:** the phone layout is the app layout.
 
 ## Where the design lives
-- `calibration_demo.html` (Home) and `report.html` (Report): each page's `<style>` holds its layout and the colour tokens on `:root`.
-- `web_assets/site.css`: shared header bar, footer banner and helpers (loads after the page style).
-- `web_assets/site.js`: draws the same header and footer on every page.
+- `web_assets/tokens.css`: every colour, font, size and radius (light + dark). Pages use these tokens only.
+- `web_assets/site.css`: shared header, footer, buttons, tiles. `web_assets/site.js`: draws the header/footer and the theme toggle.
+- Each page's own `<style>`: layout only.
 
-## Colours (dark, used everywhere)
-| Token | Hex | Use |
-|---|---|---|
-| `--bg` | #15261C | page |
-| `--surface` | #1C3226 | panels |
-| `--surface-2` | #243D2F | tiles, tinted boxes |
-| `--line` / `--line-strong` | #31503D / #46684F | borders |
-| `--ink` / `--ink-2` / `--muted` | #F1F6EF / #DFEADD / #C3D3C3 | text (all pass strong contrast) |
-| `--accent` | #8ED19D | tennis green: active step, links, main buttons |
-| `--accent-soft` | #24452F | #1 fix card, chips |
-| `--bad` | #E0907F | points lost only |
-| green band / footer | #1E4029 / #0D1912 | "How to film" band, footer |
-| ball (logo) | #D4EC7E | the ball in the logo |
-
-**Report light mode:** page #E8EFE6, panels #FBFCFA, text #122016, accent #23683A, lost #A2443A (full set in `report.html`). The header and footer bars stay dark green in both modes.
+## Colours
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--page` | #EDF0F2 | #0E1113 | page |
+| `--tile` | #FFFFFF | #1A1E21 | tiles |
+| `--tile-2` | #F4F6F7 | #23282C | inner boxes, chips |
+| `--line` | #DCE1E4 | #2E3438 | borders |
+| `--ink` / `--ink-2` / `--ink-3` | #0F1A14 / #47534D / #66716B | #EEF2EF / #B3BDB8 / #8F9A95 | text |
+| `--ball` | #DDF247 | same | main action (Record, start), "ahead", won pips, ball dot. Text on it is always #0F1A14 |
+| `--ball-soft` | #F3FAD0 | #2A3214 | "Try this" boxes |
+| `--lost` / `--lost-soft` | #C2412F / #FBE5E1 | #F2836F / #3A221E | points lost only |
+| `--night` | #0F1A14 | #000000 | the dark "New match" tile, #1 FIX tag |
 
 ## Type
-- Headings and numbers: **Newsreader** (serif). Body and buttons: **Instrument Sans**. Both from Google Fonts.
-- Body 17px (18.4px from "New analysis" down on Home), small text 15–16px, hero headline 40–64px.
+- System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto`); never bundle SF Pro.
+- Scoreboard numbers: **Barlow Condensed 700** (Google Fonts), numbers only.
+- Headings 700 with tight tracking: XL clamp(2.4rem, 5.4vw, 3.6rem), L clamp(1.6rem, 2.6vw, 2.1rem), M 1.3rem, S 1.05rem. Body 1.0625rem.
+- Laptops (1100px+): base size 118.75% (body about 20px), page width 1400px, bigger tiles/buttons/pips.
 
-## Spacing, shape, motion
-- Spacing steps: 4, 8, 12, 16, 24, 32, 48, 64, 96px. Content column 760px, 16px side margins on phones.
-- Corners: 8 / 12 / 16px, pills for buttons and tags. Tap targets at least 44–48px.
-- Motion: short fades (220ms) only; none when the device asks for reduced motion.
+## Shape, spacing, motion
+- Radius 20px tiles (24px on laptops), 12px inner boxes, pills for buttons/tabs. Tap targets 44px+ (main button 58px, 66px on laptops).
+- Gutter clamp(16px, 4vw, 48px); sections 56px apart (40px on phones).
+- Motion level **None**: only tap feedback (press scale .97, 120-200ms colour changes). Nothing moves on scroll. Reduced motion respected.
 
 ## Layout rules
-- Home order (new visitor): photo hero, New analysis (3 steps), How to film (green band with photo), My reports, closing "Every point counts" band, footer. Returning visitors with reports see My reports first.
-- The green bar marks the current upload step; finished steps show a check; upcoming steps stay readable.
-- Step 1 "Add your match" has a two-way switch (Upload video | Record match; shown only where the browser can record). Record match: camera preview → mark the court on a still → full-screen near-black recording view (big timer with a red dot, "sent / behind" line, one main button; the camera picture hides itself while filming to save battery).
-- Mark the court: when the court is found automatically the 7 dots are already placed ("We found the court…"), and any dot can be dragged. When tapping, the instruction box shows a small court picture with a pulsing ball-yellow dot on the spot to tap.
-- Report "Save as PDF" (button by the report title, also on the example): the browser's print screen with a print-only layout: light colours, both players (Player 2 on a new page), Lost and Won bars, every fold open, About this data, a "Saved <date>" line; header, footer, tabs and buttons hidden. File name "Advantage AI report - A vs B".
-- My reports: each match is a card (lighter green, ball icon, date, status badge, solid green "Ready", green left edge when ready, chevron to open) with a delete button on its right; a count badge next to the heading. Deleting asks first and removes the report and its video for good (not the example; not while it's being analysed). The report page has the same Delete button.
-- Report order: "Your #1 fix" card, overview (big rings, quick stats, AI summary), lost/won bar, top 3 fixes, keep doing, More stats, About this data. Each section is its own panel.
-- Same header bar and footer banner on every page. On Home the header floats over the photo.
-- Photos (AI-generated, 3 of 5 slots used): hero court from behind the baseline, plain fence behind the baseline (no phone in it; the diagrams show where the phone goes), ball on the baseline. WebP 800px for phones, 1600px for big screens.
+- **Dashboard (signed-in home, `/app`):** order is fixed. 1) Court photo + "Hi, name". 2) Two tiles: **This week's fix** (white: one insight, one big number, Try this, Watch the points) and **New match** (dark: Record match in ball-yellow, Upload a video, filming tip). 3) Your latest match: top 3 fixes + what you did well. 4) Recent matches (scoreboard scores, Win/Loss tags). 5) **Your numbers** (data for keen players), always last, latest match first in every chart. Never open with data.
+- **Report:** photo header with title, Save as PDF, Share with your coach, Player tabs. Then the **#1 FIX scoreboard strip** (fix, line, ball pips, big count), watch the points (video + moment times + Try this) beside the top fixes, what went well (big numbers + ball pips), serve and return (each with a plain line), point by point (yellow ahead, red behind), how sure the app is.
+- **Phone:** one column, same order, solid bottom tab bar (Home, Matches, Record as a ball, Account).
+- Charts: plain labels, say "fewer is better" / "more is better", a one-line verdict, latest first; built for players and coaches, not analysts.
+- Kept from round 1 (behaviour, restyled): New analysis steps (Upload | Record switch, camera preview, mark the court with the 7 draggable dots, full-screen recording view); Save as PDF print layout; My reports cards with delete (asks first); passcode + sign-in.
+
+## The one bold thing
+The **#1 fix as a scoreboard** (big condensed count + one ball per lost point) next to a bright ball-yellow Record button. Everything else stays quiet.
 
 ## Always / Never
-- **Always:** real data only; one accent (green), red only for lost points; phone first and checked at 375px and at desktop width; text readable outdoors.
-- **Never:** competitor names; text inside images; a light mode outside the Report; decoration that hides a button or a number.
+- **Always:** real data only (sample data labelled); solid tiles; ball-yellow only for the main action and "good"; red only for points lost; check at 375px and laptop width, light and dark.
+- **Never:** see-through/glossy glass cards; low-contrast text on photos (darken behind text); competitor names; text inside images; AI technique advice; new colours/fonts outside `tokens.css`; generic AI looks (purple gradients, neon on black, walls of identical cards).

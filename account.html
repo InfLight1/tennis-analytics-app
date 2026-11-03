@@ -9,9 +9,10 @@
 <meta name="theme-color" content="#15261C">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
 /* Same tokens as Home (DESIGN.md): one dark court-green palette. */
 :root {
@@ -36,8 +37,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 var(--text
 a { color: var(--accent); text-underline-offset: 3px; }
 :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
 h1, h2, h3 { margin: 0; font-weight: 500; text-wrap: balance; }
-h1 { font: 500 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
-h2 { font: 500 var(--text-xl)/var(--leading-tight) var(--font-serif); }
+h1 { font: 700 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
+h2 { font: 700 var(--text-xl)/var(--leading-tight) var(--font-serif); }
 h3 { font-size: var(--text-base); font-weight: 650; }
 .wrap { width: 100%; max-width: var(--col); margin: 0 auto; padding: 0 16px; }
 main.wrap { padding-top: var(--space-6); padding-bottom: var(--space-8); }
@@ -96,7 +97,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .fix summary, .roster summary { display: flex; align-items: center; gap: var(--space-3); min-height: 56px; padding: var(--space-2) 0; }
 .rank { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft);
   color: var(--accent-strong); font-weight: 700; font-size: .95rem; }
-.fix-title { font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.fix-title { font: 700 var(--text-lg)/1.25 var(--font-serif); }
 .try { margin: 0 0 var(--space-2); }
 .steps { margin: 0 0 var(--space-4); display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-4); }
 .steps dt { color: var(--dim); font-weight: 600; }
@@ -108,7 +109,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .team-focus li { padding: var(--space-3) 0; border-top: 1px solid rgba(166,223,178,.25); }
 .team-focus li:first-child { border-top: 0; }
 .tf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
-.tf-head h3 { font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.tf-head h3 { font: 700 var(--text-lg)/1.25 var(--font-serif); }
 .tf-drill { margin: var(--space-1) 0 0; color: var(--ink-2); }
 .r-name { font-weight: 650; min-width: 6rem; }
 .r-top { flex: 1; color: var(--ink-2); }
@@ -122,7 +123,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .good li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3);
   padding: var(--space-3) 0; border-top: 1px solid var(--line); }
 .good li:first-child { border-top: 0; }
-.g-title { font: 500 var(--text-lg)/1.25 var(--font-serif); }
+.g-title { font: 700 var(--text-lg)/1.25 var(--font-serif); }
 .good .muted { flex-basis: 100%; font-size: var(--text-sm); }
 .good li.tf-head .muted { flex-basis: auto; }
 .ones td { vertical-align: middle; }
@@ -148,6 +149,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   .hide-phone { display: none; }
 }
 </style>
+<link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="site.css">
 <script src="site.js"></script>
 <script src="passcode.js"></script>

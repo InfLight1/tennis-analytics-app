@@ -1,0 +1,53 @@
+/* Design tokens: the "Court" look (DESIGN.md). Loads after each page's own <style>, before site.css,
+   so these win. Light by default, dark when the device asks for it or the player picks it with the
+   sun/moon button (data-theme on <html>). Older token names at the bottom point at the new ones. */
+:root {
+  --page: #EDF0F2; --tile: #FFFFFF; --tile-2: #F4F6F7; --line: #DCE1E4; --line-2: #C3CBCF;
+  --ink: #0F1A14; --ink-2: #47534D; --ink-3: #66716B;
+  --ball: #DDF247; --ball-ink: #0F1A14; --ball-soft: #F3FAD0; --ball-deep: #5C7300;
+  --lost: #C2412F; --lost-soft: #FBE5E1;
+  --night: #0F1A14; --night-2: #1D2A22; --on-night: #F2F5F1; --on-night-2: #B9C4BD;
+  --shadow: 0 1px 2px rgba(15,26,20,.06), 0 8px 24px -12px rgba(15,26,20,.18);
+  --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+  --board: "Barlow Condensed", "Arial Narrow", var(--sys);
+  --r-tile: 20px; --r-box: 12px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0E1113; --tile: #1A1E21; --tile-2: #23282C; --line: #2E3438; --line-2: #414A4F;
+    --ink: #EEF2EF; --ink-2: #B3BDB8; --ink-3: #8F9A95;
+    --ball-soft: #2A3214; --ball-deep: #DDF247; --lost: #F2836F; --lost-soft: #3A221E;
+    --night: #000000; --night-2: #14191C;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0E1113; --tile: #1A1E21; --tile-2: #23282C; --line: #2E3438; --line-2: #414A4F;
+  --ink: #EEF2EF; --ink-2: #B3BDB8; --ink-3: #8F9A95;
+  --ball-soft: #2A3214; --ball-deep: #DDF247; --lost: #F2836F; --lost-soft: #3A221E;
+  --night: #000000; --night-2: #14191C;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+/* Laptops: everything a size up so it reads at arm's length. */
+@media (min-width: 1100px) { html { font-size: 118.75%; } :root { --r-tile: 24px; } }
+
+/* Older names used inside the page styles (round 1), mapped onto the Court tokens. */
+:root {
+  --bg: var(--page); --surface: var(--tile); --surface-2: var(--tile-2);
+  --line-strong: var(--line-2); --muted: var(--ink-2); --dim: var(--ink-3);
+  --accent: var(--ink); --accent-strong: var(--ink); --accent-soft: var(--ball-soft); --on-accent: var(--page);
+  --bad: var(--lost); --bad-soft: var(--lost-soft);
+  --won-1: var(--ball-deep); --won-2: color-mix(in srgb, var(--ball-deep) 70%, var(--tile));
+  --won-3: color-mix(in srgb, var(--ball-deep) 45%, var(--tile)); --won-4: color-mix(in srgb, var(--ball-deep) 22%, var(--tile));
+  --lost-1: var(--lost); --lost-2: color-mix(in srgb, var(--lost) 75%, var(--tile)); --lost-3: color-mix(in srgb, var(--lost) 50%, var(--tile));
+  --lost-4: color-mix(in srgb, var(--lost) 28%, var(--tile)); --lost-5: color-mix(in srgb, var(--lost) 60%, var(--ink)); --lost-6: var(--ink-2);
+  --shadow-1: var(--shadow);
+  --green-bg: var(--night); --green-surface: var(--night-2); --green-court: var(--night-2); --green-accent: var(--ball);
+  --foot-bg: var(--night); --hero-full-kw: var(--ball);
+  --font-serif: var(--sys); --font-sans: var(--sys);
+  --radius-lg: var(--r-tile); --radius-md: var(--r-box);
+  --focus: 0 0 0 3px var(--page), 0 0 0 5px var(--ink);
+}

@@ -71,27 +71,29 @@
     },
   };
 
-  // Logo: a tennis ball on a green tile. `uid` keeps gradient ids unique when it appears twice.
+  // Logo: a tennis ball. `uid` is kept so callers don't change.
   const emblem = (size, uid) => `<svg class="emblem" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">
-      <defs><linearGradient id="emb-${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8657"/><stop offset="1" stop-color="#143424"/></linearGradient></defs>
-      <rect x=".5" y=".5" width="31" height="31" rx="9" fill="url(#emb-${uid})" stroke="rgba(190,235,200,.38)"/>
-      <circle cx="16" cy="16" r="8.6" fill="#D4EC7E"/>
-      <path d="M9.4 10.4c3.1 2.3 3.1 8.9 0 11.2M22.6 10.4c-3.1 2.3-3.1 8.9 0 11.2" fill="none" stroke="#1A4330" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M5.5 7.2a12 12 0 0 1 6-3.6" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="16" cy="16" r="14" fill="#DDF247"/>
+      <path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/>
     </svg>`;
   const wordmark = '<span class="wm">Advantage</span><span class="wm-ai">AI</span>';
 
-  // Light/dark switch, only on the report (Home keeps one dark palette). With no saved choice
-  // the report follows the device setting; the report page sets data-theme early from storage.
+  // Light/dark switch on every page. With no saved choice the page follows the device setting;
+  // each page sets data-theme early from storage (no flash). data-mode mirrors the mode in use.
   const themeButton = `<button type="button" class="theme-btn" aria-label="Switch between light and dark" title="Light or dark">
       <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
     </button>`;
+  const root = document.documentElement;
+  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const showMode = () => { root.dataset.mode = isDark() ? "dark" : "light";
+    document.querySelectorAll(".theme-btn").forEach((b) => b.setAttribute("aria-label", `Switch to ${isDark() ? "light" : "dark"} mode`)); };
+  showMode();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", showMode);
   function toggleTheme() {
-    const root = document.documentElement;
-    const dark = root.dataset.theme ? root.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem("report_theme", root.dataset.theme); } catch (e) {}
+    root.dataset.theme = isDark() ? "light" : "dark";
+    try { localStorage.setItem("aa-theme", root.dataset.theme); localStorage.removeItem("report_theme"); } catch (e) {}
+    showMode();
   }
 
   // Header into <header id="topbar" data-page="home|report">, footer into <footer id="sitefoot">.
@@ -106,8 +108,9 @@
           <a href="/#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
           <a href="/#reports">My reports</a>
           <a href="/account"${bar.dataset.page === "account" ? ' aria-current="page"' : ""}>${window.Site.session() ? "Account" : "Sign in"}</a>
-        </nav>${bar.dataset.page === "report" ? themeButton : ""}</div>`;
+        </nav>${themeButton}</div>`;
       bar.querySelector(".theme-btn")?.addEventListener("click", toggleTheme);
+      showMode();
     }
     const foot = document.getElementById("sitefoot");
     if (foot) {

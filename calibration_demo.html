@@ -9,9 +9,10 @@
 <meta name="theme-color" content="#15261C">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
 /* ── Design tokens: every decision lives here ─────────────────────────── */
 :root {
@@ -95,7 +96,7 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
 h1, h2, h3 { margin: 0; font-weight: 500; text-wrap: balance; }
-h2 { font: 500 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
+h2 { font: 700 var(--text-2xl)/var(--leading-tight) var(--font-serif); letter-spacing: -0.015em; }
 h3 { font: 600 var(--text-lg)/var(--leading-snug) var(--font-sans); }
 p { margin: 0; text-wrap: pretty; }
 .kw { color: var(--accent); }
@@ -140,7 +141,7 @@ label { display: block; color: var(--ink-2); margin-bottom: var(--space-2); }
 
 /* ── Hero ─────────────────────────────────────────────────────────────── */
 .hero { padding: var(--space-8) 0 var(--space-7); }
-.hero h1 { font: 500 var(--text-display)/var(--leading-tight) var(--font-serif); letter-spacing: var(--tracking-display);
+.hero h1 { font: 700 var(--text-display)/var(--leading-tight) var(--font-serif); letter-spacing: var(--tracking-display);
   max-width: 13ch; }
 .hero .sub { margin-top: var(--space-4); font-size: var(--text-lg); color: var(--ink-2); max-width: 34ch; }
 .hero .actions { margin-top: var(--space-6); display: flex; flex-wrap: wrap; gap: var(--space-3); }
@@ -182,7 +183,7 @@ section.block > .lede { color: var(--ink-2); margin-bottom: var(--space-6); max-
   width: var(--bar-w); border-radius: 2px; background: var(--line); }
 .step.is-active::before { background: var(--accent); }
 .step-title { display: flex; align-items: baseline; gap: var(--space-3);
-  font: 500 var(--text-xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.01em; }
+  font: 700 var(--text-xl)/var(--leading-snug) var(--font-serif); letter-spacing: -0.01em; }
 .step-n { font-variant-numeric: tabular-nums; color: var(--muted); font-size: var(--text-lg); min-width: 1ch; }
 .step.is-active .step-n { color: var(--accent); }
 .step.is-upcoming .step-title { color: var(--ink); }
@@ -224,7 +225,7 @@ figcaption { margin-top: var(--space-3); color: var(--ink-2); font-size: var(--t
 .film-list li { counter-increment: f; display: grid; grid-template-columns: 2.25rem 1fr; gap: var(--space-3);
   padding: var(--space-4) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
 .film-list li:first-child { border-top: 0; }
-.film-list li::before { content: counter(f); font: 500 var(--text-xl)/1.1 var(--font-serif); color: var(--accent); font-variant-numeric: tabular-nums; }
+.film-list li::before { content: counter(f); font: 700 var(--text-xl)/1.1 var(--font-serif); color: var(--accent); font-variant-numeric: tabular-nums; }
 .film-list b { color: var(--ink); font-weight: 650; }
 
 /* ── My reports ───────────────────────────────────────────────────────── */
@@ -356,7 +357,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 .rec-inner h2 { margin-top: var(--space-1); color: #F4F8F2; }
 .rec-live { display: block; width: 100%; margin: var(--space-4) 0 var(--space-1); border-radius: var(--radius-md); background: #000; }
 .rec-live.off { display: none; }
-.rec-timer { margin-top: var(--space-5); font: 500 clamp(3.5rem, 2rem + 8vw, 5.5rem)/1 var(--font-serif); color: #F4F8F2; }
+.rec-timer { margin-top: var(--space-5); font: 700 clamp(3.5rem, 2rem + 8vw, 5.5rem)/1 var(--font-serif); color: #F4F8F2; }
 .rec-overlay.live .rec-timer::before { content: ""; display: inline-block; width: .28em; height: .28em; margin: 0 .25em .12em 0; border-radius: 50%; background: #E0907F; animation: rec-blink 1.6s infinite; }
 @keyframes rec-blink { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .rec-overlay.live .rec-timer::before { animation: none; } }
@@ -477,6 +478,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
   .rc-open .pill { margin-left: calc(36px + var(--space-3)); }
 }
 </style>
+<link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="site.css">
 </head>
 <body class="photo-hero">

@@ -2097,7 +2097,7 @@ def web_app():
         return FileResponse("/root/web/camera_test.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
-    _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css",
+    _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css", "tokens.css": "text/css",
                "recorder.js": "text/javascript", "record_match.js": "text/javascript",
                "manifest.webmanifest": "application/manifest+json",
                "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",

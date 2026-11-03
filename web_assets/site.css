@@ -1,9 +1,9 @@
-/* Shared by every page. Each page's own <style> holds its layout and the colour tokens
-   (dark court-green; the report also has a light set, see DESIGN.md); this file loads after it and adds the
-   brand header + footer banner and the small helpers the page scripts rely on. */
+/* Shared by every page. Colours, fonts and sizes come from tokens.css (DESIGN.md, "Court");
+   each page's own <style> holds its layout. This file adds the header, footer, theme button
+   and the small helpers the page scripts rely on. */
 :root {
   --border: var(--line); --text: var(--ink); --text-2: var(--ink-2);
-  --bad-soft: rgba(224, 144, 127, .16);
+  
 }
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
@@ -11,7 +11,7 @@
 .row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
   background: var(--surface-2); color: var(--ink-2); font-size: var(--text-sm); font-weight: 650; white-space: nowrap; }
-.pill.ready { background: var(--accent-soft); color: var(--accent); }
+.pill.ready { background: var(--ball); color: var(--ball-ink); }
 .pill.failed { background: var(--bad-soft); color: var(--bad); }
 .topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
 .topbar .brand { min-height: var(--tap); margin-right: auto; }
@@ -20,53 +20,44 @@
   text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
 @media (max-width: 559px) { .topbar .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); } }
 .topbar .nav a[aria-current="page"] { border-radius: 0; }
-/* ── Brand banner: one header and one footer on every page ──────────────────────────────
-   Header = frosted dark-green bar with a hairline green glow underneath; on Home it floats over the photo
-   (the photo shows faintly through), elsewhere it sits on plain green. Same height, logo and links everywhere. */
-.topbar { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgba(168,221,180,.14);
-  background: rgba(13,27,19,.66); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); }
-.topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
-.brand { display: inline-flex; align-items: center; gap: 11px; color: #F4F8F2; text-decoration: none; }
-.brand .emblem { flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
-.brand .wm { font: 500 1.375rem/1 var(--font-serif); letter-spacing: -0.012em; color: #F4F8F2; }
-.brand .wm-ai { margin-left: -3px; padding: 4px 7px 3px; border: 1px solid rgba(168,221,180,.5); border-radius: 6px;
-  background: rgba(168,221,180,.08); font: 650 .6875rem/1 var(--font-sans); letter-spacing: .14em; color: #A8DDB4; }
-.topbar .nav a { color: rgba(244,248,242,.86); }
-.topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
-.topbar .nav a[aria-current="page"] { color: #fff; box-shadow: inset 0 -2px 0 #A8DDB4; }
-@media (max-width: 559px) { .topbar { position: relative; } }
-/* Report-only light/dark switch in the header bar. The icon shows the mode you are in. */
-.theme-btn { width: var(--tap); height: var(--tap); display: grid; place-items: center; margin-left: var(--space-1);
-  border: 1px solid rgba(168,221,180,.3); border-radius: var(--radius-pill); background: transparent; color: #F4F8F2; cursor: pointer; }
-.theme-btn:hover { background: rgba(255,255,255,.08); }
-.theme-btn .sun { display: none; }
-:root[data-theme="light"] .theme-btn .sun { display: block; }
-:root[data-theme="light"] .theme-btn .moon { display: none; }
-/* In light mode the see-through bar would turn grey over the pale page: keep it solid brand green. */
-:root[data-theme="light"] .topbar:has(.theme-btn) { background: #15261C; }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .theme-btn .sun { display: block; }
-  :root:not([data-theme="dark"]) .theme-btn .moon { display: none; }
-  :root:not([data-theme="dark"]) .topbar:has(.theme-btn) { background: #15261C; }
-}
+/* Court look: bold system headings, scoreboard numbers in Barlow Condensed. */
+body { font-family: var(--sys); }
+h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+
+/* ── Header: dark bar with a pill nav (sits over the court photo on Home) ── */
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--night); border-bottom: 1px solid rgba(255,255,255,.08); }
+.topbar .wrap { max-width: 1400px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.brand .emblem { flex: none; }
+.brand .wm { font: 650 1.2rem/1 var(--sys); letter-spacing: -0.015em; color: #fff; }
+.brand .wm-ai { margin-left: -4px; font: 650 1.2rem/1 var(--sys); color: var(--ball); }
+.topbar .nav { gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.08); }
+.topbar .nav a { min-height: 40px; padding: 0 16px; border-radius: 999px; color: #E6ECE8; font-weight: 600; font-size: .95rem; }
+.topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.1); }
+.topbar .nav a[aria-current="page"] { background: #fff; color: #0F1A14; box-shadow: none; border-radius: 999px; }
+@media (max-width: 559px) { .topbar { position: relative; } .topbar .nav { margin: 0 0 10px; width: auto; } }
+/* Light/dark button on every page. The icon shows the mode you are in. */
+.theme-btn { width: 44px; height: 44px; display: grid; place-items: center; margin-left: var(--space-2);
+  border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
+.theme-btn:hover { background: rgba(255,255,255,.18); }
+.theme-btn .moon, :root[data-mode="dark"] .theme-btn .sun { display: none; }
+:root[data-mode="dark"] .theme-btn .moon { display: block; }
 @media (max-width: 559px) { .theme-btn { order: 2; } }
 
-/* Footer banner: brand lockup, tagline, links; a faint court drawing for texture. */
-.brand-foot { position: relative; overflow: hidden; margin-top: 0; padding: var(--space-8) 0 var(--space-7);
-  background: radial-gradient(ellipse 70% 120% at 15% 0%, rgba(168,221,180,.12), transparent 60%), #0D1912;
-  border-top: 1px solid rgba(168,221,180,.14); color: #E6EEE5; }
-.brand-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(168,221,180,.6) 50%, transparent); }
-.brand-foot .wrap { position: relative; z-index: 1; }
-.bf-court { position: absolute; right: max(-60px, calc(50% - 560px)); bottom: -24px; width: 420px; height: auto; color: #A8DDB4; opacity: .09; }
+/* ── Footer ── */
+.brand-foot { position: relative; overflow: hidden; padding: var(--space-8) 0 var(--space-7); background: var(--night); color: var(--on-night); }
+.brand-foot .wrap { position: relative; z-index: 1; max-width: 1400px; }
+.bf-court { position: absolute; right: max(-60px, calc(50% - 600px)); bottom: -24px; width: 420px; height: auto; color: #fff; opacity: .07; }
 .bf-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-6); }
-.brand-lg { gap: 14px; }
-.brand-lg .wm { font-size: 2rem; }
-.brand-lg .wm-ai { font-size: .8125rem; padding: 5px 9px 4px; margin-left: -2px; }
-.bf-tag { margin: 0; font: 400 1.25rem/1.3 var(--font-serif); color: #DCE8DA; }
-.bf-tag em { font-style: italic; color: #A8DDB4; }
-.bf-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid rgba(168,221,180,.14); }
-.bf-nav a { display: inline-flex; align-items: center; min-height: var(--tap); color: #F1F6EF; text-decoration: none; font-weight: 550; }
-.bf-nav a:hover { color: #A8DDB4; }
-.bf-note { margin: var(--space-2) 0 0; color: #B9CBB9; font-size: .9375rem; }
+.brand-lg .wm, .brand-lg .wm-ai { font-size: 1.8rem; }
+.bf-tag { margin: 0; font: 600 1.2rem/1.3 var(--sys); color: var(--on-night); }
+.bf-tag em { font-style: normal; color: var(--ball); }
+.bf-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid rgba(255,255,255,.12); }
+.bf-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--on-night); text-decoration: none; font-weight: 600; }
+.bf-nav a:hover { color: var(--ball); }
+.bf-note { margin: var(--space-2) 0 0; color: var(--on-night-2); font-size: .95rem; }
+
+/* Main action: ball-yellow with dark text on every page (DESIGN.md: the one bright colour). */
+.btn-primary { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
+.btn-primary:hover { background: #E6F86A; color: var(--ball-ink); }
+.btn-primary:disabled, .btn-primary[disabled] { background: var(--tile-2); color: var(--ink-3); border-color: var(--line); }
