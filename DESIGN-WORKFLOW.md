@@ -27,7 +27,7 @@ Round 2 started 2026-11-02 (web app + iPhone app overhaul). Round 1 (Oct 13): re
 - [x] 3c. Frozen Nov 2 into `DESIGN.md` ("Court"); design-log entry added; design rules in the project CLAUDE.md. Your numbers: latest match first.
 - [x] 3d. Real pages reskinned: `web_assets/tokens.css` (Court tokens + old names mapped), header/footer/theme toggle on every page (`site.css`/`site.js`, key `aa-theme`), ball-yellow main buttons, system font + Barlow Condensed.
 - [ ] 3e. Real page layouts: dashboard at `/app` (account.html signed-in view → Court dashboard), report → Court report (strip, video, KPIs, point by point), new analysis + sign-in polish, coach view mockups. Then apple-hig + break-ui on the real pages.
-- [ ] 3f. Landing page at the main address (own unique-frontend run: references, versions, pick).
+- [ ] 3f. Landing page at the main address (own unique-frontend run). Rudra (Nov 2): job = get players to try it; sections = how it works (3 steps), example report preview, for coaches (more later); look = Court, bolder hero (versions vary layout only); motion = **Subtle** for the landing page only.
 - [ ] 4. Images (5 slots, Higgsfield).
 - [ ] 5. Motion: skipped (None).
 - [ ] 6. Tweak bar.
