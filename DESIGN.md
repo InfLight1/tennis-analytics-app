@@ -25,6 +25,7 @@
 
 ## Type
 - System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto`); never bundle SF Pro.
+- **Landing page exception (Rudra, Nov 2):** the landing page at the main address keeps the round-1 fonts, **Newsreader** (serif headings) + **Instrument Sans** (body), for a premium feel. The app screens use the system stack.
 - Scoreboard numbers: **Barlow Condensed 700** (Google Fonts), numbers only.
 - Headings 700 with tight tracking: XL clamp(2.4rem, 5.4vw, 3.6rem), L clamp(1.6rem, 2.6vw, 2.1rem), M 1.3rem, S 1.05rem. Body 1.0625rem.
 - Laptops (1100px+): base size 118.75% (body about 20px), page width 1400px, bigger tiles/buttons/pips.
