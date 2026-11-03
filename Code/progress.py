@@ -17,8 +17,8 @@ build(matches) -> {
   "fixes":    latest report's top 3 fixes with advice and trend
   "strengths": latest report's top strengths [{id, title, detail, points}]
 }
-Each input match may also carry "slot", "match" (profile["match"]) and the
-player's own "result", for the win/loss tag.
+Each input match may also carry "slot", "match" (profile["match"]), the
+player's own "result" for the win/loss tag, and "opponent" (the other player's name).
 """
 
 MIN_POINTS = 10        # a match with fewer decided points says too little
@@ -57,7 +57,7 @@ def build(matches):
         played = st.get("points_played", 0)
         top = next((w for w in pl.get("weaknesses", []) if w.get("top")), None)
         out_matches.append({
-            "job_id": m["job_id"], "date": m.get("date"), "points_played": played,
+            "job_id": m["job_id"], "date": m.get("date"), "opponent": m.get("opponent"), "points_played": played,
             "points_won": st.get("points_won"), "points_lost": st.get("points_lost"),
             "points_won_pct": st.get("points_won_pct"),
             **_result(m),
@@ -128,8 +128,8 @@ def _strengths(rows, usable, limit=3):
     if not src:
         return []
     good = [s for s in src["player"].get("strengths", []) if s.get("top")] or src["player"].get("strengths", [])
-    return [{"id": s["id"], "title": s["title"], "detail": s.get("detail"), "points": s.get("points", 0)}
-            for s in good[:limit]]
+    return [{"id": s["id"], "title": s["title"], "detail": s.get("detail"), "points": s.get("points", 0),
+             "chances": s.get("chances")} for s in good[:limit]]
 
 
 def team_strengths(players, limit=3):
@@ -177,7 +177,8 @@ def _fixes(rows, usable, weaknesses):
     trends = {w["id"]: w["trend"] for w in weaknesses}
     tops = sorted((w for w in src["player"].get("weaknesses", []) if w.get("top")),
                   key=lambda w: w.get("rank", 99))
-    return [{"id": w["id"], "title": w["title"], "points": w.get("points", 0), "job_id": src["job_id"],
+    return [{"id": w["id"], "title": w["title"], "detail": w.get("detail"), "points": w.get("points", 0),
+             "chances": w.get("chances"), "moments": len(w.get("moments") or []), "job_id": src["job_id"],
              "trend": trends.get(w["id"], "not enough yet"),
              "advice": {k: advice[w["id"]][k] for k in ADVICE_KEYS if advice.get(w["id"], {}).get(k)}}
             for w in tops[:3]]

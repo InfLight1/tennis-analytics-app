@@ -16,15 +16,15 @@
       box.setAttribute("aria-modal", "true");
       box.style.cssText = "position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;" +
         "background:rgba(0,0,0,.6);font:18px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
-      box.innerHTML = `<form style="background:#fcfcfb;color:#0b0b0b;border-radius:14px;padding:22px;width:100%;max-width:360px">
+      box.innerHTML = `<form style="background:var(--tile,#fff);color:var(--ink,#0F1A14);border-radius:20px;padding:22px;width:100%;max-width:360px">
           <div style="font-size:1.3rem;font-weight:700;margin-bottom:6px">Enter the app passcode</div>
-          <div style="color:${wrong ? "#b4232a" : "#52514e"};font-size:.95rem;margin-bottom:14px">${
+          <div style="color:${wrong ? "var(--lost,#C2412F)" : "var(--ink-2,#47534D)"};font-size:.95rem;margin-bottom:14px">${
             wrong ? "That passcode didn't work. Try again." : "You only need to do this once on this device."}</div>
           <input type="password" autocomplete="current-password" aria-label="Passcode" required
-            style="width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #c9c8c2;box-sizing:border-box">
+            style="width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2,#C3CBCF);background:var(--tile-2,#F4F6F7);color:inherit;box-sizing:border-box">
           <button type="submit" style="margin-top:12px;width:100%;font:inherit;font-weight:700;padding:10px;border:0;
-            border-radius:10px;background:#1c7a4a;color:#fff;cursor:pointer;min-height:44px">Continue</button>
-          <a href="/account" style="display:block;margin-top:12px;text-align:center;color:#1c7a4a;font-size:.95rem">On a team? Sign in instead</a></form>`;
+            border-radius:999px;background:#DDF247;color:#0F1A14;cursor:pointer;min-height:48px">Continue</button>
+          <a href="/account" style="display:block;margin-top:12px;text-align:center;color:inherit;font-size:.95rem">On a team? Sign in instead</a></form>`;
       document.body.appendChild(box);
       const input = box.querySelector("input");
       input.focus();

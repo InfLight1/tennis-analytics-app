@@ -102,13 +102,29 @@
     if (bar) {
       const home = bar.dataset.page === "home";
       bar.className = "topbar";
+      const signedIn = !!window.Site.session();
+      const page = bar.dataset.page;
       bar.innerHTML = `<div class="wrap">
-        <a class="brand" href="/" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
+        <a class="brand" href="${signedIn ? "/app" : "/"}" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
         <nav class="nav" aria-label="Main">
+          ${signedIn ? `<a href="/app"${page === "app" ? ' aria-current="page"' : ""}>Home</a>` : ""}
           <a href="/#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
-          <a href="/#reports">My reports</a>
-          <a href="/account"${bar.dataset.page === "account" ? ' aria-current="page"' : ""}>${window.Site.session() ? "Account" : "Sign in"}</a>
+          <a href="${signedIn ? "/app#matches" : "/#reports"}">${signedIn ? "Matches" : "My reports"}</a>
+          <a href="/account"${page === "account" ? ' aria-current="page"' : ""}>${signedIn ? "Account" : "Sign in"}</a>
         </nav>${themeButton}</div>`;
+      // Phones, signed in: the four app tabs along the bottom (not on Home, which has its own full-screen steps).
+      if (signedIn && ["app", "report", "account"].includes(page)) {
+        const cur = (p) => (page === p ? ' aria-current="page"' : "");
+        const tabs = document.createElement("nav");
+        tabs.className = "tabbar";
+        tabs.setAttribute("aria-label", "App");
+        tabs.innerHTML = `<a href="/app"${cur("app")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/></svg>Home</a>
+          <a href="/app#matches"${cur("report")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg>Matches</a>
+          <a href="/#record"><span class="c" aria-hidden="true"><i></i></span>Record</a>
+          <a href="/account"${cur("account")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>Account</a>`;
+        document.body.appendChild(tabs);
+        document.body.classList.add("has-tabs");
+      }
       bar.querySelector(".theme-btn")?.addEventListener("click", toggleTheme);
       showMode();
     }

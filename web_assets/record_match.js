@@ -690,6 +690,10 @@
     $("modeSwitch").classList.remove("hidden");
     $("modeUpload").addEventListener("click", () => { if (!busy()) { closeCamera(); setMode(false); } });
     $("modeRecord").addEventListener("click", () => { if (!(upload && upload.running)) setMode(true); });
+    if (location.hash === "#record") {   // Record match on the dashboard and the phone tab bar
+      setMode(true);
+      $("new")?.scrollIntoView();
+    }
     $("openCameraBtn").addEventListener("click", openCamera);
     $("useViewBtn").addEventListener("click", useView);
     $("handsFreeBtn").addEventListener("click", handsFree);

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home · Advantage AI</title>
+<meta name="theme-color" content="#0F1A14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="court.css">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Dashboard layout (DESIGN.md): court photo, then fix + new match, latest match, recent matches, numbers last. */
+.band--home{padding-bottom:150px}
+.hello{padding-top:clamp(40px,9vh,110px)}
+.hello p{margin-top:8px;font:500 1.05rem/1.3 var(--sys);color:#E6ECE8}
+.start{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:20px;margin-top:-118px;position:relative}
+.fix{display:grid;grid-template-columns:1fr auto;gap:8px 32px;align-items:start}
+.fix .top{grid-column:1/-1;display:flex;justify-content:space-between;gap:4px 12px;flex-wrap:wrap}
+.fix h2{margin-top:10px}
+.fix .why{margin-top:8px;font-size:1.1rem;max-width:40ch}
+.fix .score{text-align:center;padding:14px 18px;border-radius:var(--r-box);background:var(--tile-2);border:1px solid var(--line);align-self:center}
+.fix .score .board-num{font-size:4.2rem;color:var(--lost)}
+.fix .score small{display:block;font:500 .85rem/1.25 var(--sys);color:var(--ink-2);margin-top:2px}
+.fix .try,.fix .acts,.fix .wide{grid-column:1/-1}
+.fix .try{margin-top:10px}
+.fix .acts{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:8px}
+.new h2{margin-top:10px}
+.new p.muted{margin-top:6px}
+.new .btns{display:grid;gap:10px;margin-top:20px}
+.new .btns .btn{width:100%}
+.new .tip{display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(242,245,241,.16);font-size:.92rem}
+.new .tip svg{color:var(--ball);margin-top:1px}
+.new .tip a{color:var(--on-night)}
+.new .lab{color:var(--on-night-2)}
+
+.pair{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:20px;align-items:start}
+.tips-link{display:inline-flex;margin-top:8px}
+.well{list-style:none;margin:0;padding:0}
+.well li{padding:14px 0}
+.well li+li{border-top:1px solid var(--line)}
+.well .board-num{font-size:2.6rem}
+.well .board-num small{font:500 .9rem var(--sys);color:var(--ink-2);margin-left:6px}
+.well p{margin-top:2px}
+.well .pips{margin-top:8px}
+.well .pips i{width:13px;height:13px}
+
+.matches{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.match{display:grid;gap:4px;height:100%;align-content:start}
+.match .who{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.match .who a{font-size:1.1rem;font-weight:700;text-decoration:none;overflow-wrap:anywhere}
+.match .who a:hover{text-decoration:underline}
+.match .sc{font-size:2.2rem;line-height:1}
+.match .tags{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:36px;margin-top:4px}
+.res{font:700 .8rem/1 var(--sys);letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:6px;background:var(--tile-2)}
+.res.loss{color:var(--lost);background:var(--lost-soft)}
+.res.win{background:var(--ball);color:var(--ball-ink)}
+.linkish{border:0;background:none;padding:0;min-height:36px;font:inherit;font-size:.9rem;color:var(--ink-2);text-decoration:underline;cursor:pointer}
+.chip{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--tile-2);color:var(--ink);font:600 .88rem/1 var(--sys);cursor:pointer}
+.allmatches{margin-top:14px}
+.allmatches summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.allmatches .matches{margin-top:8px}
+
+.numbers{margin-top:72px;padding-top:8px;border-top:2px solid var(--ink)}
+.numbers .intro{margin:20px 0 16px}
+.numbers .intro p{margin-top:6px}
+.ngrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.trend .rule{font-size:.92rem;margin-top:2px}
+.trend .rule b{color:var(--ink)}
+.bars{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:12px}
+.bars li{display:grid;grid-template-columns:6.4em 1fr 2.8em;gap:10px;align-items:center}
+.bars .who{font-size:.85rem;line-height:1.2;color:var(--ink-2);overflow-wrap:anywhere}
+.bars .who b{display:block;color:var(--ink);font-weight:600;font-size:.92rem}
+.bars .track{height:12px;border-radius:6px;background:var(--tile-2);border:1px solid var(--line);overflow:hidden}
+.bars .fill{display:block;height:100%;background:var(--ink-3)}
+.bars li.now .fill{background:var(--ink)}
+.bars.lost .fill{background:color-mix(in srgb,var(--lost) 45%,var(--tile))}
+.bars.lost li.now .fill{background:var(--lost)}
+.bars .val{font:700 1.45rem/1 var(--board);text-align:right}
+.trend .verdict{margin-top:14px;font-weight:600}
+
+@media (max-width:1020px){
+  .ngrid{grid-template-columns:1fr 1fr}
+  .matches{grid-template-columns:1fr 1fr}
+}
+@media (max-width:860px){
+  .band--home{padding-bottom:96px}
+  .hello{padding-top:40px}
+  .start,.pair{grid-template-columns:1fr;gap:14px}
+  .start{margin-top:-72px}
+  .fix{gap:6px 14px}
+  .fix .score{padding:10px 12px}
+  .fix .score .board-num{font-size:3rem}
+  .fix .acts{flex-direction:column;align-items:stretch;gap:4px}
+  .fix .acts .btn{width:100%}
+  .fix .acts .link{justify-content:center}
+  .matches,.ngrid{grid-template-columns:1fr;gap:12px}
+}
+</style>
+<script src="site.js"></script>
+<script src="passcode.js"></script>
+</head>
+<body>
+<header id="topbar" data-page="app"></header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="band band--home">
+  <div class="band__photo" aria-hidden="true"></div>
+  <div class="band__shade" aria-hidden="true"></div>
+  <div class="wrap hello">
+    <h1 class="h-xl" id="hello">Hi</h1>
+    <p id="teamLine">&nbsp;</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="start">
+    <section class="tile fix" id="fixTile" aria-live="polite"><p class="muted">Loading…</p></section>
+
+    <section class="tile tile--night new" id="record" aria-labelledby="nw">
+      <span class="lab"><span class="ball" aria-hidden="true"></span>New match</span>
+      <h2 class="h-m" id="nw">Film your next match</h2>
+      <p class="muted">Record on your phone at the court, or upload a video you already have.</p>
+      <div class="btns">
+        <a class="btn btn--ball" href="/#record"><span class="rec" aria-hidden="true"></span>Record match</a>
+        <a class="btn btn--night-line" href="/#new"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>Upload a video</a>
+      </div>
+      <p class="tip muted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg><span>Phone on the back fence, up high, centred on the court. <a href="/#filmGuide">How to film</a></span></p>
+    </section>
+  </div>
+  <div id="rest"></div>
+</main>
+<footer id="sitefoot"></footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// The report's lines talk about "they"; here we talk to the player.
+const you = (s) => String(s ?? "").replace(/\btheir\b/g, "your").replace(/\bthey\b/g, "you");
+function fmtDate(d) {
+  if (!d) return "";
+  const t = new Date(String(d).slice(0, 10) + "T12:00:00");
+  return isNaN(t) ? esc(d) : t.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+const pips = (n, of, cls) => (of && of <= 20 ? `<div class="pips" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i${i < n ? ` class="${cls}"` : ""}></i>`).join("")}</div>` : "");
+const vs = (m) => (m.opponent ? `vs ${esc(m.opponent)}` : "Match");
+const TREND = { shrinking: "fewer than before", growing: "more than before", "about the same": "about the same as before" };
+
+function fixTile(p, latest) {
+  const fixes = p.fixes || [];
+  if (!latest) {
+    return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span></div>
+      <div class="wide"><h2 class="h-l">Your first fix shows up here</h2>
+      <p class="why">Film a match and type your name in the player boxes. The app finds what cost you the most points.</p></div>
+      <div class="acts"><a class="btn btn--ink" href="/report?job=${Site.EXAMPLE_JOB}">See an example report</a></div>`;
+  }
+  const f = (p.focus && fixes.find((x) => x.id === p.focus.id)) || fixes[0];
+  const from = `From your ${fmtDate(latest.date)} match${latest.opponent ? ` ${vs(latest)}` : ""}`;
+  if (!f) {
+    return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span><span class="lab">${from}</span></div>
+      <div class="wide"><h2 class="h-l">Nothing stood out</h2><p class="why">No one problem cost you many points. Film another match to learn more.</p></div>
+      <div class="acts"><a class="btn btn--ink" href="${Site.reportUrl(latest.job_id)}">Open the full report</a></div>`;
+  }
+  const a = f.advice || {};
+  const n = f.moments || 0;
+  return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span><span class="lab">${from}</span></div>
+    <div><h2 class="h-l" id="fx1">${esc(you(f.title))}</h2>${f.detail ? `<p class="why">${esc(you(f.detail))}</p>` : ""}</div>
+    <p class="score"><span class="board-num">${f.points}</span><small>${f.chances ? `of ${f.chances} points<br>you lost` : `point${f.points === 1 ? "" : "s"}<br>lost`}</small></p>
+    ${a.try_this ? `<p class="try"><b>Try this next match</b>${esc(a.try_this)}</p>` : ""}
+    <div class="acts">${n ? `<a class="btn btn--ink" href="${Site.reportUrl(f.job_id)}&watch=1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg>Watch the ${n === 1 ? "point" : `${n} points`}</a>` : ""}
+      <a class="link" href="${Site.reportUrl(f.job_id)}">Open the full report</a></div>`;
+}
+
+function fixRow(f) {
+  const a = f.advice || {};
+  const steps = [["Try this", a.try_this], ["Tactic", a.match_strategy], ["Habit", a.habit], ["Drill", a.practice_drill]].filter(([, t]) => t);
+  return `<li><details><summary><span class="minus">−${f.points}<small>point${f.points === 1 ? "" : "s"}</small></span>
+      <span><span class="nm">${esc(you(a.headline || f.title))}</span><span class="ln">${esc(you(f.detail || ""))}${TREND[f.trend] ? ` ${f.detail ? "· " : ""}${TREND[f.trend]}` : ""}</span></span>
+      <span class="more">Tips<svg aria-hidden="true"><use href="#chev"/></svg></span></summary>
+    <dl class="fold">${steps.length ? steps.map(([k, t]) => `<div><dt>${k}</dt><dd>${esc(t)}</dd></div>`).join("") : "<div><dd>No tips for this one yet: too few points to call it a pattern.</dd></div>"}</dl></details></li>`;
+}
+
+function matchCard(m) {
+  const tag = m.result
+    ? `<span class="res ${m.result}">${m.result === "win" ? "Win" : "Loss"}</span>
+       <button class="linkish" type="button" data-result="${m.result === "win" ? "loss" : "win"}" data-job="${esc(m.job_id)}" aria-label="Change to ${m.result === "win" ? "loss" : "win"}">change</button>`
+    : `<span class="muted">Result?</span><button class="chip" type="button" data-result="win" data-job="${esc(m.job_id)}">Won</button>
+       <button class="chip" type="button" data-result="loss" data-job="${esc(m.job_id)}">Lost</button>`;
+  const score = m.points_won != null ? `<span class="sc board-num">${m.points_won}–${m.points_lost}</span>` : "";
+  const sets = m.sets && m.sets.length ? ` · sets ${m.sets.map(esc).join(", ")}` : "";
+  return `<li class="tile match"><span class="who"><a href="${Site.reportUrl(m.job_id)}">${vs(m)}</a><span class="muted">${fmtDate(m.date)}</span></span>
+    ${score}<span class="muted">points${sets}</span>${m.top_fix ? `<span class="muted">#1 fix: ${esc(you(m.top_fix.title))}</span>` : ""}
+    <span class="tags">${tag}</span></li>`;
+}
+
+// Charts: one bar per match, latest first, with a plain rule and a one-line answer.
+function bars(rows, fmt, max, cls) {
+  return `<ul class="bars ${cls || ""}">${rows.map((r, i) => `<li${i === 0 ? ' class="now"' : ""}>
+      <span class="who"><b>${fmtDate(r.m.date)}${i === 0 ? " · latest" : ""}</b>${esc(r.m.opponent || "")}</span>
+      <span class="track"><span class="fill" style="width:${Math.min(100, Math.round(100 * r.v / max))}%"></span></span>
+      <span class="val">${fmt(r.v)}</span></li>`).join("")}</ul>`;
+}
+function verdictPct(rows, word) {
+  if (rows.length < 2) return "";
+  const [now, before] = [Math.round(rows[0].v), Math.round(rows[1].v)];
+  return now === before ? `Same as the match before, ${now}%.` : `${now > before ? "Up" : "Down"} from ${before}% the match before.`;
+}
+function numbers(p) {
+  const counted = p.matches.filter((m) => m.enough);
+  if (counted.length < 2) {
+    return `<section class="numbers" aria-labelledby="nb"><div class="intro"><h2 class="h-l" id="nb">Your numbers</h2>
+      <p class="muted">After two matches of 10 or more points, this shows how you're changing from match to match.</p></div></section>`;
+  }
+  const recent = (list) => list.slice(-5).reverse();
+  const f = (p.focus && p.weaknesses.find((w) => w.id === p.focus.id)) || p.weaknesses[0];
+  const fixRows = f ? recent(counted.map((m, i) => ({ m, v: f.rates[i] }))) : [];
+  const fixMax = Math.max(...fixRows.map((r) => r.v), 1);
+  const say = { shrinking: "Getting better.", growing: "Costing you more lately.", "about the same": "About the same so far." };
+  const won = recent(counted.filter((m) => m.points_won_pct != null).map((m) => ({ m, v: m.points_won_pct })));
+  const serve = recent(counted.filter((m) => m.first_serve_in_pct != null).map((m) => ({ m, v: m.first_serve_in_pct })));
+  const pct = (v) => `${Math.round(v)}%`;
+  return `<section class="numbers" aria-labelledby="nb">
+    <div class="intro"><h2 class="h-l" id="nb">Your numbers</h2><p class="muted">More detail across your matches, for when you want it.</p></div>
+    <div class="ngrid">
+      ${f ? `<div class="tile trend"><h3 class="h-s">Is your #1 fix getting better?</h3>
+        <p class="rule muted">${esc(you(f.title))}: points lost out of every 10 played. <b>Fewer is better.</b></p>
+        ${bars(fixRows, (v) => v, fixMax, "lost")}<p class="verdict">${say[f.trend] || ""}</p></div>` : ""}
+      <div class="tile trend"><h3 class="h-s">Points you won</h3><p class="rule muted">Out of every point played. <b>More is better.</b></p>
+        ${bars(won, pct, 100)}<p class="verdict">${verdictPct(won)}</p></div>
+      ${serve.length ? `<div class="tile trend"><h3 class="h-s">First serves in</h3><p class="rule muted">How many first serves landed in. <b>More is better.</b></p>
+        ${bars(serve, pct, 100)}<p class="verdict">${verdictPct(serve)}</p></div>` : ""}
+    </div></section>`;
+}
+
+function restHtml(p, latest) {
+  if (!latest) return numbers(p);
+  const fixes = p.fixes || [], good = p.strengths || [];
+  const line = [vs(latest), fmtDate(latest.date), latest.points_won != null ? `${latest.points_won}–${latest.points_lost} points` : ""].filter(Boolean).join(" · ");
+  const fixTileHtml = fixes.length ? `<section class="tile" aria-labelledby="fx"><h3 class="h-m" id="fx" style="margin-bottom:6px">Top ${fixes.length === 1 ? "fix" : `${fixes.length} fixes`}</h3>
+      <ol class="fixes">${fixes.map(fixRow).join("")}</ol></section>` : "";
+  const goodTile = good.length ? `<section class="tile" aria-labelledby="wl"><h3 class="h-m" id="wl">What you did well</h3>
+      <ul class="well">${good.map((s) => `<li><span class="board-num">${s.points}<small>${s.chances ? `of ${s.chances} ` : ""}points won</small></span>
+        <p>${esc(you(s.title))}.</p>${pips(s.points, s.chances, "won")}</li>`).join("")}</ul></section>` : "";
+  const all = p.matches.slice().reverse();
+  const older = all.slice(3);
+  return `<div class="sh"><h2 class="h-l">Your latest match</h2><p>${line}</p></div>
+    <div class="pair">${fixTileHtml}${goodTile}</div>
+    <div class="sh" id="matches"><h2 class="h-l">Recent matches</h2></div>
+    <ul class="matches">${all.slice(0, 3).map(matchCard).join("")}</ul>
+    ${older.length ? `<details class="allmatches"><summary>All ${all.length} matches</summary><ul class="matches">${older.map(matchCard).join("")}</ul></details>` : ""}
+    ${numbers(p)}`;
+}
+
+async function showProgress() {
+  const res = await fetch("/api/progress");
+  const p = await res.json().catch(() => ({}));
+  if (!res.ok) { $("fixTile").innerHTML = `<p class="muted">${esc(p.error || "Couldn't load your matches. Try again in a moment.")}</p>`; return; }
+  const latest = p.matches[p.matches.length - 1];
+  $("fixTile").innerHTML = fixTile(p, latest);
+  $("rest").innerHTML = restHtml(p, latest);
+  if (location.hash === "#matches") $("matches")?.scrollIntoView();
+}
+// Win/Loss: set from the score or points; the player can change it (videos often stop before the match ends).
+$("rest").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-result]");
+  if (!b) return;
+  b.disabled = true;
+  const fd = new FormData();
+  fd.set("job_id", b.dataset.job);
+  fd.set("result", b.dataset.result);
+  await fetch("/api/me/result", { method: "POST", body: fd }).catch(() => {});
+  showProgress();
+});
+
+(async () => {
+  const me = Site.session() ? await fetch("/api/me").then((r) => r.json()).catch(() => ({})) : {};
+  if (!me.user || me.user.role === "coach") { location.replace("/account"); return; }
+  $("hello").textContent = `Hi, ${me.user.name}`;
+  $("teamLine").textContent = `Player on ${me.team?.name || "your team"}`;
+  showProgress();
+})();
+</script>
+</body>
+</html>

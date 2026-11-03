@@ -7,7 +7,8 @@
 
 ## Where the design lives
 - `web_assets/tokens.css`: every colour, font, size and radius (light + dark). Pages use these tokens only.
-- `web_assets/site.css`: shared header, footer, buttons, tiles. `web_assets/site.js`: draws the header/footer and the theme toggle.
+- `web_assets/court.css`: shared tiles, buttons, fixes list, ball pips (dashboard and report). `web_assets/site.css`: header, footer, phone tab bar. `web_assets/site.js`: draws those and the theme toggle.
+- Pages: `app.html` (dashboard, `/app`), `report.html`, `account.html` (sign-in + coach view), `calibration_demo.html` (Home + new analysis until the landing page).
 - Each page's own `<style>`: layout only.
 
 ## Colours

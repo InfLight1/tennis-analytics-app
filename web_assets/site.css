@@ -61,3 +61,18 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .btn-primary { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
 .btn-primary:hover { background: #E6F86A; color: var(--ball-ink); }
 .btn-primary:disabled, .btn-primary[disabled] { background: var(--tile-2); color: var(--ink-3); border-color: var(--line); }
+
+/* Phone tab bar on the signed-in app screens (same four tabs as the iPhone app). */
+.tabbar { display: none; }
+@media (max-width: 860px) {
+  body.has-tabs { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  body.has-tabs .topbar .nav { display: none; }
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
+    background: var(--tile); border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px;
+    color: var(--ink-2); text-decoration: none; font: 500 .76rem/1 var(--sys); }
+  .tabbar a[aria-current="page"] { color: var(--ink); font-weight: 700; }
+  .tabbar .c { width: 30px; height: 30px; border-radius: 50%; background: var(--ball); display: grid; place-items: center; box-shadow: 0 0 0 1px rgba(15,26,20,.2); }
+  .tabbar .c i { width: 12px; height: 12px; border-radius: 50%; background: #D7362A; }
+}
+@media print { .tabbar { display: none !important; } }

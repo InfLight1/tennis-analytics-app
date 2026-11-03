@@ -46,7 +46,7 @@
   --lost-4: color-mix(in srgb, var(--lost) 28%, var(--tile)); --lost-5: color-mix(in srgb, var(--lost) 60%, var(--ink)); --lost-6: var(--ink-2);
   --shadow-1: var(--shadow);
   --green-bg: var(--night); --green-surface: var(--night-2); --green-court: var(--night-2); --green-accent: var(--ball);
-  --foot-bg: var(--night); --hero-full-kw: var(--ball);
+  --foot-bg: var(--night); --court: var(--night-2); --hero-full-kw: var(--ball);
   --font-serif: var(--sys); --font-sans: var(--sys);
   --radius-lg: var(--r-tile); --radius-md: var(--r-box);
   --focus: 0 0 0 3px var(--page), 0 0 0 5px var(--ink);

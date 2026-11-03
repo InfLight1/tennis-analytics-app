@@ -261,6 +261,7 @@ cpu_image = (
     .add_local_file("calibration_demo.html", "/root/web/calibration_demo.html")
     .add_local_file("camera_test.html", "/root/web/camera_test.html")
     .add_local_file("account.html", "/root/web/account.html")
+    .add_local_file("app.html", "/root/web/app.html")
     # passcode.js, manifest + icons (install-on-phone). Served at the site root.
     .add_local_dir("web_assets", remote_path="/root/web/assets")
 )
@@ -2085,6 +2086,11 @@ def web_app():
         return FileResponse("/root/web/report.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
+    @fastapi_app.get("/app")
+    def app_page():
+        return FileResponse("/root/web/app.html", media_type="text/html",
+                            headers={"Cache-Control": "no-store"})
+
     @fastapi_app.get("/account")
     def account_page():
         """Sign in / join a team / create a team; then progress, or the coach's team view."""
@@ -2097,7 +2103,7 @@ def web_app():
         return FileResponse("/root/web/camera_test.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
-    _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css", "tokens.css": "text/css",
+    _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css", "tokens.css": "text/css", "court.css": "text/css",
                "recorder.js": "text/javascript", "record_match.js": "text/javascript",
                "manifest.webmanifest": "application/manifest+json",
                "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",
@@ -2275,8 +2281,10 @@ def web_app():
 
     def _match_row(claim):
         prof = _read_json(_job_paths(claim["job_id"])["profile_json_path"]) or {}
+        others = [p for k, p in prof.get("players", {}).items() if k != claim["slot"]]
         return {"job_id": claim["job_id"], "date": claim["date"], "slot": claim["slot"],
                 "player": prof.get("players", {}).get(claim["slot"]), "match": prof.get("match"),
+                "opponent": " & ".join(p.get("name", "") for p in others) or None,
                 "result": claim.get("result"), "advice": _advice_in(claim["job_id"], claim["slot"])}
 
     def _advice_in(job_id, slot):

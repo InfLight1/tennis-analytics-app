@@ -6,7 +6,7 @@
 <title>Match Report · Advantage AI</title>
 <meta name="description" content="Match report: what is costing each player points and what to practise.">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#15261C">
+<meta name="theme-color" content="#0F1A14">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -265,18 +265,6 @@ details.fold > summary svg { color: var(--muted); }
 .fold-body { padding: 0 0 var(--space-6); }
 .fold-body p + p { margin-top: var(--space-3); }
 .fold-body p { color: var(--ink-2); max-width: 66ch; }
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
-.tile { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-md); }
-.tile .v { font: 700 var(--text-num)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
-.tile .l { margin-top: var(--space-2); font-weight: 600; font-size: var(--text-sm); }
-.tile .c { color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
-@media (max-width: 459px) {
-  .tiles { grid-template-columns: 1fr; }
-  .tile { padding: var(--space-3) var(--space-4); display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline; gap: 0 var(--space-3); }
-  .tile .l { margin: 0; }
-  .tile .c { grid-column: 2; }
-  .tile .v { grid-row: span 2; }
-}
 .sub-h { margin: var(--space-7) 0 var(--space-4); font: 600 var(--text-lg)/1.3 var(--font-sans); }
 .early { list-style: none; margin: 0; padding: 0; }
 .early li { padding: var(--space-3) 0; border-top: 1px solid var(--line); color: var(--ink-2); }
@@ -321,7 +309,7 @@ details.fold > summary svg { color: var(--muted); }
   }
   html, body { background: #fff !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 1.05rem; line-height: 1.4; }
-  #topbar, #sitefoot, .tabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg, .end, #watch, .watch-all, .ff-watch { display: none !important; }
+  #topbar, #sitefoot, .tabs, .ptabs, #player, .head-actions, #namesForm, #error, #tip, .ff-go, .seg, .end, #watch, .watch-all, .ff-watch { display: none !important; }
   .tbtn { min-height: 0; min-width: 0; padding: 0 4px; border: 0; }
   .stats-x li { padding: 4px 0; break-inside: avoid; }
   #printView { display: block !important; }
@@ -339,7 +327,7 @@ details.fold > summary svg { color: var(--muted); }
   .tag { min-height: 0; padding: 1px 8px; }
   .rings { grid-template-columns: repeat(2, auto); justify-content: start; gap: var(--space-8); }
   .minis { margin-top: var(--space-4); }
-  .mini, .tile { padding: 6px 8px; border-radius: 6px; }
+  .mini { padding: 6px 8px; border-radius: 6px; }
   .summary { margin-top: var(--space-4); font-size: 1.2rem; max-width: none; }
   .bar { height: 14px; }
   .legend { margin-top: var(--space-2); columns: 2; column-gap: var(--space-8); }
@@ -361,38 +349,168 @@ details.fold > summary svg { color: var(--muted); }
   .fold-body { padding-bottom: 8px; }
   .sub-h { margin: var(--space-4) 0 var(--space-2); }
   .early li { padding: 2px 0; }
-  .fix, .tile, .mini, .keep, .first-fix, .ring-item, .legend li, .advice div { break-inside: avoid; }
+  .fix, .mini, .keep, .first-fix, .ring-item, .legend li, .advice div { break-inside: avoid; }
   a { color: inherit; text-decoration: none; }
 }
 .btn-del:hover { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
 </style>
 <link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="court.css">
 <link rel="stylesheet" href="site.css">
+<style>
+/* Report layout (DESIGN.md "Court"): photo header, #1 FIX scoreboard strip, video beside fixes, numbers below.
+   The styles above still drive the Save as PDF view. */
+.band--report{padding-bottom:110px}
+.title{display:flex;justify-content:space-between;align-items:end;gap:16px 32px;flex-wrap:wrap;padding-top:clamp(24px,5vh,56px)}
+.title .label{font:600 .95rem/1.2 var(--sys);color:#E6ECE8;margin-bottom:6px}
+.title h1 .vs{font-weight:500;opacity:.8}
+.title .score{margin-top:8px;color:#E6ECE8;font-weight:500}
+.title .score b{color:#fff}
+.title .score a{color:#fff}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap}
+.head-actions .btn{min-height:44px;font-size:.95rem;padding:0 18px;background:#fff;color:#0F1A14;border-color:#fff}
+.head-actions .btn:hover{background:#E6ECE8}
+.head-actions .btn-quiet{background:rgba(10,16,12,.8);color:#fff;border-color:rgba(255,255,255,.35)}
+.head-actions .btn-quiet:hover{background:rgba(10,16,12,.95);border-color:#fff}
+.ptabs{display:inline-flex;gap:4px;max-width:100%;padding:4px;border-radius:999px;background:rgba(10,16,12,.75);margin-top:22px}
+.ptabs button{min-height:44px;padding:0 20px;border-radius:999px;border:0;background:transparent;color:#E6ECE8;font:600 .98rem/1 var(--sys);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptabs button[aria-selected="true"]{background:var(--ball);color:var(--ball-ink)}
+#namesForm{color:var(--ink);margin-top:18px}
+#error{margin-top:0;position:relative}
+
+.strip{margin-top:-84px;position:relative;display:grid;grid-template-columns:auto 1fr auto;padding:0;overflow:hidden}
+.strip .tag{display:grid;place-items:center;align-content:center;min-height:0;padding:0 26px;border:0;border-radius:0;background:#0F1A14;color:var(--ball);font:700 1.5rem/1 var(--board);letter-spacing:.02em;text-align:center}
+.strip .tag small{display:block;font:600 .72rem/1 var(--sys);letter-spacing:.08em;color:#fff;opacity:.8;margin-bottom:6px}
+.strip .what{padding:24px 28px}
+.strip .what p{margin-top:6px;font-size:1.08rem;color:var(--ink-2);max-width:52ch}
+.strip .count{padding:24px 28px;border-left:1px solid var(--line);display:grid;gap:10px;align-content:center;justify-items:end}
+.strip .count .board-num{font-size:3.4rem;color:var(--lost)}
+.strip .count .board-num small{font:500 .95rem var(--sys);color:var(--ink-2);margin-left:6px}
+.strip .count .pips{max-width:230px;justify-content:flex-end}
+
+.rgrid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;margin-top:20px;align-items:start}
+.rgrid.one{grid-template-columns:minmax(0,1fr)}
+.vhead{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin-bottom:14px}
+.poster{position:relative;display:block;width:100%;aspect-ratio:16/9;padding:0;border:0;border-radius:var(--r-box);overflow:hidden;background:#0B120E url(hero-court-1600.webp) center 80%/cover;cursor:pointer}
+.poster span{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;background:#fff;color:#0F1A14;display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.poster svg{width:26px;height:26px;margin-left:4px}
+body.watching .poster{display:none}
+#watch{position:static;width:auto;border:1px solid var(--line);border-radius:var(--r-box);box-shadow:none;background:var(--tile-2)}
+.g-video .moments{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.tbtn{min-height:44px;min-width:68px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--tile-2);color:var(--ink);font:700 1.1rem/1 var(--board);cursor:pointer}
+.tbtn:hover{border-color:var(--ink-3);color:var(--ink)}
+.tbtn.on{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.g-video .try{margin-top:16px;max-width:none;color:var(--ink)}
+.fixes{display:block}
+.fixes .try{margin:0 0 12px}
+.fixes .moments{margin:0 0 16px}
+.fix-more{color:var(--ink-2)}
+.watch-all{background:var(--ink);color:var(--page)}
+.watch-all:hover{background:var(--ink);opacity:.9}
+
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.kpi h3{font:600 1rem/1.35 var(--sys);letter-spacing:0}
+.kpi .board-num{font-size:3rem;display:block;margin:8px 0 10px}
+.kpi .board-num small{font:500 .95rem var(--sys);color:var(--ink-2);margin-left:6px}
+.kpi p{margin-top:6px;color:var(--ink-2)}
+.ai-note{margin-top:14px}
+
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.game .tags{margin-bottom:12px}
+.game .summary{margin:0;font:500 1.15rem/1.45 var(--sys);max-width:none}
+.game .minis{margin-top:18px}
+.mini{background:var(--tile-2);border-radius:var(--r-box)}
+.mini .mv{font:700 2.2rem/1 var(--board)}
+.bar{border-radius:var(--r-box)}
+.seg button{min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--page);box-shadow:none}
+
+.sgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px}
+.sgrid>*{grid-column:span 2}
+.sgrid.n2>*,.sgrid.n4>*{grid-column:span 3}
+.sgrid.n5>:nth-child(n+4){grid-column:span 3}
+.sgrid.n1>*{grid-column:1/-1}
+.stat .board-num{font-size:2.6rem;display:block;line-height:1.05}
+.stat h3{font:700 1rem/1.3 var(--sys);letter-spacing:0;margin-top:6px}
+.stat p{color:var(--ink-2);font-size:.92rem;margin-top:2px}
+
+.flow .chart{position:relative;margin:8px 0 0 64px}
+.flow svg{width:100%;height:200px;display:block}
+.flow .yl{position:absolute;left:-64px;font:600 .82rem/1 var(--sys);color:var(--ink-2);transform:translateY(-50%)}
+.flow .xl{display:flex;justify-content:space-between;font:600 .82rem/1 var(--sys);color:var(--ink-2);margin-top:6px}
+.flow .legend2{display:flex;gap:6px 18px;flex-wrap:wrap;margin-top:14px;font-size:.92rem;color:var(--ink-2)}
+.flow .legend2 i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+.flow .verdict{font-weight:600;margin-top:12px}
+#player .sure{margin-top:56px;border-radius:var(--r-tile)}
+details.fold{border-radius:var(--r-tile);margin-top:20px}
+.end{height:var(--space-6)}
+body.watching .end{height:var(--space-6)}
+
+@media (max-width:1020px){
+  .rgrid{grid-template-columns:minmax(0,1fr)}
+  .pair{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .band--report{padding-bottom:72px}
+  .head-actions{width:100%}
+  .head-actions .btn{flex:1 1 40%}
+  .strip{margin-top:-52px;grid-template-columns:minmax(0,1fr)}
+  .strip .tag{padding:12px 18px;display:flex;gap:10px;justify-content:flex-start;align-items:center;font-size:1.2rem}
+  .strip .tag small{margin:0}
+  .strip .what{padding:18px}
+  .strip .count{border-left:0;border-top:1px solid var(--line);padding:14px 18px;justify-items:start;grid-template-columns:auto 1fr;align-items:center}
+  .strip .count .board-num{font-size:2.4rem;white-space:nowrap}
+  .strip .count .pips{justify-content:flex-start}
+  .rgrid,.pair{gap:12px;margin-top:12px}
+  .kpis{grid-template-columns:1fr;gap:12px}
+  .sgrid{grid-template-columns:1fr 1fr;gap:12px}
+  .sgrid>*,.sgrid.n2>*,.sgrid.n4>*,.sgrid.n5>:nth-child(n+4){grid-column:1/-1}
+  .flow .chart{margin-left:52px}
+  .flow .yl{left:-52px}
+  #player .sure{margin-top:40px}
+}
+@media print{
+  .wrap{max-width:none;padding:0}
+  .band{padding:0;color:#0F1A14}
+  .band__photo,.band__shade,.ptabs,.head-actions{display:none!important}
+  .title{padding:0}
+  .title .label,.title .score,.title .score b,.title .score a{color:#0F1A14}
+  .fixes .try{padding:0;border:0;background:none}
+  .fixes .try b{display:inline}
+}
+</style>
 </head>
 <body>
 <header id="topbar" data-page="report"></header>
 
+<div class="band band--report">
+  <div class="band__photo" aria-hidden="true"></div>
+  <div class="band__shade" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="title">
+      <div>
+        <div class="label">Match report <span class="print-only">· Advantage AI · <span id="printDate"></span></span></div>
+        <h1 class="h-xl" id="title">Loading…</h1>
+        <p class="score" id="subtitle"></p>
+      </div>
+      <div class="head-actions">
+        <button type="button" class="btn hidden" id="shareBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg> Share with your coach</button>
+        <button type="button" class="btn btn-quiet hidden" id="pdfBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Save as PDF</button>
+        <button type="button" class="btn btn-quiet hidden" id="editNamesBtn">Edit names</button>
+        <button type="button" class="btn btn-quiet btn-del hidden" id="deleteBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg> Delete report</button>
+      </div>
+    </div>
+    <div class="ptabs hidden" role="tablist" aria-label="Player" id="tabs"></div>
+    <form id="namesForm" class="hidden">
+      <div><label for="n1">Player who starts at the near end (closest to the camera)</label><input id="n1" maxlength="40"></div>
+      <div><label for="n2">Player who starts at the far end</label><input id="n2" maxlength="40"></div>
+      <button type="submit" class="btn">Save</button>
+    </form>
+  </div>
+</div>
+
 <main class="wrap">
-  <header class="page-head">
-    <div>
-      <div class="label">Match report <span class="print-only">· Advantage AI · <span id="printDate"></span></span></div>
-      <h1 id="title">Loading…</h1>
-      <p class="score" id="subtitle"></p>
-    </div>
-    <div class="head-actions">
-      <button type="button" class="btn hidden" id="shareBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg> Share with your coach</button>
-      <button type="button" class="btn hidden" id="pdfBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Save as PDF</button>
-      <button type="button" class="btn hidden" id="editNamesBtn">Edit names</button>
-      <button type="button" class="btn btn-del hidden" id="deleteBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg> Delete report</button>
-    </div>
-  </header>
-  <form id="namesForm" class="hidden">
-    <div><label for="n1">Player who starts at the near end (closest to the camera)</label><input id="n1" maxlength="40"></div>
-    <div><label for="n2">Player who starts at the far end</label><input id="n2" maxlength="40"></div>
-    <button type="submit" class="btn">Save</button>
-  </form>
   <div id="error" class="hidden" role="alert"></div>
-  <div class="tabs hidden" role="tablist" aria-label="Player" id="tabs"></div>
   <div id="player" role="tabpanel"></div>
   <div id="printView" aria-hidden="true"></div>
   <details class="fold hidden" id="coverageBox">
@@ -404,6 +522,7 @@ details.fold > summary svg { color: var(--muted); }
 
 <footer id="sitefoot"></footer>
 <div id="tip" role="tooltip"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>
 <section id="watch" class="hidden" aria-label="Watch your points">
   <div class="w-stage">
     <video id="wVideo" playsinline controls controlslist="nofullscreen nodownload" disablepictureinpicture preload="metadata"></video>
@@ -469,6 +588,7 @@ async function load() {
     $("n1").value = profile.players.player_1?.name || ""; $("n2").value = profile.players.player_2?.name || "";
     Site.teamNameHints([$("n1"), $("n2")]);
     render();
+    if (params.get("watch")) document.querySelector(".poster")?.click();   // "Watch the points" on the dashboard
     $("pdfBtn").classList.remove("hidden");
     if (JOB) Site.rememberReport(JOB, $("title").textContent);
     if (Site.dev && JOB && !EXAMPLES.includes(JOB)) {   // timings: dev mode only
@@ -650,8 +770,148 @@ $("tabs").addEventListener("keydown", (e) => {
   render(); $(`tab-${current}`).focus();
 });
 
+// The screen view (DESIGN.md). The player element lives in the Watch tile; it steps out while the page redraws.
 function renderPlayer(pl) {
-  $("player").innerHTML = playerHtml(pl);
+  const box = $("watch");
+  if (!box.classList.contains("hidden")) watchClose();
+  document.body.appendChild(box);
+  $("player").innerHTML = courtHtml(pl);
+  $("watchSlot")?.appendChild(box);
+}
+
+// The report's lines talk about "they"; here we talk to the player whose tab is open.
+const you = (t) => String(t ?? "").replace(/\btheir\b/g, "your").replace(/\bthey\b/g, "you");
+const pips = (n, of, cls) => (of && of <= 20 ? `<div class="pips" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i${i < n ? ` class="${cls}"` : ""}></i>`).join("")}</div>` : "");
+const orderedOf = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
+
+function fixRow(p) {
+  const a = p.advice;
+  const steps = !a ? [] : [["Tactic", a.match_strategy], ["Habit", a.habit], ["Drill", a.practice_drill]].filter(([, t]) => t);
+  return `<li id="fix-${esc(p.id)}"><details><summary><span class="minus">−${p.points}<small>point${p.points === 1 ? "" : "s"}</small></span>
+      <span><span class="nm">${esc(you(headlineOf(p)))}</span><span class="ln">${esc(you(p.detail))}</span></span>
+      <span class="more">Tips<svg aria-hidden="true"><use href="#chev"/></svg></span></summary>
+    ${a && a.try_this ? `<p class="try"><b>Try this</b>${esc(a.try_this)}</p>` : ""}
+    ${steps.length ? `<dl class="fold">${steps.map(([k, t]) => `<div><dt>${k}</dt><dd>${esc(t)}</dd></div>`).join("")}</dl>` : a ? "" : `<p class="fix-more">No tips for this one yet.</p>`}
+    ${momentsLine(p)}</details></li>`;
+}
+
+function barHtml(pl) {
+  const { lostParts, wonParts } = barParts(pl.stats);
+  return barView === "lost" ? stackedBar(lostParts, pl.stats.points_lost, "lost", "lost") : stackedBar(wonParts, pl.stats.points_won, "won", "won");
+}
+
+// Point by point: the player's lead after each called point, from the report's own point list.
+function flowHtml(pl) {
+  const pts = (profile.points || []).filter((p) => p.winner);
+  if (pts.length < 2) return "";
+  const end = Math.max(...pts.map((p) => p.e || p.s), 1);
+  let lead = 0, best = 0, worst = 0;
+  const steps = [];
+  for (const p of pts) {
+    lead += p.winner === pl.id ? 1 : -1;
+    steps.push([p.e || p.s, lead]);
+    best = Math.max(best, lead); worst = Math.min(worst, lead);
+  }
+  const span = Math.max(best, -worst, 1), Y = (v) => 100 - v * (88 / span), X = (t) => (640 * t / end).toFixed(1);
+  let d = `M0,${Y(0)}`;
+  for (const [t, v] of steps) d += ` H${X(t)} V${Y(v)}`;
+  d += " H640";
+  const ticks = [...new Set([best, 0, worst])];
+  const label = (v) => (v === 0 ? "Level" : v > 0 ? `Up ${v}` : `Down ${-v}`);
+  const mins = Array.from({ length: 5 }, (_, i) => clock(Math.round(end * i / 4)));
+  const finish = steps[steps.length - 1][1];
+  const say = finish === 0 ? "Ended level" : finish > 0 ? `Ended up ${finish}` : `Ended down ${-finish}`;
+  return `<div class="sh"><h2 class="h-l">Point by point</h2><p>Your lead after each of the ${pts.length} points the app called.</p></div>
+    <section class="tile flow" aria-label="Point by point"><div class="chart">
+      <svg viewBox="0 0 640 200" preserveAspectRatio="none" role="img" aria-label="${esc(say)}. Biggest lead ${best}, furthest behind ${-worst}.">
+        <defs><clipPath id="ab"><rect width="640" height="100"/></clipPath><clipPath id="be"><rect y="100" width="640" height="100"/></clipPath></defs>
+        ${ticks.filter((v) => v).map((v) => `<path d="M0 ${Y(v)} H640" stroke="var(--line)" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>`).join("")}
+        <path d="M0 100 H640" stroke="var(--ink-3)" vector-effect="non-scaling-stroke"/>
+        <path d="${d} V100 Z" fill="var(--ball)" clip-path="url(#ab)"/>
+        <path d="${d} V100 Z" fill="var(--lost)" fill-opacity=".55" clip-path="url(#be)"/>
+        <path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      </svg>
+      ${ticks.map((v) => `<span class="yl" style="top:${Y(v)}px">${label(v)}</span>`).join("")}
+      <div class="xl" aria-hidden="true">${mins.map((m) => `<span>${m}</span>`).join("")}</div></div>
+      <div class="legend2"><span><i style="background:var(--ball)"></i>You were ahead</span><span><i style="background:var(--lost)"></i>You were behind</span></div>
+      <p class="verdict">${esc(say)}.</p></section>`;
+}
+
+function courtHtml(pl) {
+  const s = pl.stats, sv = s.serve;
+  const fixes = orderedOf(pl.weaknesses), keeps = orderedOf(pl.strengths).slice(0, 3);
+  const top = fixes.slice(0, 3), n1 = top[0];
+  const moments = (n1 && n1.moments) || [];
+  const a1 = n1 && n1.advice;
+  const tryThis = a1 ? (a1.try_this || firstSentence(a1.match_strategy)) : "";
+  const strip = n1 ? `<section class="tile strip" aria-label="Your number one fix">
+      <div class="tag"><small>YOUR</small>#1 FIX</div>
+      <div class="what"><h2 class="h-l">${esc(you(headlineOf(n1)))}</h2><p>${esc(you(n1.detail))}</p></div>
+      <div class="count"><span class="board-num">${n1.points}<small>${n1.chances ? `of ${n1.chances} ` : ""}points lost</small></span>${pips(n1.points, n1.chances, "lost")}</div>
+    </section>` : `<section class="tile strip"><div class="tag"><small>YOUR</small>#1 FIX</div><div class="what"><h2 class="h-l">Nothing to rank yet</h2><p>Not enough tracked points to pick a fix.</p></div></section>`;
+  const watch = moments.length ? `<section class="tile g-video" aria-labelledby="wH">
+      <div class="vhead"><h2 class="h-m" id="wH">Watch the ${moments.length === 1 ? "point" : `${moments.length} points`}</h2><span class="muted">Tap a time to jump there</span></div>
+      <button type="button" class="poster" data-w="${esc(n1.id)}" data-i="0" aria-label="Play the first point"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg></span></button>
+      <div id="watchSlot"></div>
+      <div class="moments">${moments.map((t, i) => `<button type="button" class="tbtn" data-w="${esc(n1.id)}" data-i="${i}" aria-label="Watch the point at ${clock(t)}">${clock(t)}</button>`).join("")}</div>
+      ${tryThis ? `<p class="try"><b>Try this next match</b>${esc(tryThis)}</p>` : ""}
+    </section>` : "";
+  const fixTile = top.length ? `<section class="tile g-fixes" id="fixes" aria-labelledby="fxH"><h2 class="h-m" id="fxH" style="margin-bottom:6px">Top ${top.length === 1 ? "fix" : `${top.length} fixes`}</h2>
+      <ol class="fixes">${top.map(fixRow).join("")}</ol></section>` : "";
+  const kpi = (p) => `<div class="tile kpi"><h3>${esc(you(headlineOf(p)))}</h3>${p.points
+    ? `<span class="board-num">${p.points}<small>${p.chances ? `of ${p.chances} ` : ""}points won</small></span>${pips(p.points, p.chances, "won")}`
+    : `<p>${esc(you(p.detail))}</p>`}</div>`;
+  const rl = s.rally_length, played = rl.short.played + rl.medium.played + rl.long.played;
+  const rally = s.avg_rally_shots != null ? s.avg_rally_shots : pct(played ? 100 * rl.short.played / played : null);
+  const rows = statRows(s);
+  return `${strip}
+    <div class="rgrid${watch && fixTile ? "" : " one"}">${watch}${fixTile}</div>
+    ${keeps.length ? `<div class="sh"><h2 class="h-l">What went well</h2></div><div class="kpis">${keeps.map(kpi).join("")}</div>
+      ${HAS_INSIGHTS ? `<p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>` : ""}` : ""}
+    <div class="sh"><h2 class="h-l">How the match went</h2></div>
+    <div class="pair">
+      <section class="tile game" aria-label="Your game">
+        ${pl.playstyle.tags.length ? `<div class="tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
+        ${pl.ai_summary ? `<p class="summary">${esc(pl.ai_summary)}</p>` : ""}
+        <div class="minis">
+          <div class="mini" title="Serves the opponent didn't return"><div class="mv">${sv.aces}</div><div class="ml">Aces</div></div>
+          <div class="mini" title="At least this many: some serves aren't seen"><div class="mv">${sv.double_faults}</div><div class="ml">Double faults</div></div>
+          <div class="mini"><div class="mv">${rally}</div><div class="ml">${s.avg_rally_shots != null ? "Shots per rally" : "Short points"}</div></div>
+        </div>
+      </section>
+      <section class="tile" aria-labelledby="barH">
+        <div class="sec-head"><h3 class="h-m" id="barH">How ${esc(pl.name)} <span id="barWord">${barView}</span> points</h3>
+          <div class="seg" role="group" aria-label="Show points lost or won">
+            <button type="button" data-view="lost" aria-pressed="${barView === "lost"}">Lost</button>
+            <button type="button" data-view="won" aria-pressed="${barView === "won"}">Won</button>
+          </div></div>
+        <div id="barBox">${barHtml(pl)}</div>
+      </section>
+    </div>
+    ${rows.length ? `<div class="sh"><h2 class="h-l">Serve and return</h2></div>
+      <div class="sgrid n${rows.length}">${rows.map((r) => `<div class="tile stat"><span class="board-num">${r.v}</span><h3>${esc(r.l)}</h3><p>${esc(r.x)}</p></div>`).join("")}</div>` : ""}
+    ${flowHtml(pl)}
+    ${sureHtml("")}`;
+}
+
+function barParts(s) {
+  const errs = s.lost_by.own_errors;
+  return {
+    lostParts: [
+      { label: "Into the net", n: errs.net || 0, slot: 1 },
+      { label: "Long", n: errs.long || 0, slot: 2 },
+      { label: "Wide", n: errs.wide || 0, slot: 3 },
+      { label: "Missed (direction unclear)", n: errs.unclassified || 0, slot: 4 },
+      { label: "Double faults", n: s.lost_by.double_faults, slot: 5 },
+      { label: "Opponent's shot not returned", n: s.lost_by.opponent_winners, slot: 6 },
+    ],
+    wonParts: [
+      { label: "Their shot not returned", n: s.won_by.winners, slot: 1 },
+      { label: "Serve not returned", n: s.won_by.aces, slot: 2 },
+      { label: "Opponent missed", n: s.won_by.opponent_errors, slot: 3 },
+      { label: "Opponent double faults", n: s.won_by.opponent_double_faults, slot: 4 },
+    ],
+  };
 }
 
 // One player's report as HTML. print: both Lost and Won bars (no switch), ids made unique.
@@ -660,21 +920,7 @@ function playerHtml(pl, print = false) {
   const s = pl.stats, sv = s.serve, rt = s.return;
   const ordered = (list) => { const ok = list.filter((p) => !p.low_sample); return [...ok.filter((p) => p.tier === "headline"), ...ok.filter((p) => p.tier !== "headline")]; };
   const fixes = ordered(pl.weaknesses), keeps = ordered(pl.strengths);
-  const errs = s.lost_by.own_errors;
-  const lostParts = [
-    { label: "Into the net", n: errs.net || 0, slot: 1 },
-    { label: "Long", n: errs.long || 0, slot: 2 },
-    { label: "Wide", n: errs.wide || 0, slot: 3 },
-    { label: "Missed (direction unclear)", n: errs.unclassified || 0, slot: 4 },
-    { label: "Double faults", n: s.lost_by.double_faults, slot: 5 },
-    { label: "Opponent's shot not returned", n: s.lost_by.opponent_winners, slot: 6 },
-  ];
-  const wonParts = [
-    { label: "Their shot not returned", n: s.won_by.winners, slot: 1 },
-    { label: "Serve not returned", n: s.won_by.aces, slot: 2 },
-    { label: "Opponent missed", n: s.won_by.opponent_errors, slot: 3 },
-    { label: "Opponent double faults", n: s.won_by.opponent_double_faults, slot: 4 },
-  ];
+  const { lostParts, wonParts } = barParts(s);
   const rl = s.rally_length, played = rl.short.played + rl.medium.played + rl.long.played;
   // Same fallback as the live report: no shot count yet -> share of short points.
   const rally = `<div class="mv num">${s.avg_rally_shots != null ? s.avg_rally_shots : pct(played ? 100 * rl.short.played / played : null)}</div>`;
@@ -733,7 +979,12 @@ function playerHtml(pl, print = false) {
 }
 $("player").addEventListener("click", (e) => {
   const b = e.target.closest(".seg button");
-  if (b && b.dataset.view !== barView) { barView = b.dataset.view; renderPlayer(DATA.players[current]); document.querySelector(`.seg button[data-view="${barView}"]`).focus(); }
+  if (b && b.dataset.view !== barView) {
+    barView = b.dataset.view;
+    $("barBox").innerHTML = barHtml(DATA.players[current]);
+    $("barWord").textContent = barView;
+    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  }
 });
 
 document.addEventListener("pointermove", (e) => {
@@ -785,6 +1036,7 @@ async function watchOpen(patId, i) {
   clearTimeout(W.retry);
   $("watch").classList.remove("hidden");
   document.body.classList.add("watching");
+  $("watch").scrollIntoView({ block: "center" });
   watchTitle();
   loadBall();
   try {
@@ -1004,7 +1256,7 @@ $("deleteBtn").addEventListener("click", async () => {
   try {
     const res = await Site.deleteReport(JOB);
     if (!res.ok) { alert(`Couldn't delete it: ${res.error}`); $("deleteBtn").disabled = false; return; }
-    location.href = "/#reports";
+    location.href = Site.session() ? "/app" : "/#reports";
   } catch (e) {
     alert("Couldn't reach the server. Check the connection and try again.");
     $("deleteBtn").disabled = false;
