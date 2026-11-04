@@ -11,6 +11,7 @@
   --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
   --board: "Barlow Condensed", "Arial Narrow", var(--sys);
   --serif: "Newsreader", "Iowan Old Style", Georgia, serif; --sans: "Instrument Sans", var(--sys);
+  --tint-court: #E3F0EA; --tint-good: #EFF4D8; --tint-sand: #F6EFE1;
   --court-deep: #0A1410; --court-out: #154734; --court-in: #1E7A52; --court-line: #EEF2EF; --lost-glow: #F2836F;
   --r-tile: 20px; --r-box: 12px;
   color-scheme: light;

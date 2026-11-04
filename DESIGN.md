@@ -50,6 +50,10 @@
 - Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches (sample team view, labelled), for parents and schools, Every point counts. No price shown yet. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
 - Signed-in players go to `/app` (`/?stay=1` keeps them on the page).
 
+## Coach view (`/account`, Nov 4)
+- Built around **whole-team drills**, not separate groups (Rudra: coaches run things the whole team does). Order: This week's team practice (most common fix, whole-team drill, who this helps most) beside the team code; Next team drills; Team strengths; No report yet; Players (each row shows the #1 fix and trend, opens for more).
+- Mild section tints: `--tint-court` #E3F0EA (next drills), `--tint-good` #EFF4D8 (strengths), `--tint-sand` #F6EFE1 (no report yet).
+
 ## The one bold thing
 The **#1 fix as a scoreboard** (big condensed count + one ball per lost point) next to a bright ball-yellow Record button. Everything else stays quiet.
 
