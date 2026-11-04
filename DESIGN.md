@@ -47,7 +47,7 @@
 - Fonts: Newsreader titles (regular weight, italic for the key words), Instrument Sans body. Serif titles are for this page only.
 - Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
 - **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
-- Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches, Every point counts. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
+- Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches (sample team view, labelled), for parents and schools, Every point counts. No price shown yet. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
 - Signed-in players go to `/app` (`/?stay=1` keeps them on the page).
 
 ## The one bold thing
