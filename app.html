@@ -56,12 +56,12 @@
 .match .who a{font-size:1.1rem;font-weight:700;text-decoration:none;overflow-wrap:anywhere}
 .match .who a:hover{text-decoration:underline}
 .match .sc{font-size:2.2rem;line-height:1}
-.match .tags{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:36px;margin-top:4px}
+.match .tags{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px;margin-top:4px}
 .res{font:700 .8rem/1 var(--sys);letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:6px;background:var(--tile-2)}
 .res.loss{color:var(--lost);background:var(--lost-soft)}
 .res.win{background:var(--ball);color:var(--ball-ink)}
-.linkish{border:0;background:none;padding:0;min-height:36px;font:inherit;font-size:.9rem;color:var(--ink-2);text-decoration:underline;cursor:pointer}
-.chip{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--tile-2);color:var(--ink);font:600 .88rem/1 var(--sys);cursor:pointer}
+.linkish{border:0;background:none;padding:0;min-height:44px;font:inherit;font-size:.9rem;color:var(--ink-2);text-decoration:underline;cursor:pointer}
+.chip{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--tile-2);color:var(--ink);font:600 .88rem/1 var(--sys);cursor:pointer}
 .allmatches{margin-top:14px}
 .allmatches summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
 .allmatches .matches{margin-top:8px}
@@ -100,6 +100,13 @@
   .fix .acts .btn{width:100%}
   .fix .acts .link{justify-content:center}
   .matches,.ngrid{grid-template-columns:1fr;gap:12px}
+}
+/* Small phones: a long fix title gets the full width; the number sits under it on one line. */
+@media (max-width:520px){
+  .fix{grid-template-columns:1fr}
+  .fix .score{display:flex;align-items:center;gap:12px;text-align:left;justify-self:start}
+  .fix .score small{margin:0}
+  .fix .score small br{display:none}
 }
 </style>
 <script src="site.js"></script>
@@ -172,7 +179,7 @@ function fixTile(p, latest) {
   const n = f.moments || 0;
   return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span><span class="lab">${from}</span></div>
     <div><h2 class="h-l" id="fx1">${esc(you(f.title))}</h2>${f.detail ? `<p class="why">${esc(you(f.detail))}</p>` : ""}</div>
-    <p class="score"><span class="board-num">${f.points}</span><small>${f.chances ? `of ${f.chances} points<br>you lost` : `point${f.points === 1 ? "" : "s"}<br>lost`}</small></p>
+    <p class="score"><span class="board-num">${f.points}</span><small>${f.chances ? `of ${f.chances} points <br>you lost` : `point${f.points === 1 ? "" : "s"} <br>lost`}</small></p>
     ${a.try_this ? `<p class="try"><b>Try this next match</b>${esc(a.try_this)}</p>` : ""}
     <div class="acts">${n ? `<a class="btn btn--ink" href="${Site.reportUrl(f.job_id)}&watch=1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/></svg>Watch the ${n === 1 ? "point" : `${n} points`}</a>` : ""}
       <a class="link" href="${Site.reportUrl(f.job_id)}">Open the full report</a></div>`;

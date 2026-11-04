@@ -18,7 +18,7 @@
 | `--tile` | #FFFFFF | #1A1E21 | tiles |
 | `--tile-2` | #F4F6F7 | #23282C | inner boxes, chips |
 | `--line` | #DCE1E4 | #2E3438 | borders |
-| `--ink` / `--ink-2` / `--ink-3` | #0F1A14 / #47534D / #66716B | #EEF2EF / #B3BDB8 / #8F9A95 | text |
+| `--ink` / `--ink-2` / `--ink-3` | #0F1A14 / #47534D / #5F6A64 | #EEF2EF / #B3BDB8 / #8F9A95 | text |
 | `--ball` | #C6DA2C | same | main action (Record, start), "ahead", won pips, ball dot. Text on it is always #0F1A14 |
 | `--ball-soft` | #EFF5C8 | #2A3214 | "Try this" boxes |
 | `--lost` / `--lost-soft` | #C2412F / #FBE5E1 | #F2836F / #3A221E | points lost only |

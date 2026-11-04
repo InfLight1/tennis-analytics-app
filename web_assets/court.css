@@ -7,7 +7,10 @@
 html{background:var(--page);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--page);color:var(--ink);font:400 1.0625rem/1.5 var(--sys);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-underline-offset:3px}
-:focus-visible{outline:3px solid var(--ball);outline-offset:2px;border-radius:8px}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px;border-radius:8px}
+.topbar :focus-visible,.tile--night :focus-visible,.brand-foot :focus-visible,.tabbar :focus-visible,.lnav :focus-visible,.stage :focus-visible,.report :focus-visible,.coach :focus-visible,.last :focus-visible{outline-color:var(--ball)}
+.tile :focus-visible{outline-color:var(--ink)}
+.tile--night :focus-visible{outline-color:var(--ball)}
 h1,h2,h3,p{margin:0}
 .num{font-variant-numeric:tabular-nums}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

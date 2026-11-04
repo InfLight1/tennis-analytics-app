@@ -3,7 +3,7 @@
    DESIGN.md). Older token names at the bottom point at the new ones. */
 :root {
   --page: #EDF0F2; --tile: #FFFFFF; --tile-2: #F4F6F7; --line: #DCE1E4; --line-2: #C3CBCF;
-  --ink: #0F1A14; --ink-2: #47534D; --ink-3: #66716B;
+  --ink: #0F1A14; --ink-2: #47534D; --ink-3: #5F6A64;
   --ball: #C6DA2C; --ball-ink: #0F1A14; --ball-soft: #EFF5C8; --ball-deep: #5C7300;
   --lost: #C2412F; --lost-soft: #FBE5E1;
   --night: #0F1A14; --night-2: #1D2A22; --on-night: #F2F5F1; --on-night-2: #B9C4BD;
