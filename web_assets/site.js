@@ -88,9 +88,10 @@
       const cur = (p) => (page === p ? ' aria-current="page"' : "");
       // One bar for the whole site: same logo and look; the links depend on being signed in.
       bar.innerHTML = `<div class="wrap">
-        <a class="brand" href="${signedIn ? "/app" : "/"}" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
+        <a class="brand" href="${signedIn ? "/?stay=1" : "/"}" aria-label="Advantage AI, about">${emblem(32, "h")}${wordmark}</a>
         <nav class="nav" aria-label="Main">${signedIn
-          ? `<a class="opt" href="/app"${cur("app")}>Dashboard</a>
+          ? `<a class="opt" href="/?stay=1"${cur("landing")}>About</a>
+             <a class="opt" href="/app"${cur("app")}>Dashboard</a>
              <a class="opt" href="/app#matches">Matches</a>
              <a href="/account"${cur("account")}>Account</a>
              <a class="cta" href="/new"${cur("home")}>New match</a>`

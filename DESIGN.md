@@ -43,7 +43,7 @@
 - Kept from round 1 (behaviour, restyled): New analysis steps (Upload | Record switch, camera preview, mark the court with the 7 draggable dots, full-screen recording view); Save as PDF print layout; My reports cards with delete (asks first); passcode + sign-in.
 
 ## Landing page (`/`, Nov 4)
-- One shared header (`site.js`, same logo, links change when signed in) and footer. Signed-in visitors see "Go to your dashboard"; the app pages link back here from the footer and the empty dashboard.
+- One shared header (`site.js`, same logo, links change when signed in) and footer. The logo always opens this page; signed-in players also get an About link. Signed-in visitors see "Go to your dashboard"; the app pages link back here from the footer and the empty dashboard.
 - `court-night-*.webp`: a still of the landing court, used as the top band on the dashboard, report, account and new analysis pages, so every page opens on the same court.
 - Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
 - **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
