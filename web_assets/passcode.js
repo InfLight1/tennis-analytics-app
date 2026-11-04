@@ -23,7 +23,7 @@
           <input type="password" autocomplete="current-password" aria-label="Passcode" required
             style="width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line-2,#C3CBCF);background:var(--tile-2,#F4F6F7);color:inherit;box-sizing:border-box">
           <button type="submit" style="margin-top:12px;width:100%;font:inherit;font-weight:700;padding:10px;border:0;
-            border-radius:999px;background:#DDF247;color:#0F1A14;cursor:pointer;min-height:48px">Continue</button>
+            border-radius:999px;background:#C6DA2C;color:#0F1A14;cursor:pointer;min-height:48px">Continue</button>
           <a href="/account" style="display:block;margin-top:12px;text-align:center;color:inherit;font-size:.95rem">On a team? Sign in instead</a></form>`;
       document.body.appendChild(box);
       const input = box.querySelector("input");

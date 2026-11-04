@@ -51,7 +51,7 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 
 /* Main action: ball-yellow with dark text on every page (DESIGN.md: the one bright colour). */
 .btn-primary { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
-.btn-primary:hover { background: #E6F86A; color: var(--ball-ink); }
+.btn-primary:hover { background: #D3E63F; color: var(--ball-ink); }
 .btn-primary:disabled, .btn-primary[disabled] { background: var(--tile-2); color: var(--ink-3); border-color: var(--line); }
 
 /* Phone tab bar on the signed-in app screens (same four tabs as the iPhone app). */

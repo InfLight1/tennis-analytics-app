@@ -132,6 +132,12 @@ def seed(profile_path, watch=None):
             a.claim("sam", job, "player_2", "2026-11-01")
         a.set_owner(job, "rudra")
         a.claim("rudra", job, "player_1", f"2026-11-0{1 + 7 * i}" if i == 0 else f"2026-11-{1 + 7 * i:02d}")
+    # The public example report, from the real example match, so /example works here too.
+    real = Path(profile_path).with_name(f"live_profile_{modal_app.EXAMPLE_JOB_ID}.json")
+    if real.exists():
+        d = Path(TMP) / modal_app.EXAMPLE_JOB_ID
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "profile.json").write_bytes(real.read_bytes())
     a.set_result("rudra", "dev000000001", "loss")
     print(f"Demo team code {team['code']}; sign in as coachk / rudra / sam with password1")
 

@@ -25,7 +25,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.022em;text-wr
 em{font-style:italic}
 .btn{font-family:var(--sans)}
 .kick{font:600 .82rem/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase}
-.big{font-size:clamp(2.5rem,5.4vw,5.2rem);line-height:1.02}
+.big{font-size:clamp(2.3rem,4.4vw,4.2rem);line-height:1.03}
+section[id]{scroll-margin-top:60px}
+@media (min-width:1100px){html{font-size:106%}}
 
 /* header */
 .lnav{position:fixed;z-index:30;inset:0 0 auto;color:#fff;transition:background-color .2s}
@@ -42,7 +44,7 @@ em{font-style:italic}
 /* the court stage */
 .stage{position:relative;background:var(--court-deep);color:#fff}
 .pin{position:relative;min-height:100svh;overflow:hidden}
-#court{position:absolute;inset:0;width:100%;height:100%;display:block}
+#court{position:absolute;inset:0 0 auto;width:100%;height:100svh;display:block}
 .scene{position:relative;z-index:2;padding:0 var(--gutter)}
 .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:1400px;margin:0 auto;padding-top:76px}
 .hero .kick{color:var(--ball)}
@@ -84,16 +86,16 @@ em{font-style:italic}
 }
 
 /* sections */
-.sec{padding-block:clamp(72px,10vw,150px)}
+.sec{padding-block:clamp(52px,6vw,92px)}
 .how{background:var(--page);color:var(--ink)}
-.how .head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 64px;align-items:end}
+.how .head{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px 64px;align-items:end}
 .how .head p{font-size:1.2rem;color:var(--ink-2);max-width:38ch}
-.steps{list-style:none;margin:clamp(40px,6vw,80px) 0 0;padding:0}
-.steps li{display:grid;grid-template-columns:minmax(90px,.5fr) minmax(0,1fr) minmax(0,1.2fr);gap:12px 40px;align-items:baseline;padding:clamp(24px,3vw,40px) 0;border-top:1px solid var(--line-2)}
+.steps{list-style:none;margin:clamp(28px,3vw,44px) 0 0;padding:0}
+.steps li{display:grid;grid-template-columns:72px minmax(0,.7fr) minmax(0,1.3fr);gap:8px 32px;align-items:center;padding:clamp(16px,1.7vw,24px) 0;border-top:1px solid var(--line-2)}
 .steps li:last-child{border-bottom:1px solid var(--line-2)}
-.steps .no{font:400 clamp(3rem,6vw,5.6rem)/.9 var(--serif);font-style:italic;color:var(--ink-3)}
-.steps h3{font-size:clamp(1.8rem,3vw,3rem);line-height:1.05}
-.steps p{font-size:1.15rem;color:var(--ink-2);max-width:44ch}
+.steps .no{font:400 clamp(2.6rem,4vw,3.6rem)/.9 var(--serif);font-style:italic;color:var(--ink-3)}
+.steps h3{font-size:clamp(1.7rem,2.5vw,2.5rem);line-height:1.05}
+.steps p{font-size:1.08rem;color:var(--ink-2);max-width:52ch}
 .steps a{color:var(--ink);font-weight:600}
 
 .report{background:var(--court-deep);color:#fff;overflow:hidden}
@@ -119,7 +121,7 @@ em{font-style:italic}
 
 .proof{background:var(--ball);color:var(--ball-ink)}
 .proof .wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px 64px;align-items:end}
-.proof .fig{font:400 clamp(5rem,16vw,15rem)/.86 var(--serif);letter-spacing:-.045em}
+.proof .fig{font:400 clamp(4.6rem,12vw,10.5rem)/.86 var(--serif);letter-spacing:-.045em}
 .proof .fig em{font-size:.5em;letter-spacing:-.02em}
 .proof p{font-size:clamp(1.15rem,1.6vw,1.45rem);line-height:1.4}
 .proof p+p{margin-top:14px;font-size:1.05rem}
@@ -132,11 +134,11 @@ em{font-style:italic}
 .coach p{margin-top:20px;font-size:1.2rem;line-height:1.45;max-width:42ch;color:#E6ECE8}
 .coach .btn{margin-top:28px}
 
-.last{position:relative;isolation:isolate;color:#fff;min-height:min(92vh,860px);display:flex;align-items:flex-end}
+.last{position:relative;isolation:isolate;color:#fff;min-height:min(74vh,660px);display:flex;align-items:flex-end}
 .last img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:60% 50%}
 .last::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(10,20,16,.82) 0%,rgba(10,20,16,.25) 55%,rgba(10,20,16,.1) 100%)}
-.last .wrap{padding-block:clamp(48px,7vw,96px)}
-.last h2{font-size:clamp(3.2rem,8vw,8rem);line-height:.98;letter-spacing:-.035em}
+.last .wrap{padding-block:clamp(40px,5vw,68px)}
+.last h2{font-size:clamp(3rem,6.6vw,6.4rem);line-height:.98;letter-spacing:-.035em}
 .last h2 em{color:var(--ball)}
 .last blockquote{margin:20px 0 0;max-width:46ch;font:400 clamp(1.15rem,1.7vw,1.5rem)/1.35 var(--serif);font-style:italic;color:#F2F5F1}
 .last .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
@@ -180,7 +182,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 <header class="lnav" id="lnav">
   <div class="wrap">
     <a class="brand" href="/" aria-label="Advantage AI, home">
-      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#DDF247"/><path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#C6DA2C"/><path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span class="wm">Advantage</span><span class="wm-ai">AI</span>
     </a>
     <a class="l opt" href="#how">How it works</a>
@@ -200,7 +202,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
       <p class="sub">Film a match on your phone. See what cost you points, and what to fix first.</p>
       <div class="acts">
         <a class="btn btn--ball" href="/new">Try it on a match</a>
-        <a class="btn btn--night-line" href="/report?job=76a383379d90">See an example report</a>
+        <a class="btn btn--night-line" href="/example">See an example report</a>
       </div>
     </section>
     <section class="scene story" id="s1">
@@ -220,7 +222,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
           </div>
           <div class="pips" aria-hidden="true"><i class="lost"></i><i class="lost"></i><i class="lost"></i><i class="lost"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <p class="try"><b>Try this next match</b>Aim to clear the net by about a racket's length.</p>
-          <a class="link" href="/report?job=76a383379d90">Open the full example report</a>
+          <a class="link" href="/example">Open the full example report</a>
         </div>
       </div>
     </section>
@@ -249,7 +251,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
         <p class="kick">The report</p>
         <h2 class="big" id="repH">Know what to fix, not just <em>the score</em></h2>
         <p class="say">Plain words, ranked by points lost. It shows what went well too, and how sure the app is.</p>
-        <a class="btn btn--ball" href="/report?job=76a383379d90">Open the example report</a>
+        <a class="btn btn--ball" href="/example">Open the example report</a>
       </div>
       <div class="sheet">
         <div class="a">
@@ -303,7 +305,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 <script>
 (() => {
   const root = document.documentElement, calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const cv = document.getElementById("court"), g = cv.getContext("2d");
+  const cv = document.getElementById("court"); let g = cv.getContext("2d");
   const stage = document.getElementById("stage"), nav = document.getElementById("lnav"), cue = document.getElementById("cue");
   const S = [0, 1, 2].map((i) => document.getElementById("s" + i));
   const css = getComputedStyle(root), tok = (n) => css.getPropertyValue(n).trim();
@@ -320,12 +322,13 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
   const LINES = [[-HW, -HL, HW, -HL], [-HW, HL, HW, HL], [-HW, -HL, -HW, HL], [HW, -HL, HW, HL], [-SW, -HL, -SW, HL], [SW, -HL, SW, HL],
     [-SW, -SL, SW, -SL], [-SW, SL, SW, SL], [0, -SL, 0, SL], [0, -HL, 0, -HL + .25], [0, HL, 0, HL - .25]];
 
-  let W = 0, H = 0, wide = true, cam = {};
+  let W = 0, H = 0, wide = true, cam = {}, bgKey = "";
+  const bg = document.createElement("canvas"), main = g;
   function resize() {
     const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
     W = r.width; H = r.height; wide = W > 860;
-    cv.width = Math.round(W * d); cv.height = Math.round(H * d);
-    g.setTransform(d, 0, 0, d, 0, 0);
+    cv.width = bg.width = Math.round(W * d); cv.height = bg.height = Math.round(H * d);
+    g.setTransform(d, 0, 0, d, 0, 0); bg.getContext("2d").setTransform(d, 0, 0, d, 0, 0); bgKey = "";
   }
   // Camera: starts low behind the baseline (where the phone films from), ends straight above.
   function setCam(rise) {
@@ -349,34 +352,109 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     g.globalAlpha = a; g.fillStyle = n; g.fillRect(x - r, y - r, r * 2, r * 2); g.globalAlpha = 1;
   }
 
-  function drawCourt(intro) {
-    g.fillStyle = C.deep; g.fillRect(0, 0, W, H);
-    const c0 = P(0, 0);
-    g.globalAlpha = smooth(0, .5, intro) * (1 - smooth(.15, .7, cam.rise));
-    poly([[-10, -18], [10, -18], [10, 18], [-10, 18]]); g.fillStyle = C.out; g.fill();
-    g.globalAlpha = smooth(0, .5, intro);
-    poly([[-HW, -HL], [HW, -HL], [HW, HL], [-HW, HL]]); g.fillStyle = C.inn; g.fill();
+  // Fine speckle so the surface reads as a painted hard court, not flat colour.
+  const grain = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 220;
+    const x = c.getContext("2d"), im = x.createImageData(220, 220);
+    for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() < .5 ? 255 : 0; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = Math.random() * 34; }
+    x.putImageData(im, 0, 0); return c;
+  })();
+  // A line with real width on the ground, so it narrows into the distance like a real one.
+  function band(x1, y1, x2, y2, w, t = 1) {
+    const dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy), nx = -dy / l * w / 2, ny = dx / l * w / 2, ex = x1 + dx * t, ey = y1 + dy * t;
+    poly([[x1 + nx, y1 + ny], [ex + nx, ey + ny], [ex - nx, ey - ny], [x1 - nx, y1 - ny]]); g.fill();
+  }
+  const tree = (x) => 6.2 + 1.3 * Math.sin(x * .13) + .9 * Math.abs(Math.sin(x * .37 + 1)) + .5 * Math.abs(Math.sin(x * .83 + 2));
+  function drawSurroundings(a) {
+    if (a <= 0) return;
+    const hz = P(0, 34, 0)[1], sky = g.createLinearGradient(0, 0, 0, hz + 40);
+    sky.addColorStop(0, C.deep); sky.addColorStop(1, "#143A33");
+    g.globalAlpha = a; g.fillStyle = sky; g.fillRect(0, 0, W, hz + 40);
+    g.fillStyle = "#06100C"; g.beginPath();                       // tree line behind the far fence
+    for (let x = -70; x <= 70; x += 1) { const q = P(x, 34, tree(x)); x === -70 ? g.moveTo(q[0], q[1]) : g.lineTo(q[0], q[1]); }
+    const r = P(70, 34, 0), l = P(-70, 34, 0); g.lineTo(r[0], r[1] + 60); g.lineTo(l[0], l[1] + 60); g.closePath(); g.fill();
     g.globalAlpha = 1;
-    glow(c0[0], c0[1], Math.max(W, H) * .6, "rgba(226,250,205,.34)", smooth(.2, 1, intro));
-    g.strokeStyle = C.line; g.lineCap = "round";
-    LINES.forEach((l, i) => {
-      const t = smooth(i * .045, .5 + i * .045, intro);
-      if (!t) return;
-      g.lineWidth = Math.max(1.1, P(l[0], Math.min(l[1], l[3]))[2] * .05);
-      g.beginPath(); seg([l[0], l[1], 0], [l[2], l[3], 0], t); g.stroke();
+  }
+  function drawFence(a) {
+    if (a <= 0) return;
+    const X = 10, Y0 = -18, Y1 = 18, Z = 3.7;
+    g.globalAlpha = a;
+    [[[-X, Y1], [X, Y1]], [[-X, Y0], [-X, Y1]], [[X, Y0], [X, Y1]]].forEach(([p, q]) => {
+      poly([[...p, 0], [...q, 0], [...q, Z], [...p, Z]]); g.fillStyle = "rgba(6,16,12,.5)"; g.fill();
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]), at = (t, z) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t), z];
+      g.strokeStyle = "rgba(190,210,200,.11)"; g.lineWidth = 1; g.beginPath();   // chain link, kept coarse
+      for (let d = -Z; d < len; d += .9) {
+        seg(at(clamp(d / len), d < 0 ? -d : 0), at(clamp((d + Z) / len), d + Z > len ? len - d : Z));
+        seg(at(clamp((d + Z) / len), d + Z > len ? Z - (len - d) : 0), at(clamp(d / len), d < 0 ? Z + d : Z));
+      }
+      g.stroke();
+      g.strokeStyle = "rgba(170,186,178,.5)"; g.lineWidth = 1.6; g.beginPath();
+      for (let d = 0; d <= len; d += 4) seg(at(d / len, 0), at(d / len, Z));
+      seg(at(0, Z), at(1, Z)); g.stroke();
     });
+    g.globalAlpha = 1;
+  }
+  function drawLights(a) {
+    if (a <= 0) return;
+    [[-12, 19], [12, 19], [-12, -6], [12, -6]].forEach(([x, y]) => {
+      const f = P(x, y, 0), t = P(x, y, 8.6);
+      g.globalAlpha = a; g.strokeStyle = "#35443D"; g.lineWidth = Math.max(1.5, t[2] * .1);
+      g.beginPath(); g.moveTo(f[0], f[1]); g.lineTo(t[0], t[1]); g.stroke(); g.globalAlpha = 1;
+      glow(t[0], t[1], t[2] * 5, "rgba(255,250,225,.75)", a);
+      g.globalAlpha = a; g.fillStyle = "#FFFDF0"; g.beginPath(); g.ellipse(t[0], t[1], t[2] * .42, t[2] * .17, 0, 0, 7); g.fill(); g.globalAlpha = 1;
+    });
+  }
+  function drawCourt(intro) {
+    const low = 1 - smooth(.12, .6, cam.rise), on = smooth(0, .5, intro);
+    g.fillStyle = C.deep; g.fillRect(0, 0, W, H);
+    drawSurroundings(low * on);
+    g.globalAlpha = on * low;
+    poly([[-10, -18], [10, -18], [10, 18], [-10, 18]]); g.fillStyle = C.out; g.fill();
+    g.globalAlpha = on;
+    poly([[-HW, -HL], [HW, -HL], [HW, HL], [-HW, HL]]); g.fillStyle = C.inn; g.fill();
+    g.globalAlpha = on * .9;
+    poly([[-HW, -HL], [HW, -HL], [HW, HL], [-HW, HL]]); g.fillStyle = g.createPattern(grain, "repeat"); g.fill();
+    g.globalAlpha = 1;
+    const c0 = P(0, 0), r = Math.max(W, H) * .58;
+    g.globalCompositeOperation = "screen";                        // floodlight pool on the court
+    glow(c0[0], c0[1], r, "rgba(236,255,214,.3)", smooth(.2, 1, intro));
+    g.globalCompositeOperation = "source-over";
+    g.fillStyle = "rgba(4,14,10,.3)";                             // the net's shadow
+    if (intro > .5) { g.globalAlpha = smooth(.5, 1, intro) * (1 - cam.rise); poly([[-6.4, 0], [6.4, 0], [6.4, .85], [-6.4, .85]]); g.fill(); g.globalAlpha = 1; }
+    g.fillStyle = C.line;
+    LINES.forEach((l, i) => {
+      const t = smooth(i * .045, .5 + i * .045, intro), across = l[1] === l[3];
+      if (t) band(l[0], l[1], l[2], l[3], .085 * (across ? lerp(2.1, 1, cam.rise) : lerp(1.3, 1, cam.rise)), t);
+    });
+    drawFence(low * smooth(.3, .8, intro));
+    drawLights(low * smooth(.4, 1, intro));
   }
   function drawNet(a) {
     if (!a) return;
     const nh = 1.0, X = 6.4;
     g.globalAlpha = a;
-    poly([[-X, 0, 0], [X, 0, 0], [X, 0, nh], [-X, 0, nh]]); g.fillStyle = "rgba(10,20,16,.42)"; g.fill();
-    g.strokeStyle = "rgba(238,242,239,.26)"; g.lineWidth = 1; g.beginPath();
-    for (let x = -X; x <= X; x += .8) seg([x, 0, 0], [x, 0, nh]);
-    for (let z = .25; z < nh; z += .25) seg([-X, 0, z], [X, 0, z]);
+    poly([[-X, 0, 0], [X, 0, 0], [X, 0, nh], [-X, 0, nh]]); g.fillStyle = "rgba(10,20,16,.5)"; g.fill();
+    g.strokeStyle = "rgba(238,242,239,.3)"; g.lineWidth = 1; g.beginPath();
+    for (let x = -X; x <= X; x += .4) seg([x, 0, 0], [x, 0, nh]);
+    for (let z = .2; z < nh; z += .2) seg([-X, 0, z], [X, 0, z]);
     g.stroke();
-    g.strokeStyle = C.line; g.lineWidth = Math.max(2, P(0, 0)[2] * .07); g.beginPath(); seg([-X, 0, nh], [X, 0, nh]); g.stroke();
-    g.lineWidth = Math.max(2, P(0, 0)[2] * .08); g.strokeStyle = "#7E8A84"; g.beginPath(); seg([-X, 0, 0], [-X, 0, nh + .05]); seg([X, 0, 0], [X, 0, nh + .05]); g.stroke();
+    g.strokeStyle = "#FFFFFF"; g.lineWidth = Math.max(2, P(0, 0)[2] * .075); g.beginPath(); seg([-X, 0, nh], [X, 0, nh]); g.stroke();
+    g.lineWidth = Math.max(2, P(0, 0)[2] * .09); g.strokeStyle = "#8B9791"; g.beginPath(); seg([-X, 0, 0], [-X, 0, nh + .07]); seg([X, 0, 0], [X, 0, nh + .07]); g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  // A plain figure standing on the court, seen from the fence.
+  function player(x, y, shirt, a, lean) {
+    const f = P(x, y, 0), s = f[2], top = P(x, y, 1.78), h = f[1] - top[1];
+    if (h < 3) return;
+    g.globalAlpha = a * .4; g.fillStyle = "#04100A"; g.beginPath(); g.ellipse(f[0] + s * .28, f[1] + s * .03, s * .55, s * .13, 0, 0, 7); g.fill();
+    g.globalAlpha = a; g.lineCap = "round";
+    const hip = f[1] - h * .47, sh = f[1] - h * .8, lx = lean * s * .12;
+    g.strokeStyle = "#101815"; g.lineWidth = s * .13; g.beginPath(); g.moveTo(f[0] - s * .13, f[1]); g.lineTo(f[0], hip); g.lineTo(f[0] + s * .15, f[1]); g.stroke();
+    g.strokeStyle = shirt; g.lineWidth = s * .3; g.beginPath(); g.moveTo(f[0], hip); g.lineTo(f[0] + lx, sh); g.stroke();
+    g.lineWidth = s * .09; g.beginPath(); g.moveTo(f[0] + lx, sh); g.lineTo(f[0] + lx + lean * s * .42, sh + h * .13); g.stroke();
+    g.strokeStyle = "#DCE4DF"; g.lineWidth = Math.max(1, s * .035); g.beginPath(); g.ellipse(f[0] + lx + lean * s * .66, sh + h * .02, s * .13, s * .17, 0, 0, 7); g.stroke();
+    g.fillStyle = "#C79A78"; g.beginPath(); g.arc(f[0] + lx, top[1] + h * .07, h * .075, 0, 7); g.fill();
     g.globalAlpha = 1;
   }
 
@@ -392,12 +470,19 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     }
     return SHOTS[SHOTS.length - 1][1];
   }
+  const STOPS = { near: [[0, 1.4, -12.5], [3.6, 3.9, -12.9], [7.1, 2, -11.8], [LOOP + HOLD, .4, -12.4]], far: [[0, -2.5, 12.7], [1.12, -3.2, 12.8], [4.6, -3.6, 12.6], [LOOP + HOLD, -.5, 12.7]] };
+  function stand(list, t) {
+    for (let i = 1; i < list.length; i++) if (t <= list[i][0]) { const a = list[i - 1], b = list[i], k = smooth(a[0], b[0], t); return [lerp(a[1], b[1], k), lerp(a[2], b[2], k)]; }
+    return list[list.length - 1].slice(1);
+  }
   function drawRally(sec, a) {
     if (a <= 0) return;
     const round = Math.floor(sec / (LOOP + HOLD)), t = sec % (LOOP + HOLD), m = round % 2 ? -1 : 1;
     const at = (u) => { const q = ballAt(clamp(u, 0, LOOP)); return [q[0] * m, q[1], q[2]]; };
     const fade = a * (t > LOOP ? 1 - smooth(LOOP + .8, LOOP + HOLD, t) : smooth(0, .25, t));
-    const n = 16;
+    const n = 16, far = stand(STOPS.far, t), near = stand(STOPS.near, t);
+    player(far[0] * m, far[1], "#E9EEEA", a, -m);
+    player(near[0] * m, near[1], C.lost, a, m);
     g.lineCap = "round";
     for (let i = n; i > 0; i--) {           // trail
       const p = P(...at(t - i * .02)), q = P(...at(t - (i - 1) * .02));
@@ -406,7 +491,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     }
     const b = at(t), sh = P(b[0], b[1], 0), p = P(...b), r = Math.max(4.5, p[2] * .11);
     g.globalAlpha = fade * .4; g.fillStyle = "#04100A"; g.beginPath(); g.ellipse(sh[0], sh[1], r * 1.3, r * .5, 0, 0, 7); g.fill();
-    glow(p[0], p[1], r * 5, "rgba(221,242,71,.55)", fade);
+    glow(p[0], p[1], r * 5, "rgba(198,218,44,.55)", fade);
     g.globalAlpha = fade; g.fillStyle = C.ball; g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.globalAlpha = 1;
     if (t > LOOP - .3) {                    // the miss
       const k = clamp((t - LOOP + .3) / .9), q = P(...at(LOOP));
@@ -453,9 +538,14 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     const sec = (now - t0) / 1000, intro = calm ? 1 : clamp(sec / 1.7);
     p += (target - p) * (1 - Math.exp(-(now - last) / 90)); last = now; if (Math.abs(target - p) < .0004) p = target;
     setCam(smooth(.1, .5, p));
-    drawCourt(intro);
-    const rallyA = 1 - smooth(.14, .3, p), netA = smooth(.1, .5, intro);
-    drawNet(netA);
+    const key = [W, H, cam.rise.toFixed(4), intro.toFixed(3)].join();
+    if (key !== bgKey) {                    // the court only redraws when the camera moves
+      bgKey = key; g = bg.getContext("2d");
+      drawCourt(intro); drawNet(smooth(.1, .5, intro));
+      g = main;
+    }
+    g.drawImage(bg, 0, 0, W, H);
+    const rallyA = 1 - smooth(.14, .3, p);
     drawRally(sec - 1.1, sec > 1.1 ? rallyA : 0);
     drawMarks(p);
     // Fade for the words over the court on narrow screens and on the left on wide ones.

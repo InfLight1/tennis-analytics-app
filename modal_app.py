@@ -2073,13 +2073,20 @@ def web_app():
         st["server_time"] = round(time.time(), 1)
         return JSONResponse(st)
 
-    from fastapi.responses import FileResponse
+    from fastapi.responses import FileResponse, RedirectResponse
 
     @fastapi_app.get("/")
     def landing_page():
         """Front page for new visitors; signed-in players go on to /app."""
         return FileResponse("/root/web/landing.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
+
+    @fastapi_app.get("/example")
+    def example_report():
+        """The public example report: the test copy where it exists, otherwise the original."""
+        volume.reload()
+        job = TEST_EXAMPLE_JOB_ID if os.path.exists(_job_paths(TEST_EXAMPLE_JOB_ID)["profile_json_path"]) else EXAMPLE_JOB_ID
+        return RedirectResponse(f"/report?job={job}", status_code=307)
 
     @fastapi_app.get("/new")
     @fastapi_app.get("/calibration_demo.html")

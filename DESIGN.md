@@ -19,8 +19,8 @@
 | `--tile-2` | #F4F6F7 | #23282C | inner boxes, chips |
 | `--line` | #DCE1E4 | #2E3438 | borders |
 | `--ink` / `--ink-2` / `--ink-3` | #0F1A14 / #47534D / #66716B | #EEF2EF / #B3BDB8 / #8F9A95 | text |
-| `--ball` | #DDF247 | same | main action (Record, start), "ahead", won pips, ball dot. Text on it is always #0F1A14 |
-| `--ball-soft` | #F3FAD0 | #2A3214 | "Try this" boxes |
+| `--ball` | #C6DA2C | same | main action (Record, start), "ahead", won pips, ball dot. Text on it is always #0F1A14 |
+| `--ball-soft` | #EFF5C8 | #2A3214 | "Try this" boxes |
 | `--lost` / `--lost-soft` | #C2412F / #FBE5E1 | #F2836F / #3A221E | points lost only |
 | `--night` | #0F1A14 | #000000 | the dark "New match" tile, #1 FIX tag |
 
@@ -45,7 +45,7 @@
 
 ## Landing page (`/`, Nov 4)
 - Fonts: Newsreader titles (regular weight, italic for the key words), Instrument Sans body. Serif titles are for this page only.
-- Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #12271D, `--court-in` #1F6B4A, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
+- Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
 - **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
 - Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches, Every point counts. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
 - Signed-in players go to `/app` (`/?stay=1` keeps them on the page).

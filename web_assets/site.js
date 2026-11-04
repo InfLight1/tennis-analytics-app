@@ -73,7 +73,7 @@
 
   // Logo: a tennis ball. `uid` is kept so callers don't change.
   const emblem = (size, uid) => `<svg class="emblem" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="14" fill="#DDF247"/>
+      <circle cx="16" cy="16" r="14" fill="#C6DA2C"/>
       <path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/>
     </svg>`;
   const wordmark = '<span class="wm">Advantage</span><span class="wm-ai">AI</span>';
@@ -119,7 +119,7 @@
             <a class="brand brand-lg" href="/" aria-label="Advantage AI, home">${emblem(44, "f")}${wordmark}</a>
             <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
           </div>
-          <nav class="bf-nav" aria-label="Footer"><a href="/new#new">New analysis</a><a href="/new#reports">My reports</a><a href="/report?job=${EXAMPLE_JOB}">Example report</a></nav>
+          <nav class="bf-nav" aria-label="Footer"><a href="/new#new">New analysis</a><a href="/new#reports">My reports</a><a href="/example">Example report</a></nav>
           <p class="bf-note">Built by a player, for players. Made to work alongside your coach, not replace one.</p>
           ${dev ? '<p class="bf-note">Dev mode is on for this device (add ?dev=0 to the address to turn it off).</p>' : ""}
         </div>`;

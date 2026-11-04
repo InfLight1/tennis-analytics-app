@@ -159,7 +159,7 @@ function fixTile(p, latest) {
     return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span></div>
       <div class="wide"><h2 class="h-l">Your first fix shows up here</h2>
       <p class="why">Film a match and type your name in the player boxes. The app finds what cost you the most points.</p></div>
-      <div class="acts"><a class="btn btn--ink" href="/report?job=${Site.EXAMPLE_JOB}">See an example report</a></div>`;
+      <div class="acts"><a class="btn btn--ink" href="/example">See an example report</a></div>`;
   }
   const f = (p.focus && fixes.find((x) => x.id === p.focus.id)) || fixes[0];
   const from = `From your ${fmtDate(latest.date)} match${latest.opponent ? ` ${vs(latest)}` : ""}`;

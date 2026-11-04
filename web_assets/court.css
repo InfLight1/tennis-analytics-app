@@ -43,7 +43,7 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 22px;border-radius:999px;border:1px solid transparent;text-decoration:none;font:600 1.02rem/1 var(--sys);cursor:pointer;transition:transform .12s ease-out,background-color .15s,border-color .15s}
 .btn:active{transform:scale(.97)}
 .btn--ball{background:var(--ball);color:var(--ball-ink);min-height:58px;font-size:1.12rem}
-.btn--ball:hover{background:#E6F86A}
+.btn--ball:hover{background:#D3E63F}
 .btn--ball .rec{width:22px;height:22px;border-radius:50%;background:#D7362A;box-shadow:0 0 0 3px rgba(15,26,20,.85)}
 .btn--ink{background:var(--ink);color:var(--page)}
 .btn--ink:hover{opacity:.9}

@@ -4,14 +4,14 @@
 :root {
   --page: #EDF0F2; --tile: #FFFFFF; --tile-2: #F4F6F7; --line: #DCE1E4; --line-2: #C3CBCF;
   --ink: #0F1A14; --ink-2: #47534D; --ink-3: #66716B;
-  --ball: #DDF247; --ball-ink: #0F1A14; --ball-soft: #F3FAD0; --ball-deep: #5C7300;
+  --ball: #C6DA2C; --ball-ink: #0F1A14; --ball-soft: #EFF5C8; --ball-deep: #5C7300;
   --lost: #C2412F; --lost-soft: #FBE5E1;
   --night: #0F1A14; --night-2: #1D2A22; --on-night: #F2F5F1; --on-night-2: #B9C4BD;
   --shadow: 0 1px 2px rgba(15,26,20,.06), 0 8px 24px -12px rgba(15,26,20,.18);
   --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
   --board: "Barlow Condensed", "Arial Narrow", var(--sys);
   --serif: "Newsreader", "Iowan Old Style", Georgia, serif; --sans: "Instrument Sans", var(--sys);
-  --court-deep: #0A1410; --court-out: #12271D; --court-in: #1F6B4A; --court-line: #EEF2EF; --lost-glow: #F2836F;
+  --court-deep: #0A1410; --court-out: #154734; --court-in: #1E7A52; --court-line: #EEF2EF; --lost-glow: #F2836F;
   --r-tile: 20px; --r-box: 12px;
   color-scheme: light;
 }
