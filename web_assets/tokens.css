@@ -8,9 +8,9 @@
   --lost: #C2412F; --lost-soft: #FBE5E1;
   --night: #0F1A14; --night-2: #1D2A22; --on-night: #F2F5F1; --on-night-2: #B9C4BD;
   --shadow: 0 1px 2px rgba(15,26,20,.06), 0 8px 24px -12px rgba(15,26,20,.18);
-  --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+  --sys: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
   --board: "Barlow Condensed", "Arial Narrow", var(--sys);
-  --serif: "Newsreader", "Iowan Old Style", Georgia, serif; --sans: "Instrument Sans", var(--sys);
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif; --sans: var(--sys);
   --tint-court: #E3F0EA; --tint-good: #EFF4D8; --tint-sand: #F6EFE1;
   --court-deep: #0A1410; --court-out: #154734; --court-in: #1E7A52; --court-line: #EEF2EF; --lost-glow: #F2836F;
   --r-tile: 20px; --r-box: 12px;
@@ -32,7 +32,7 @@
   --shadow-1: var(--shadow);
   --green-bg: var(--night); --green-surface: var(--night-2); --green-court: var(--night-2); --green-accent: var(--ball);
   --foot-bg: var(--night); --court: var(--night-2); --hero-full-kw: var(--ball);
-  --font-serif: var(--sys); --font-sans: var(--sys);
+  --font-serif: var(--serif); --font-sans: var(--sys);
   --radius-lg: var(--r-tile); --radius-md: var(--r-box);
   --focus: 0 0 0 3px var(--page), 0 0 0 5px var(--ink);
 }

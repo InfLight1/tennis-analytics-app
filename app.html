@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="court.css">
 <link rel="stylesheet" href="site.css">
@@ -166,7 +166,7 @@ function fixTile(p, latest) {
     return `<div class="top"><span class="lab"><span class="dot" aria-hidden="true"></span>This week's fix</span></div>
       <div class="wide"><h2 class="h-l">Your first fix shows up here</h2>
       <p class="why">Film a match and type your name in the player boxes. The app finds what cost you the most points.</p></div>
-      <div class="acts"><a class="btn btn--ink" href="/example">See an example report</a></div>`;
+      <div class="acts"><a class="btn btn--ink" href="/example">See an example report</a><a class="link" href="/?stay=1#how">How it works</a></div>`;
   }
   const f = (p.focus && fixes.find((x) => x.id === p.focus.id)) || fixes[0];
   const from = `From your ${fmtDate(latest.date)} match${latest.opponent ? ` ${vs(latest)}` : ""}`;
@@ -222,8 +222,8 @@ function verdictPct(rows, word) {
 function numbers(p) {
   const counted = p.matches.filter((m) => m.enough);
   if (counted.length < 2) {
-    return `<section class="numbers" aria-labelledby="nb"><div class="intro"><h2 class="h-l" id="nb">Your numbers</h2>
-      <p class="muted">After two matches of 10 or more points, this shows how you're changing from match to match.</p></div></section>`;
+    return `<div class="sh"><h2 class="h-l" id="nb">Your numbers</h2></div>
+      <section class="tile" aria-labelledby="nb"><p class="muted">After two matches of 10 or more points, this shows how you're changing from match to match.</p></section>`;
   }
   const recent = (list) => list.slice(-5).reverse();
   const f = (p.focus && p.weaknesses.find((w) => w.id === p.focus.id)) || p.weaknesses[0];
@@ -247,7 +247,7 @@ function numbers(p) {
 }
 
 function restHtml(p, latest) {
-  if (!latest) return numbers(p);
+  if (!latest) return "";
   const fixes = p.fixes || [], good = p.strengths || [];
   const line = [vs(latest), fmtDate(latest.date), latest.points_won != null ? `${latest.points_won}–${latest.points_lost} points` : ""].filter(Boolean).join(" · ");
   const fixTileHtml = fixes.length ? `<section class="tile" aria-labelledby="fx"><h3 class="h-m" id="fx" style="margin-bottom:6px">Top ${fixes.length === 1 ? "fix" : `${fixes.length} fixes`}</h3>

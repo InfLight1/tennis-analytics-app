@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
 <style>
 /* Layout only; colours and fonts come from tokens.css (DESIGN.md). */
 :root {
@@ -36,7 +36,7 @@ h2 { font: 700 var(--text-xl)/var(--leading-tight) var(--font-serif); }
 h3 { font-size: var(--text-base); font-weight: 650; }
 .wrap { width: 100%; max-width: var(--col); margin: 0 auto; padding: 0 16px; }
 main.wrap { padding-top: var(--space-6); padding-bottom: var(--space-8); }
-.acct-band { height: clamp(120px, 20vh, 200px); background: linear-gradient(180deg, rgba(6,12,9,.55), rgba(6,12,9,.15)), url(hero-court-1600.webp) center 62%/cover; }
+.acct-band { height: clamp(120px, 20vh, 200px); background: linear-gradient(180deg, rgba(6,12,9,.55), rgba(6,12,9,.15)), url(court-night-1600.webp) 70% 62%/cover no-repeat; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-5);
   margin-top: var(--space-5); }
 .lead { color: var(--muted); margin: var(--space-2) 0 0; }
@@ -342,7 +342,7 @@ document.querySelectorAll("form[data-api]").forEach((f) => {
 $("signOut").addEventListener("click", async () => {
   await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
   Site.setSession(null);
-  location.reload();
+  location.assign("/");
 });
 
 function fmtDate(d) {

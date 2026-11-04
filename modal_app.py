@@ -2121,7 +2121,7 @@ def web_app():
                "recorder.js": "text/javascript", "record_match.js": "text/javascript",
                "manifest.webmanifest": "application/manifest+json",
                "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",
-               **{f"{n}-{w}.webp": "image/webp" for n in ("hero-court", "band-phone", "band-ball") for w in (800, 1600)}}
+               **{f"{n}-{w}.webp": "image/webp" for n in ("hero-court", "band-phone", "band-ball", "court-night") for w in (800, 1600)}}
 
     @fastapi_app.get("/{name}")
     def web_asset(name: str):

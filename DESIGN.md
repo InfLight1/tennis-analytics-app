@@ -25,8 +25,7 @@
 | `--night` | #0F1A14 | #000000 | the dark "New match" tile, #1 FIX tag |
 
 ## Type
-- System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto`); never bundle SF Pro.
-- **Landing page exception (Rudra, Nov 2):** the landing page at the main address keeps the round-1 fonts, **Newsreader** (serif headings) + **Instrument Sans** (body), for a premium feel. The app screens use the system stack.
+- **One type system on every website page (Rudra, Nov 4: landing and dashboard must feel like one site):** **Newsreader** titles (regular or 500, italic for key words on the landing page), **Instrument Sans** everywhere else. The iPhone app decides its own fonts later; never bundle SF Pro.
 - Scoreboard numbers: **Barlow Condensed 700** (Google Fonts), numbers only.
 - Headings 700 with tight tracking: XL clamp(2.4rem, 5.4vw, 3.6rem), L clamp(1.6rem, 2.6vw, 2.1rem), M 1.3rem, S 1.05rem. Body 1.0625rem.
 - Laptops (1100px+): base size 118.75% (body about 20px), page width 1400px, bigger tiles/buttons/pips.
@@ -44,7 +43,8 @@
 - Kept from round 1 (behaviour, restyled): New analysis steps (Upload | Record switch, camera preview, mark the court with the 7 draggable dots, full-screen recording view); Save as PDF print layout; My reports cards with delete (asks first); passcode + sign-in.
 
 ## Landing page (`/`, Nov 4)
-- Fonts: Newsreader titles (regular weight, italic for the key words), Instrument Sans body. Serif titles are for this page only.
+- One shared header (`site.js`, same logo, links change when signed in) and footer. Signed-in visitors see "Go to your dashboard"; the app pages link back here from the footer and the empty dashboard.
+- `court-night-*.webp`: a still of the landing court, used as the top band on the dashboard, report, account and new analysis pages, so every page opens on the same court.
 - Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
 - **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
 - Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches (sample team view, labelled), for parents and schools, Every point counts. No price shown yet. Motion is this one moment only; reduced motion or no scripts shows everything stacked.

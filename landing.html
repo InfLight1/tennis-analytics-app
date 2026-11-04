@@ -29,17 +29,9 @@ em{font-style:italic}
 section[id]{scroll-margin-top:60px}
 @media (min-width:1100px){html{font-size:106%}}
 
-/* header */
-.lnav{position:fixed;z-index:30;inset:0 0 auto;color:#fff;transition:background-color .2s}
-.lnav.solid{background:var(--court-deep)}
-.lnav .wrap{display:flex;align-items:center;gap:8px;min-height:76px}
-.lnav .brand{margin-right:auto}
-.lnav .wm,.lnav .wm-ai{font-family:var(--serif);font-weight:500;font-size:1.4rem}
-.lnav .wm-ai{margin-left:-2px}
-.lnav .l{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;color:#E6ECE8;text-decoration:none;font-weight:500}
-.lnav .l:hover{color:#fff;text-decoration:underline}
-.lnav .btn{min-height:44px;padding:0 20px;margin-left:8px;font-size:1rem;white-space:nowrap}
-.lnav .l{white-space:nowrap}
+/* the shared header sits over the court until you scroll past it */
+.topbar{position:fixed;inset:0 0 auto;background:transparent}
+.topbar.solid{background:var(--court-deep)}
 
 /* the court stage */
 .stage{position:relative;background:var(--court-deep);color:#fff}
@@ -161,16 +153,8 @@ section[id]{scroll-margin-top:60px}
 .last h2 em{color:var(--ball)}
 .last blockquote{margin:20px 0 0;max-width:46ch;font:400 clamp(1.15rem,1.7vw,1.5rem)/1.35 var(--serif);font-style:italic;color:#F2F5F1}
 .last .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
-.brand-foot .wm,.brand-foot .wm-ai,.bf-tag{font-family:var(--serif);font-weight:500}
-.bf-nav a,.bf-note{font-family:var(--sans)}
 
 @media (max-width:860px){
-  .lnav .l.opt{display:none}
-  .lnav .wrap{min-height:64px}
-  .lnav .brand{min-height:44px}
-  .lnav .wm,.lnav .wm-ai{font-size:1.2rem}
-  .lnav .l{padding:0 8px}
-  .lnav .btn{margin-left:2px;padding:0 16px}
   .hero{justify-content:flex-start;padding-top:96px}
   .hero h1{font-size:clamp(3rem,15vw,5rem)}
   .hero .sub{margin-top:16px}
@@ -199,19 +183,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 </script>
 </head>
 <body>
-<header class="lnav" id="lnav">
-  <div class="wrap">
-    <a class="brand" href="/" aria-label="Advantage AI, home">
-      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#C6DA2C"/><path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span class="wm">Advantage</span><span class="wm-ai">AI</span>
-    </a>
-    <a class="l opt" href="#how">How it works</a>
-    <a class="l opt" href="#report">Example report</a>
-    <a class="l opt" href="#coaches">For coaches</a>
-    <a class="l" href="/account">Sign in</a>
-    <a class="btn btn--ball" href="/new">Try it</a>
-  </div>
-</header>
+<header id="topbar" data-page="landing"></header>
 
 <div class="stage" id="stage">
   <div class="pin">
@@ -347,10 +319,14 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 <footer id="sitefoot"></footer>
 
 <script>
+// Signed in (reached from the footer): the page points back at the player's own dashboard.
+if (window.Site && Site.session()) document.querySelectorAll('main a[href="/new"], .stage a[href="/new"]').forEach((a) => { a.href = "/app"; a.textContent = "Go to your dashboard"; });
+</script>
+<script>
 (() => {
   const root = document.documentElement, calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cv = document.getElementById("court"); let g = cv.getContext("2d");
-  const stage = document.getElementById("stage"), nav = document.getElementById("lnav"), cue = document.getElementById("cue");
+  const stage = document.getElementById("stage"), nav = document.getElementById("topbar"), cue = document.getElementById("cue");
   const S = [0, 1, 2].map((i) => document.getElementById("s" + i));
   const css = getComputedStyle(root), tok = (n) => css.getPropertyValue(n).trim();
   const C = { deep: tok("--court-deep"), out: tok("--court-out"), inn: tok("--court-in"), line: tok("--court-line"), ball: tok("--ball"), lost: tok("--lost-glow") };

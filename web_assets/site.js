@@ -82,21 +82,25 @@
   document.addEventListener("DOMContentLoaded", () => {
     const bar = document.getElementById("topbar");
     if (bar) {
-      const home = bar.dataset.page === "home";
       bar.className = "topbar";
       const signedIn = !!window.Site.session();
       const page = bar.dataset.page;
+      const cur = (p) => (page === p ? ' aria-current="page"' : "");
+      // One bar for the whole site: same logo and look; the links depend on being signed in.
       bar.innerHTML = `<div class="wrap">
         <a class="brand" href="${signedIn ? "/app" : "/"}" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
-        <nav class="nav" aria-label="Main">
-          ${signedIn ? `<a href="/app"${page === "app" ? ' aria-current="page"' : ""}>Home</a>` : ""}
-          <a href="/new#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
-          <a href="${signedIn ? "/app#matches" : "/new#reports"}">${signedIn ? "Matches" : "My reports"}</a>
-          <a href="/account"${page === "account" ? ' aria-current="page"' : ""}>${signedIn ? "Account" : "Sign in"}</a>
-        </nav></div>`;
+        <nav class="nav" aria-label="Main">${signedIn
+          ? `<a class="opt" href="/app"${cur("app")}>Home</a>
+             <a class="opt" href="/app#matches">Matches</a>
+             <a href="/account"${cur("account")}>Account</a>
+             <a class="cta" href="/new"${cur("home")}>New match</a>`
+          : `<a class="opt" href="/#how">How it works</a>
+             <a class="opt" href="/example">Example report</a>
+             <a class="opt" href="/#coaches">For coaches</a>
+             <a href="/account"${cur("account")}>Sign in</a>
+             <a class="cta" href="/new">Try it</a>`}</nav></div>`;
       // Phones, signed in: the four app tabs along the bottom (not on Home, which has its own full-screen steps).
-      if (signedIn && ["app", "report", "account"].includes(page)) {
-        const cur = (p) => (page === p ? ' aria-current="page"' : "");
+      if (signedIn && ["app", "report", "account", "landing"].includes(page)) {
         const tabs = document.createElement("nav");
         tabs.className = "tabbar";
         tabs.setAttribute("aria-label", "App");
@@ -116,10 +120,13 @@
           <path d="M54 156 H306" stroke-dasharray="2 4"/></g></svg>
         <div class="wrap">
           <div class="bf-top">
-            <a class="brand brand-lg" href="/" aria-label="Advantage AI, home">${emblem(44, "f")}${wordmark}</a>
+            <a class="brand brand-lg" href="${window.Site.session() ? "/?stay=1" : "/"}" aria-label="About Advantage AI">${emblem(44, "f")}${wordmark}</a>
             <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
           </div>
-          <nav class="bf-nav" aria-label="Footer"><a href="/new#new">New analysis</a><a href="/new#reports">My reports</a><a href="/example">Example report</a></nav>
+          <nav class="bf-nav" aria-label="Footer">${(() => {
+            const home = window.Site.session() ? "/?stay=1" : "/";
+            return `<a href="${home}#how">How it works</a><a href="/example">Example report</a><a href="${home}#coaches">For coaches</a><a href="${home}#parents">For parents</a><a href="/new">New analysis</a><a href="/new#reports">My reports</a>`;
+          })()}</nav>
           <p class="bf-note">Built by a player, for players. Made to work alongside your coach, not replace one.</p>
           ${dev ? '<p class="bf-note">Dev mode is on for this device (add ?dev=0 to the address to turn it off).</p>' : ""}
         </div>`;

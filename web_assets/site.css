@@ -13,36 +13,40 @@
   background: var(--surface-2); color: var(--ink-2); font-size: var(--text-sm); font-weight: 650; white-space: nowrap; }
 .pill.ready { background: var(--ball); color: var(--ball-ink); }
 .pill.failed { background: var(--bad-soft); color: var(--bad); }
-.topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); min-height: 64px; }
-.topbar .brand { min-height: var(--tap); margin-right: auto; }
-.topbar .nav { display: flex; gap: var(--space-1); }
-.topbar .nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-3);
-  text-decoration: none; font-weight: 550; border-radius: var(--radius-sm); }
-@media (max-width: 559px) { .topbar .nav { order: 3; width: 100%; margin: 0 calc(-1 * var(--space-3)); } }
-.topbar .nav a[aria-current="page"] { border-radius: 0; }
-/* Court look: bold system headings, scoreboard numbers in Barlow Condensed. */
+/* One look on every page: serif titles, Instrument Sans text, scoreboard numbers in Barlow Condensed. */
 body { font-family: var(--sys); }
-h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+h1, h2 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.02em; }
+h3 { font-weight: 650; letter-spacing: -0.01em; }
 
-/* ── Header: dark bar with a pill nav (sits over the court photo on Home) ── */
-.topbar { position: sticky; top: 0; z-index: 20; background: var(--night); border-bottom: 1px solid rgba(255,255,255,.08); }
-.topbar .wrap { max-width: 1400px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+/* ── Header: the same bar on the landing page and in the app ── */
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--court-deep); color: #fff; transition: background-color .2s; }
+.topbar .wrap { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; min-height: 76px; width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 56px); }
+.brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: #fff; text-decoration: none; }
+.topbar .brand { margin-right: auto; }
 .brand .emblem { flex: none; }
-.brand .wm { font: 650 1.2rem/1 var(--sys); letter-spacing: -0.015em; color: #fff; }
-.brand .wm-ai { margin-left: -4px; font: 650 1.2rem/1 var(--sys); color: var(--ball); }
-.topbar .nav { gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.08); }
-.topbar .nav a { min-height: 40px; padding: 0 16px; border-radius: 999px; color: #E6ECE8; font-weight: 600; font-size: .95rem; }
-.topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.1); }
-.topbar .nav a[aria-current="page"] { background: #fff; color: #0F1A14; box-shadow: none; border-radius: 999px; }
-@media (max-width: 559px) { .topbar { position: relative; } .topbar .nav { margin: 0 0 10px; width: auto; } }
+.brand .wm, .brand .wm-ai { font: 500 1.4rem/1 var(--serif); letter-spacing: -0.015em; color: #fff; }
+.brand .wm-ai { margin-left: -4px; color: var(--ball); }
+.topbar .nav { display: flex; flex: none; order: 0; width: auto; margin: 0; padding: 0; background: none; align-items: center; gap: 2px; }
+.topbar .nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; color: #E6ECE8; font: 500 1rem/1 var(--sys); text-decoration: none; white-space: nowrap; }
+.topbar .nav a:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+.topbar .nav a[aria-current="page"] { color: #fff; box-shadow: inset 0 -2px 0 var(--ball); }
+.topbar .nav a.cta { min-height: 44px; margin-left: 8px; padding: 0 20px; border-radius: 999px; background: var(--ball); color: var(--ball-ink); font-weight: 600; box-shadow: none; }
+.topbar .nav a.cta:hover { background: #D3E63F; color: var(--ball-ink); text-decoration: none; }
+@media (max-width: 860px) {
+  .topbar .wrap { min-height: 64px; }
+  .brand .wm, .brand .wm-ai { font-size: 1.2rem; }
+  .topbar .nav a { padding: 0 8px; }
+  .topbar .nav a.opt { display: none; }
+  .topbar .nav a.cta { margin-left: 2px; padding: 0 16px; }
+}
+
 /* ── Footer ── */
-.brand-foot { position: relative; overflow: hidden; padding: var(--space-8) 0 var(--space-7); background: var(--night); color: var(--on-night); }
+.brand-foot { position: relative; overflow: hidden; padding: var(--space-8) 0 var(--space-7); background: var(--court-deep); color: var(--on-night); }
 .brand-foot .wrap { position: relative; z-index: 1; max-width: 1400px; }
 .bf-court { position: absolute; right: max(-60px, calc(50% - 600px)); bottom: -24px; width: 420px; height: auto; color: #fff; opacity: .07; }
 .bf-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4) var(--space-6); }
 .brand-lg .wm, .brand-lg .wm-ai { font-size: 1.8rem; }
-.bf-tag { margin: 0; font: 600 1.2rem/1.3 var(--sys); color: var(--on-night); }
+.bf-tag { margin: 0; font: 500 1.3rem/1.3 var(--serif); color: var(--on-night); }
 .bf-tag em { font-style: normal; color: var(--ball); }
 .bf-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid rgba(255,255,255,.12); }
 .bf-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--on-night); text-decoration: none; font-weight: 600; }
