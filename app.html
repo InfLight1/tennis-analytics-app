@@ -18,7 +18,7 @@
 /* Dashboard layout (DESIGN.md): court photo, then fix + new match, latest match, recent matches, numbers last. */
 .band--home{padding-bottom:176px}
 .hello{padding-top:clamp(56px,11vh,128px)}
-#rest .sh{margin:clamp(64px,7vw,104px) 0 24px}
+#rest .sh{margin:clamp(64px,7vw,104px) 0 24px;scroll-margin-top:96px}
 .hello p{margin-top:8px;font:500 1.05rem/1.3 var(--sys);color:#E6ECE8}
 .start{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:28px;margin-top:-118px;position:relative}
 .fix{display:grid;grid-template-columns:1fr auto;gap:14px 32px;align-items:start}
@@ -248,7 +248,8 @@ function numbers(p) {
 }
 
 function restHtml(p, latest) {
-  if (!latest) return "";
+  if (!latest) return `<div class="sh" id="matches"><h2 class="h-l">Recent matches</h2></div>
+    <section class="tile"><p class="muted">Your matches will show up here after your first report.</p></section>`;
   const fixes = p.fixes || [], good = p.strengths || [];
   const line = [vs(latest), fmtDate(latest.date), latest.points_won != null ? `${latest.points_won}–${latest.points_lost} points` : ""].filter(Boolean).join(" · ");
   const fixTileHtml = fixes.length ? `<section class="tile" aria-labelledby="fx"><h3 class="h-m" id="fx" style="margin-bottom:6px">Top ${fixes.length === 1 ? "fix" : `${fixes.length} fixes`}</h3>

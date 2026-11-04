@@ -77,6 +77,7 @@ if __name__ == "__main__":
     check(client.get(f"/api/profile/{job}", headers={"x-session": sam}).status_code == 403, "teammate can't")
     check(client.get(f"/api/profile/{job}", headers={"x-session": coach}).status_code == 200, "coach can")
     check(client.delete(f"/api/job/{job}", headers={"x-session": sam}).status_code == 403, "teammate can't delete it")
+    check(client.delete("/api/job/e0e0e0e0e0e0", headers={"x-session": sam}).status_code == 403, "nobody can delete the test site's example")
     # match video needs the passcode AND a sign-in that may see the report (Nov 1)
     pw = {"x-passcode": "test-1234"}
     check(client.get(f"/api/watch/{job}", headers=pw).status_code == 403, "video: passcode alone isn't enough")

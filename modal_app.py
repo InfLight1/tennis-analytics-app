@@ -1924,7 +1924,7 @@ def web_app():
         import re
         if not re.fullmatch(r"[0-9a-f]{12}", job_id):
             return JSONResponse({"error": "Not a job code"}, status_code=400)
-        if job_id == EXAMPLE_JOB_ID:
+        if job_id in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID):
             return JSONResponse({"error": "The example report can't be deleted."}, status_code=403)
         volume.reload()
         d = _job_paths(job_id)["job_dir"]

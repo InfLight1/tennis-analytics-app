@@ -423,6 +423,7 @@ async function render() {
   $("signedIn").classList.toggle("hidden", !user);
   if (!user) return;
   $("hello").textContent = `Hi, ${user.name}`;
+  Site.setRole(user.role);
   $("teamLine").textContent = user.role === "coach" || me.team?.name ? `${user.role === "coach" ? "Coach of" : "Player on"} ${me.team?.name || "your team"}` : "Solo player";
   $("soloBox").classList.toggle("hidden", user.role === "coach" || !!user.team_id);
   const coach = user.role === "coach";

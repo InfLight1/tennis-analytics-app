@@ -63,7 +63,7 @@ h3 { font-weight: 650; letter-spacing: -0.01em; }
 @media (max-width: 860px) {
   body.has-tabs { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   body.has-tabs .topbar .nav { display: none; }
-  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
+  .tabbar { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
     background: var(--tile); border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
   .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px;
     color: var(--ink-2); text-decoration: none; font: 500 .76rem/1 var(--sys); }

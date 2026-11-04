@@ -4,8 +4,11 @@
 (() => {
   const KEY = "tennis_reports";
 
+  // The example report (and its test-site copy) isn't the visitor's own, so it never joins "My reports".
+  const EXAMPLE_JOBS = ["76a383379d90", "e0e0e0e0e0e0"];
+
   function load() {
-    try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+    try { return (JSON.parse(localStorage.getItem(KEY)) || []).filter((r) => !EXAMPLE_JOBS.includes(r.job)); } catch (e) { return []; }
   }
   function save(list) {
     try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
@@ -23,23 +26,31 @@
   } catch (e) {}
   let dev = devParam === "1";
   try { dev = dev || localStorage.getItem(DEV_KEY) === "1"; } catch (e) {}
-  if (load().some((r) => r.job === EXAMPLE_JOB)) save(load().filter((r) => r.job !== EXAMPLE_JOB));
 
   // Signed-in session (accounts, 2026-10-28); passcode.js sends it as X-Session.
   const SESSION_KEY = "advantage_session";
+  const ROLE_KEY = "advantage_role";
 
   window.Site = {
     EXAMPLE_JOB,
     dev,
     session() { try { return localStorage.getItem(SESSION_KEY); } catch (e) { return null; } },
+    // Coaches have no player dashboard: their home is the team page, so the header drops those links.
+    setRole(role) {
+      try { localStorage.setItem(ROLE_KEY, role); } catch (e) {}
+      if (role !== "coach") return;
+      document.querySelectorAll('.topbar a[href^="/app"], .tabbar a[href^="/app"]').forEach((a) => a.remove());
+      document.querySelectorAll('.topbar a[href="/account"], .tabbar a[href="/account"]').forEach((a) => { a.lastChild.textContent = "Team"; });
+    },
     setSession(token) {
+      if (!token) { try { localStorage.removeItem(ROLE_KEY); } catch (e) {} }
       try { token ? localStorage.setItem(SESSION_KEY, token) : localStorage.removeItem(SESSION_KEY); } catch (e) {}
     },
     reportUrl: (job) => `/report?job=${encodeURIComponent(job)}`,
     reports: load,
     // Add or update a report (newest first). Keeps the first "added" date.
     rememberReport(job, title) {
-      if (job === EXAMPLE_JOB) return;
+      if (EXAMPLE_JOBS.includes(job)) return;
       const list = load();
       const old = list.find((r) => r.job === job);
       const entry = { job, title: title || old?.title || "Match", added: old?.added || new Date().toISOString() };
@@ -113,6 +124,7 @@
         document.body.appendChild(tabs);
         document.body.classList.add("has-tabs");
       }
+      if (signedIn) { try { const role = localStorage.getItem(ROLE_KEY); if (role) window.Site.setRole(role); } catch (e) {} }
     }
     const foot = document.getElementById("sitefoot");
     if (foot) {
