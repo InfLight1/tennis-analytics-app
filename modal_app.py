@@ -2271,6 +2271,30 @@ def web_app():
             return _account_error(e)
         return _signed_in(user, accts.new_session(user["username"]))
 
+    @fastapi_app.post("/api/auth/solo")
+    async def auth_solo(request: Request, username: str = Form(...), password: str = Form(...),
+                        name: str = Form(""), email: str = Form("")):
+        """A player with no team signs up. Needs the app passcode during the closed test."""
+        if not request.state.full_access:
+            return JSONResponse({"error": "Signing up needs the app passcode."}, status_code=401)
+        try:
+            user = accts.solo_signup(username, password, name, email)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return _signed_in(user, accts.new_session(user["username"]))
+
+    @fastapi_app.post("/api/me/join-team")
+    def me_join_team(request: Request, code: str = Form(...)):
+        """A solo player joins a team with its code."""
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        try:
+            accts.add_to_team(u["username"], code)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return JSONResponse({"joined": True})
+
     @fastapi_app.post("/api/auth/join")
     def auth_join(code: str = Form(...), username: str = Form(...), password: str = Form(...), name: str = Form("")):
         try:
@@ -2343,7 +2367,7 @@ def web_app():
         u = request.state.user
         team = accts.team(u["team_id"]) if u else None
         if not team:
-            return JSONResponse({"names": []})
+            return JSONResponse({"names": [u["name"]] if u else []})
         return JSONResponse({"names": [p["name"] for p in map(accts.user, team.get("players", [])) if p]})
 
     @fastapi_app.get("/api/progress")

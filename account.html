@@ -200,6 +200,7 @@ body.coach main.wrap { max-width: 1200px; }
     <div class="tabs" role="tablist" aria-label="Account">
       <button type="button" role="tab" id="tab-signin" aria-controls="f-signin" aria-selected="true">Sign in</button>
       <button type="button" role="tab" id="tab-join" aria-controls="f-join" aria-selected="false">Join my team</button>
+      <button type="button" role="tab" id="tab-solo" aria-controls="f-solo" aria-selected="false">Just me</button>
       <button type="button" role="tab" id="tab-coach" aria-controls="f-coach" aria-selected="false">I'm a coach</button>
     </div>
     <div class="panel">
@@ -208,7 +209,7 @@ body.coach main.wrap { max-width: 1200px; }
         <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
         <button class="btn btn-primary" type="submit">Sign in</button>
         <p class="msg" role="alert"></p>
-        <p class="muted">Forgot your password? Your coach can set a new one for you.</p>
+        <p class="muted">Forgot your password? Your coach can set a new one for you. Reset by email for solo players is coming soon.</p>
       </form>
       <form id="f-join" class="hidden" data-api="/api/auth/join" role="tabpanel" aria-labelledby="tab-join">
         <label>Team code <small>6 letters, from your coach</small><input name="code" required autocapitalize="characters" maxlength="6"></label>
@@ -216,6 +217,15 @@ body.coach main.wrap { max-width: 1200px; }
         <label>Username <small>3-24 letters or numbers; no email needed</small><input name="username" autocomplete="username" required autocapitalize="none"></label>
         <label>Password <small>at least 8 characters</small><input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
         <button class="btn btn-primary" type="submit">Join team</button>
+        <p class="msg" role="alert"></p>
+      </form>
+      <form id="f-solo" class="hidden" data-api="/api/auth/solo" role="tabpanel" aria-labelledby="tab-solo">
+        <label>Your name <small>type this same name when you film a match</small><input name="name" autocomplete="name" required maxlength="40"></label>
+        <label>Username <small>3-24 letters or numbers</small><input name="username" autocomplete="username" required autocapitalize="none"></label>
+        <label>Password <small>at least 8 characters</small><input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
+        <label>Email <small>optional, for resetting your password later</small><input name="email" type="email" autocomplete="email" maxlength="120"></label>
+        <p class="muted">Advantage AI is in a closed test, so you'll be asked for the passcode you were given. On a team? Use Join my team instead.</p>
+        <button class="btn btn-primary" type="submit">Create my account</button>
         <p class="msg" role="alert"></p>
       </form>
       <form id="f-coach" class="hidden" data-api="/api/auth/create-team" role="tabpanel" aria-labelledby="tab-coach">
@@ -256,6 +266,15 @@ body.coach main.wrap { max-width: 1200px; }
       <p class="lead">Your fixes, matches and numbers are on your home screen.</p>
       <p style="margin-top:16px"><a class="btn btn-primary" href="/app">Go to home</a></p>
     </div>
+    <div id="soloBox" class="panel hidden">
+      <h2>Join a team</h2>
+      <p class="lead">Got a team code from your coach? Your matches come with you.</p>
+      <form id="joinLater" style="margin-top:16px">
+        <label>Team code <input name="code" required autocapitalize="characters" maxlength="6"></label>
+        <button class="btn btn-primary" type="submit">Join team</button>
+        <p class="msg" role="alert"></p>
+      </form>
+    </div>
   </section>
 </main>
 <footer id="sitefoot"></footer>
@@ -264,7 +283,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // Tabs
-const tabs = ["signin", "join", "coach"];
+const tabs = ["signin", "join", "solo", "coach"];
 function showTab(name) {
   tabs.forEach((t) => {
     $(`tab-${t}`).setAttribute("aria-selected", String(t === name));
@@ -298,6 +317,7 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
 });
 if (location.hash === "#join") showTab("join");
 if (location.hash === "#coach") showTab("coach");
+if (location.hash === "#solo") showTab("solo");
 
 // Sign in / join / create team: all three answer {session, user}
 document.querySelectorAll("form[data-api]").forEach((f) => {
@@ -403,7 +423,8 @@ async function render() {
   $("signedIn").classList.toggle("hidden", !user);
   if (!user) return;
   $("hello").textContent = `Hi, ${user.name}`;
-  $("teamLine").textContent = `${user.role === "coach" ? "Coach of" : "Player on"} ${me.team?.name || "your team"}`;
+  $("teamLine").textContent = user.role === "coach" || me.team?.name ? `${user.role === "coach" ? "Coach of" : "Player on"} ${me.team?.name || "your team"}` : "Solo player";
+  $("soloBox").classList.toggle("hidden", user.role === "coach" || !!user.team_id);
   const coach = user.role === "coach";
   $("coachBox").classList.toggle("hidden", !coach);
   document.body.classList.toggle("coach", coach);
@@ -414,6 +435,13 @@ async function render() {
     $("playerBox").classList.remove("hidden");
   }
 }
+$("joinLater").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const res = await fetch("/api/me/join-team", { method: "POST", body: new FormData(e.target) }).catch(() => null);
+  if (res?.ok) { location.reload(); return; }
+  const data = res ? await res.json().catch(() => ({})) : {};
+  e.target.querySelector(".msg").textContent = data.error || "Couldn't reach the server. Try again.";
+});
 render();
 </script>
 </body>

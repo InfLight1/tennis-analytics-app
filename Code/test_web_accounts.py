@@ -118,4 +118,13 @@ if __name__ == "__main__":
     check(client.get(f"/api/profile/{job}", headers={"x-passcode": "test-1234"}).status_code == 200,
           "the passcode still opens everything (beta + checks)")
     check(form("/api/auth/signin", {"username": "rudra", "password": "nope"}).status_code == 400, "wrong password")
+    solo_form = {"username": "soloplayer", "password": "secret123", "name": "Mia Chen", "email": "mia@example.com"}
+    check(form("/api/auth/solo", solo_form).status_code == 401, "solo sign-up needs the passcode")
+    solo = form("/api/auth/solo", solo_form, **{"x-passcode": "test-1234"}).json()["session"]
+    me = client.get("/api/me", headers={"x-session": solo}).json()
+    check(me["user"]["team_id"] is None and "email" not in me["user"], "solo player signed in; email not sent to the page")
+    check(client.get("/api/progress", headers={"x-session": solo}).status_code == 200, "solo player has a dashboard")
+    check(client.get("/api/team/names", headers={"x-session": solo}).json()["names"] == ["Mia Chen"], "solo name offered at court marking")
+    check(form("/api/me/join-team", {"code": "NOPE00"}, **{"x-session": solo}).status_code == 400, "wrong team code refused")
+    check(form("/api/me/join-team", {"code": code}, **{"x-session": solo}).status_code == 200, "solo player joins a team later")
     print("\nAll web account checks passed.")

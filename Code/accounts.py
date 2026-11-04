@@ -5,11 +5,13 @@ Built for school teams of minors: no email addresses are collected. A coach
 creates a team (needs the app passcode, so not anyone can be a coach) and
 gets a short team code; players join with that code, a username and a
 password. A coach can reset a player's password, so no reset emails needed.
+Solo players (no team; also need the passcode for now) may add an optional
+email for password resets; it is never shown to a page or a coach.
 
 Storage is any dict-like object with get/put semantics (`store[key]`,
 `store.get(key)`, `key in store`, `del store[key]`). On Modal it's a
 modal.Dict; in tests a plain dict. Keys:
-  user:<username>     {id, username, name, role, team_id, salt, pw, created}
+  user:<username>     {id, username, name, role, team_id, salt, pw, created, email?}
   team:<team_id>      {id, name, code, coaches: [username], players: [username]}
   teamcode:<CODE>     team_id
   session:<token>     {username, expires}
@@ -97,6 +99,32 @@ class Accounts:
         self.s[f"team:{team_id}"] = team
         return user
 
+    def solo_signup(self, username, password, name, email=""):
+        """A player with no team. (Caller checks the passcode.)"""
+        email = (email or "").strip().lower()[:120]
+        if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise AccountError("That email doesn't look right. You can leave it empty.")
+        user = self._new_user(username, password, name, "player", None)
+        if email:
+            user["email"] = email
+            self.s[f"user:{user['username']}"] = user
+        return user
+
+    def add_to_team(self, username, code):
+        """A solo player joins a team later; their matches come with them."""
+        user = self.user(username)
+        if not user or user["role"] != "player" or user.get("team_id"):
+            raise AccountError("You're already on a team.")
+        team_id = self.s.get(f"teamcode:{(code or '').strip().upper()}")
+        if not team_id:
+            raise AccountError("That team code doesn't match a team. Check it with your coach.")
+        user["team_id"] = team_id
+        self.s[f"user:{user['username']}"] = user
+        team = self.s[f"team:{team_id}"]
+        team["players"] = team["players"] + [user["username"]]
+        self.s[f"team:{team_id}"] = team
+        return user
+
     def team(self, team_id):
         return self.s.get(f"team:{team_id}")
 
@@ -165,7 +193,10 @@ class Accounts:
         A name matches a player's full name, username, or first name when
         only one player on the team has that first name. Not case-sensitive."""
         players = [self.user(u) for u in (self.team(team_id) or {}).get("players", [])]
-        players = [p for p in players if p]
+        return self._match_in([p for p in players if p], names)
+
+    @staticmethod
+    def _match_in(players, names):
         firsts = {}
         for p in players:
             firsts.setdefault(p["name"].split()[0].lower() if p["name"].split() else "", []).append(p)
@@ -187,8 +218,13 @@ class Accounts:
         owner = self.user(self.owner(job_id))
         if not owner:
             return {}
-        found = self.match_names(owner["team_id"], names)
-        for u in (self.team(owner["team_id"]) or {}).get("players", []):
+        if owner.get("team_id"):
+            found = self.match_names(owner["team_id"], names)
+            people = (self.team(owner["team_id"]) or {}).get("players", [])
+        else:   # a solo player: only their own name can match
+            found = self._match_in([owner], names)
+            people = [owner["username"]]
+        for u in people:
             slot = next((s for s, name in found.items() if name == u), None)
             had = next((j for j in self.claims(u) if j["job_id"] == job_id), None)
             if slot:

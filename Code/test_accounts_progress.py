@@ -50,6 +50,17 @@ def test_accounts():
     check(not a.can_see(other_coach, "job1"), "another team's coach can't")
     check(a.can_change(coach, "job1") and not a.can_change(p2, "job1"), "only uploader or coach can delete")
 
+    solo = a.solo_signup("soloplayer", "password3", "Mia Chen", "Mia@Example.com")
+    check(solo["team_id"] is None and solo["email"] == "mia@example.com", "solo player: no team, optional email kept")
+    check("email" not in accounts.public_user(solo), "a solo player's email never reaches a page")
+    check(raises(lambda: a.solo_signup("solo2", "password3", "X", "not-an-email")), "a bad email is refused")
+    check("email" not in a.solo_signup("solo3", "password3", "No Email"), "email is optional")
+    a.set_owner("job9", "soloplayer")
+    check(a.auto_claim("job9", {"player_1": "Mia", "player_2": "Rival"}) == {"player_1": "soloplayer"}, "a solo player's own name adds the match")
+    check(a.can_see(solo, "job9") and not a.can_see(coach, "job9"), "no coach sees a solo player's report")
+    a.add_to_team("soloplayer", team["code"])
+    check(a.can_see(coach, "job9") and a.claims("soloplayer"), "joining a team later brings the matches along")
+    check(raises(lambda: a.add_to_team("soloplayer", team["code"])), "can't join a second team")
     a.join_team(team["code"], "sam2", "password2", "Sam Lee")
     a.join_team(team["code"], "jo1", "password2", "Jo Park")
     check(a.match_names(team["id"], {"player_1": "rudra", "player_2": "jo"}) == {"player_1": "rudra", "player_2": "jo1"},

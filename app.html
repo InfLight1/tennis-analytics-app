@@ -290,7 +290,7 @@ $("rest").addEventListener("click", async (e) => {
   const me = Site.session() ? await fetch("/api/me").then((r) => r.json()).catch(() => ({})) : {};
   if (!me.user || me.user.role === "coach") { location.replace("/account"); return; }
   $("hello").textContent = `Hi, ${me.user.name}`;
-  $("teamLine").textContent = `Player on ${me.team?.name || "your team"}`;
+  $("teamLine").textContent = me.team?.name ? `Player on ${me.team.name}` : "Solo player";
   showProgress();
 })();
 </script>
