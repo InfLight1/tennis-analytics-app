@@ -46,7 +46,7 @@
 ## Landing page (`/`, Nov 4)
 - Fonts: Newsreader titles (regular weight, italic for the key words), Instrument Sans body. Serif titles are for this page only.
 - Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
-- **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
+- **Wow moment:** opens on a full-screen photo of a ball on the line, with a marker finding the ball (Rudra picked this blend of options A and D, Nov 4). Scrolling pushes into the ball and the photo gives way to a drawn court seen from the back fence, where the lines draw themselves and a rally ends in the net. The camera rises overhead, the example match's 11 lost points land, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration. No players on the court.
 - Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches (sample team view, labelled), for parents and schools, Every point counts. No price shown yet. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
 - Signed-in players go to `/app` (`/?stay=1` keeps them on the page).
 

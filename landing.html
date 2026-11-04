@@ -46,12 +46,22 @@ section[id]{scroll-margin-top:60px}
 .pin{position:relative;min-height:100svh;overflow:hidden}
 #court{position:absolute;inset:0 0 auto;width:100%;height:100svh;display:block}
 .scene{position:relative;z-index:2;padding:0 var(--gutter)}
-.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:1400px;margin:0 auto;padding-top:76px}
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:space-between;gap:24px;max-width:1400px;margin:0 auto;padding-top:clamp(96px,14vh,140px);padding-bottom:clamp(22px,4.4vh,44px)}
 .hero .kick{color:var(--ball)}
-.hero h1{margin-top:20px;font-size:clamp(3.2rem,8vw,8.4rem);line-height:.96;letter-spacing:-.035em;max-width:9.5ch;font-weight:400}
+.hero h1{margin-top:14px;font-size:clamp(3rem,6.6vw,7rem);line-height:.96;letter-spacing:-.035em;font-weight:400}
+.hero h1 span{display:block;white-space:nowrap}
 .hero h1 em{color:var(--ball)}
-.hero .sub{margin-top:26px;max-width:30ch;font-size:clamp(1.1rem,1.5vw,1.4rem);line-height:1.4;color:#DCE4DF}
-.hero .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.hero .low{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.hero .sub{max-width:32ch;font-size:clamp(1.05rem,1.45vw,1.35rem);line-height:1.4;color:#fff}
+.hero .acts{display:flex;flex-wrap:wrap;gap:12px}
+/* the opening photo: one ball on the line, which the app finds */
+.shot{position:absolute;inset:0 0 auto;z-index:1;height:100svh;overflow:hidden;will-change:opacity,transform}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 50%}
+.shot::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,14,10,.74) 0%,rgba(8,14,10,.42) 48%,rgba(8,14,10,.05) 72%),linear-gradient(180deg,rgba(8,14,10,.6),transparent 26%,transparent 70%,rgba(8,14,10,.68))}
+.mark{position:absolute;z-index:2;left:0;top:0;width:var(--s,150px);height:var(--s,150px);transform:translate(-50%,-50%);pointer-events:none}
+.mark i{position:absolute;width:24px;height:24px;border:2.5px solid var(--ball)}
+.mark i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}.mark i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.mark i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}.mark i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
 .cue{position:absolute;z-index:2;left:50%;bottom:22px;transform:translateX(-50%);display:none;font:500 .9rem/1 var(--sans);color:#C9D3CD}
 .story{padding-block:48px;max-width:1400px;margin:0 auto}
 .story .inner{max-width:520px}
@@ -71,7 +81,7 @@ section[id]{scroll-margin-top:60px}
 .fixcard .link{margin-top:6px}
 
 /* live (scroll-driven) mode, switched on by the script */
-.live .stage{height:370vh}
+.live .stage{height:470vh}
 .live .pin{position:sticky;top:0;height:100svh;min-height:0}
 .live .scene{position:absolute;inset:0;visibility:hidden;opacity:0;will-change:opacity,transform}
 .live .hero{height:100%;min-height:0;visibility:visible;opacity:1}
@@ -80,9 +90,13 @@ section[id]{scroll-margin-top:60px}
 .live .cue{display:block}
 /* opening: the headline settles in while the court lines draw */
 @media (prefers-reduced-motion:no-preference){
-  .live .hero>*{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
-  .live .hero h1{animation-delay:.12s}.live .hero .sub{animation-delay:.3s}.live .hero .acts{animation-delay:.42s}
+  .live .hero .copy{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .live .hero .low{animation:rise .9s .3s cubic-bezier(.2,.7,.2,1) both}
   @keyframes rise{from{opacity:0;transform:translateY(22px)}}
+  .live .shot img{animation:push 14s ease-out both}
+  @keyframes push{from{transform:scale(1.07)}}
+  .live .mark{animation:find .7s 1.2s both}
+  @keyframes find{from{opacity:0;scale:1.5}}
 }
 
 /* sections */
@@ -154,7 +168,7 @@ section[id]{scroll-margin-top:60px}
 .safe li b{color:var(--ink)}
 
 .last{position:relative;isolation:isolate;color:#fff;min-height:min(74vh,660px);display:flex;align-items:flex-end}
-.last img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:60% 50%}
+.last img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 62%}
 .last::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(10,20,16,.82) 0%,rgba(10,20,16,.25) 55%,rgba(10,20,16,.1) 100%)}
 .last .wrap{padding-block:clamp(40px,5vw,68px)}
 .last h2{font-size:clamp(3rem,6.6vw,6.4rem);line-height:.98;letter-spacing:-.035em}
@@ -171,10 +185,12 @@ section[id]{scroll-margin-top:60px}
   .lnav .wm,.lnav .wm-ai{font-size:1.2rem}
   .lnav .l{padding:0 8px}
   .lnav .btn{margin-left:2px;padding:0 16px}
-  .hero{justify-content:flex-start;padding-top:96px}
+  .hero{padding-top:84px}
   .hero h1{font-size:clamp(3rem,15vw,5rem)}
-  .hero .sub{margin-top:16px}
-  .hero .acts{margin-top:20px}
+  .shot img{object-position:64% 50%}
+  .shot::after{background:linear-gradient(180deg,rgba(8,14,10,.8) 0%,rgba(8,14,10,.5) 50%,rgba(8,14,10,.8) 100%)}
+  .mark,.cue{display:none!important}
+  .live #sf{align-items:flex-start;padding-top:84px}
   .hero .acts .btn{min-height:50px;font-size:1rem;padding:0 18px}
   .live .story{align-items:flex-end;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
   .story h2{font-size:2.1rem}
@@ -215,19 +231,31 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 <div class="stage" id="stage">
   <div class="pin">
     <canvas id="court" aria-hidden="true"></canvas>
+    <div class="shot" id="shot" aria-hidden="true"><img src="band-ball-800.webp" srcset="band-ball-800.webp 800w, band-ball-1600.webp 1600w" sizes="100vw" width="1600" height="900" fetchpriority="high" alt=""></div>
+    <div class="mark" id="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <section class="scene hero" id="s0">
-      <p class="kick">Built by a player, for players</p>
-      <h1>Turn match data into <em>match wins</em></h1>
-      <p class="sub">Film a match on your phone. See what cost you points, and what to fix first.</p>
-      <div class="acts">
-        <a class="btn btn--ball" href="/new">Try it on a match</a>
-        <a class="btn btn--night-line" href="/example">See an example report</a>
+      <div class="copy">
+        <p class="kick">Built by a player, for players</p>
+        <h1><span>Turn match</span> <span>data into</span> <span><em>match wins</em></span></h1>
+      </div>
+      <div class="low">
+        <p class="sub">Film a match on your phone. See what cost you points, and what to fix first.</p>
+        <div class="acts">
+          <a class="btn btn--ball" href="/new">Try it on a match</a>
+          <a class="btn btn--night-line" href="/example">See an example report</a>
+        </div>
+      </div>
+    </section>
+    <section class="scene story" id="sf">
+      <div class="inner">
+        <h2>It starts with one phone on the <em>fence</em></h2>
+        <p class="say">High up behind the baseline, with the whole court in the picture.</p>
       </div>
     </section>
     <section class="scene story" id="s1">
       <div class="inner">
         <h2>See where the points <em>went</em></h2>
-        <p class="say">One phone on the back fence. The app sorts each point it can call by how it ended.</p>
+        <p class="say">The app sorts each point it can call by how it ended.</p>
         <p class="note">11 points one player lost in our example match. Real counts; the spots are drawn for illustration.</p>
       </div>
     </section>
@@ -335,7 +363,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
   </section>
 
   <section class="last" aria-labelledby="lastH">
-    <img src="band-ball-800.webp" srcset="band-ball-800.webp 800w, band-ball-1600.webp 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt="">
+    <img src="hero-court-800.webp" srcset="hero-court-800.webp 800w, hero-court-1600.webp 1600w" sizes="100vw" width="1600" height="1067" loading="lazy" alt="">
     <div class="wrap">
       <h2 id="lastH">Every point <em>counts</em></h2>
       <blockquote>“I built Advantage AI after losing a JV match, because when it ended, I could not say what had actually gone wrong.”</blockquote>
@@ -350,7 +378,8 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
   const root = document.documentElement, calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cv = document.getElementById("court"); let g = cv.getContext("2d");
   const stage = document.getElementById("stage"), nav = document.getElementById("lnav"), cue = document.getElementById("cue");
-  const S = [0, 1, 2].map((i) => document.getElementById("s" + i));
+  const S = ["s0", "sf", "s1", "s2"].map((i) => document.getElementById(i));
+  const shot = document.getElementById("shot"), mark = document.getElementById("mark");
   const css = getComputedStyle(root), tok = (n) => css.getPropertyValue(n).trim();
   const C = { deep: tok("--court-deep"), out: tok("--court-out"), inn: tok("--court-in"), line: tok("--court-line"), ball: tok("--ball"), lost: tok("--lost-glow") };
   if (!calm) root.classList.add("live");
@@ -524,9 +553,9 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
   const MARKS = [["w", -4.7, -9.8], ["n", -3.4, -.25], ["l", -2.2, 12.9], ["n", 1.2, -.25], ["w", 4.4, -11], ["d", 1.7, 7.5], ["n", -1.2, -.25], ["w", -3.6, -12.4], ["l", 2.8, 13.1], ["n", 3.3, -.25], ["w", 3.1, -5.2]];
   const LABELS = [["n", "4", "into the net", 0], ["l", "2", "long", 12.9], ["d", "1", "double fault", 7.5], ["w", "4", "not reached", -9.4]];
   function drawMarks(p) {
-    const focus = smooth(.62, .72, p);
+    const focus = smooth(.7, .78, p);
     MARKS.forEach(([k, x, y], i) => {
-      const t = clamp((p - (.34 + i * .02)) / .035);
+      const t = clamp((p - (.44 + i * .016)) / .03);
       if (!t) return;
       const q = P(x, y, 0), net = k === "n", r = Math.max(5, q[2] * .24) * back(t) * (net ? 1 + focus * .45 : 1);
       const a = net ? 1 : 1 - focus * .8;
@@ -534,7 +563,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
       g.globalAlpha = a; g.fillStyle = C.lost; g.beginPath(); g.arc(q[0], q[1], r, 0, 7); g.fill();
       g.strokeStyle = C.deep; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1;
     });
-    const la = smooth(.5, .58, p);
+    const la = smooth(.56, .62, p);
     if (!la) return;
     const small = W < 460, f = small ? 12.5 : 16;
     LABELS.forEach(([k, n, s, y]) => {
@@ -547,6 +576,13 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     });
   }
 
+  // Keep the marker on the ball at any window size (photo 1600x900, ball centre 61.7%, 51.5%).
+  function place() {
+    const h = shot.offsetHeight, k = Math.max(W / 1600, h / 900), iw = 1600 * k, ih = 900 * k;
+    const x = (W - iw) * .6 + iw * .617, y = (h - ih) * .5 + ih * .515;
+    mark.style.left = x + "px"; mark.style.top = y + "px"; mark.style.setProperty("--s", Math.round(iw * .155) + "px");
+    shot.style.transformOrigin = `${x}px ${y}px`;
+  }
   function show(el, a, y = 0) {
     el.style.opacity = a; el.style.visibility = a > .01 ? "visible" : "hidden";
     el.style.transform = y ? `translateY(${y}px)` : "none";
@@ -556,9 +592,10 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
   const progress = () => clamp(-stage.getBoundingClientRect().top / Math.max(1, stage.offsetHeight - innerHeight));
   function frame(now) {
     running = false;
-    const sec = (now - t0) / 1000, intro = calm ? 1 : clamp(sec / 1.7);
+    const sec = (now - t0) / 1000;
     p += (target - p) * (1 - Math.exp(-(now - last) / 90)); last = now; if (Math.abs(target - p) < .0004) p = target;
-    setCam(smooth(.1, .5, p));
+    const intro = calm ? 1 : clamp((p - .06) / .14);
+    setCam(smooth(.3, .58, p));
     const key = [W, H, cam.rise.toFixed(4), intro.toFixed(3)].join();
     if (key !== bgKey) {                    // the court only redraws when the camera moves
       bgKey = key; g = bg.getContext("2d");
@@ -566,18 +603,23 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
       g = main;
     }
     g.drawImage(bg, 0, 0, W, H);
-    const rallyA = 1 - smooth(.14, .3, p);
+    const rallyA = smooth(.17, .23, p) * (1 - smooth(.34, .44, p));
     drawRally(sec - 1.1, sec > 1.1 ? rallyA : 0);
     drawMarks(p);
     // Fade for the words over the court on narrow screens and on the left on wide ones.
     const sh = wide ? g.createLinearGradient(0, 0, W * .62, 0) : g.createLinearGradient(0, 0, 0, H * .72);
     sh.addColorStop(0, "rgba(10,20,16,.92)"); sh.addColorStop(.6, "rgba(10,20,16,.5)"); sh.addColorStop(1, "rgba(10,20,16,0)");
-    g.globalAlpha = 1 - smooth(.2, .45, p) * (wide ? .35 : 1); g.fillStyle = sh; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+    g.globalAlpha = 1 - smooth(.34, .5, p) * (wide ? .35 : 1); g.fillStyle = sh; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
     if (!calm) {
-      const a0 = 1 - smooth(.04, .13, p), a1 = smooth(.34, .42, p) * (1 - smooth(.62, .68, p)), a2 = smooth(.68, .76, p);
-      show(S[0], a0, -60 * smooth(.04, .13, p));
-      show(S[1], a1, 18 * (1 - smooth(.34, .42, p)));
-      show(S[2], a2, 18 * (1 - smooth(.68, .76, p)));
+      const a0 = 1 - smooth(.04, .12, p), af = smooth(.18, .23, p) * (1 - smooth(.3, .35, p)), a1 = smooth(.46, .52, p) * (1 - smooth(.68, .72, p)), a2 = smooth(.74, .82, p);
+      show(S[0], a0, -60 * smooth(.04, .12, p));
+      show(S[1], af, 18 * (1 - smooth(.18, .23, p)));
+      show(S[2], a1, 18 * (1 - smooth(.46, .52, p)));
+      show(S[3], a2, 18 * (1 - smooth(.74, .82, p)));
+      const o = 1 - smooth(.07, .18, p);    // the photo pushes in on the ball, then gives way to the court
+      shot.style.opacity = o; shot.style.visibility = o > .01 ? "visible" : "hidden";
+      shot.style.transform = `scale(${1 + .6 * smooth(.04, .2, p)})`;
+      mark.style.opacity = a0;
       cue.style.opacity = 1 - smooth(0, .03, p);
       if (visible) tick();
     }
@@ -589,10 +631,10 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
     tick();
   }
   addEventListener("scroll", onScroll, { passive: true });
-  addEventListener("resize", () => { resize(); onScroll(); });
+  addEventListener("resize", () => { resize(); place(); onScroll(); });
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) tick(); }).observe(stage);
   document.fonts?.ready.then(tick);
-  resize(); onScroll();
+  resize(); place(); onScroll();
 })();
 </script>
 </body>
