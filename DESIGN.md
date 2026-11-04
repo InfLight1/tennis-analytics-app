@@ -32,7 +32,7 @@
 
 ## Shape, spacing, motion
 - Radius 20px tiles (24px on laptops), 12px inner boxes, pills for buttons/tabs. Tap targets 44px+ (main button 58px, 66px on laptops).
-- Gutter clamp(16px, 4vw, 48px); sections 56px apart (40px on phones).
+- Gutter clamp(16px, 4vw, 48px); sections 56px apart (40px on phones); on the dashboard up to 104px apart, tiles 28px apart, with clear space above the footer on every app page (Rudra, Nov 4: it felt cramped).
 - Motion level **None**: only tap feedback (press scale .97, 120-200ms colour changes). Nothing moves on scroll. Reduced motion respected.
 
 ## Layout rules

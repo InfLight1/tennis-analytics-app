@@ -44,6 +44,8 @@ section[id]{scroll-margin-top:60px}
 .hero h1 em{color:var(--ball)}
 .hero .sub{margin-top:26px;max-width:30ch;font-size:clamp(1.1rem,1.5vw,1.4rem);line-height:1.4;color:#DCE4DF}
 .hero .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.hero .back{margin-top:16px;color:#DCE4DF}
+.hero .back a{color:#fff;font-weight:600}
 .cue{position:absolute;z-index:2;left:50%;bottom:22px;transform:translateX(-50%);display:none;font:500 .9rem/1 var(--sans);color:#C9D3CD}
 .story{padding-block:48px;max-width:1400px;margin:0 auto}
 .story .inner{max-width:520px}
@@ -196,6 +198,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
         <a class="btn btn--ball" href="/new">Try it on a match</a>
         <a class="btn btn--night-line" href="/example">See an example report</a>
       </div>
+      <p class="back" id="backLink">Already have an account? <a href="/app">Go to your dashboard</a></p>
     </section>
     <section class="scene story" id="s1">
       <div class="inner">
@@ -321,6 +324,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
 <script>
 // Signed in (reached from the footer): the page points back at the player's own dashboard.
 if (window.Site && Site.session()) document.querySelectorAll('main a[href="/new"], .stage a[href="/new"]').forEach((a) => { a.href = "/app"; a.textContent = "Go to your dashboard"; });
+if (window.Site && Site.session()) document.getElementById("backLink").hidden = true;
 </script>
 <script>
 (() => {

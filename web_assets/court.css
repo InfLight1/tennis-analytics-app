@@ -17,6 +17,7 @@ h1,h2,h3,p{margin:0}
 svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 [hidden]{display:none!important}
 .wrap{width:100%;max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+main.wrap{padding-bottom:clamp(72px,9vw,128px)}
 
 /* ---------- court photo band (sharp, never blurred) ---------- */
 .band{position:relative;isolation:isolate;color:#fff}

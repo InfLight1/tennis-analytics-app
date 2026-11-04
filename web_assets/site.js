@@ -90,13 +90,14 @@
       bar.innerHTML = `<div class="wrap">
         <a class="brand" href="${signedIn ? "/app" : "/"}" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
         <nav class="nav" aria-label="Main">${signedIn
-          ? `<a class="opt" href="/app"${cur("app")}>Home</a>
+          ? `<a class="opt" href="/app"${cur("app")}>Dashboard</a>
              <a class="opt" href="/app#matches">Matches</a>
              <a href="/account"${cur("account")}>Account</a>
              <a class="cta" href="/new"${cur("home")}>New match</a>`
           : `<a class="opt" href="/#how">How it works</a>
              <a class="opt" href="/example">Example report</a>
              <a class="opt" href="/#coaches">For coaches</a>
+             <a class="opt" href="/app">Dashboard</a>
              <a href="/account"${cur("account")}>Sign in</a>
              <a class="cta" href="/new">Try it</a>`}</nav></div>`;
       // Phones, signed in: the four app tabs along the bottom (not on Home, which has its own full-screen steps).
@@ -104,7 +105,7 @@
         const tabs = document.createElement("nav");
         tabs.className = "tabbar";
         tabs.setAttribute("aria-label", "App");
-        tabs.innerHTML = `<a href="/app"${cur("app")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/></svg>Home</a>
+        tabs.innerHTML = `<a href="/app"${cur("app")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/></svg>Dashboard</a>
           <a href="/app#matches"${cur("report")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg>Matches</a>
           <a href="/new#record"><span class="c" aria-hidden="true"><i></i></span>Record</a>
           <a href="/account"${cur("account")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>Account</a>`;
