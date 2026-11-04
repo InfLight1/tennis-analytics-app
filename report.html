@@ -684,7 +684,7 @@ function statRows(s) {
     add(pct(p), "First serves in", `${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves} first serves went in. ` +
       (p >= 65 ? "Reliable: most points start on a first serve." : p < 50 ? "Under half, so the opponent sees a lot of second serves." : "About half: every extra first serve in takes pressure off the second."));
   }
-  if (sv.second_serves) {
+  if (sv.second_serves && sv.second_serves_in != null) {
     add(pct(sv.second_serve_in_pct), "Second serves in", `${sv.second_serves_in} of ${sv.second_serves} second serves went in. Every miss here is a double fault.`);
   }
   if (sv.first_serve_points && sv.second_serve_points) {

@@ -1931,7 +1931,7 @@ function reportHref(job) {
   try { hasReports = (JSON.parse(localStorage.getItem("tennis_reports") || "[]") || []).length > 0; } catch (e) {}
   if (!hasReports) guide.open = true;
   document.querySelectorAll("[data-open-guide]").forEach((a) => a.addEventListener("click", () => { guide.open = true; }));
-  if (location.hash === "#filmGuide") guide.open = true;
+  if (location.hash === "#filmGuide") { guide.open = true; addEventListener("load", () => guide.scrollIntoView({ behavior: "instant" })); }
 })();
 
 function renderReports() {

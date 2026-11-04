@@ -182,7 +182,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
         <label>Your name <input name="name" autocomplete="name" required maxlength="40"></label>
         <label>Username <input name="username" autocomplete="username" required autocapitalize="none"></label>
         <label>Password <small>at least 8 characters</small><input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
-        <p class="muted">You'll be asked for the app passcode (from Rudra) if this device doesn't have it yet.</p>
+        <p class="muted">Advantage AI is in a closed test, so you'll be asked for the passcode you were given.</p>
         <button class="btn btn-primary" type="submit">Create team</button>
         <p class="msg" role="alert"></p>
       </form>
@@ -249,6 +249,7 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
   wrap.appendChild(b);
 });
 if (location.hash === "#join") showTab("join");
+if (location.hash === "#coach") showTab("coach");
 
 // Sign in / join / create team: all three answer {session, user}
 document.querySelectorAll("form[data-api]").forEach((f) => {
