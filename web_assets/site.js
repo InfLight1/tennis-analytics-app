@@ -78,24 +78,6 @@
     </svg>`;
   const wordmark = '<span class="wm">Advantage</span><span class="wm-ai">AI</span>';
 
-  // Light/dark switch on every page. With no saved choice the page follows the device setting;
-  // each page sets data-theme early from storage (no flash). data-mode mirrors the mode in use.
-  const themeButton = `<button type="button" class="theme-btn" aria-label="Switch between light and dark" title="Light or dark">
-      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-    </button>`;
-  const root = document.documentElement;
-  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  const showMode = () => { root.dataset.mode = isDark() ? "dark" : "light";
-    document.querySelectorAll(".theme-btn").forEach((b) => b.setAttribute("aria-label", `Switch to ${isDark() ? "light" : "dark"} mode`)); };
-  showMode();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", showMode);
-  function toggleTheme() {
-    root.dataset.theme = isDark() ? "light" : "dark";
-    try { localStorage.setItem("aa-theme", root.dataset.theme); localStorage.removeItem("report_theme"); } catch (e) {}
-    showMode();
-  }
-
   // Header into <header id="topbar" data-page="home|report">, footer into <footer id="sitefoot">.
   document.addEventListener("DOMContentLoaded", () => {
     const bar = document.getElementById("topbar");
@@ -108,10 +90,10 @@
         <a class="brand" href="${signedIn ? "/app" : "/"}" aria-label="Advantage AI, home">${emblem(32, "h")}${wordmark}</a>
         <nav class="nav" aria-label="Main">
           ${signedIn ? `<a href="/app"${page === "app" ? ' aria-current="page"' : ""}>Home</a>` : ""}
-          <a href="/#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
-          <a href="${signedIn ? "/app#matches" : "/#reports"}">${signedIn ? "Matches" : "My reports"}</a>
+          <a href="/new#new"${home ? ' aria-current="page"' : ""}>New analysis</a>
+          <a href="${signedIn ? "/app#matches" : "/new#reports"}">${signedIn ? "Matches" : "My reports"}</a>
           <a href="/account"${page === "account" ? ' aria-current="page"' : ""}>${signedIn ? "Account" : "Sign in"}</a>
-        </nav>${themeButton}</div>`;
+        </nav></div>`;
       // Phones, signed in: the four app tabs along the bottom (not on Home, which has its own full-screen steps).
       if (signedIn && ["app", "report", "account"].includes(page)) {
         const cur = (p) => (page === p ? ' aria-current="page"' : "");
@@ -120,13 +102,11 @@
         tabs.setAttribute("aria-label", "App");
         tabs.innerHTML = `<a href="/app"${cur("app")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v9H4z"/></svg>Home</a>
           <a href="/app#matches"${cur("report")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg>Matches</a>
-          <a href="/#record"><span class="c" aria-hidden="true"><i></i></span>Record</a>
+          <a href="/new#record"><span class="c" aria-hidden="true"><i></i></span>Record</a>
           <a href="/account"${cur("account")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>Account</a>`;
         document.body.appendChild(tabs);
         document.body.classList.add("has-tabs");
       }
-      bar.querySelector(".theme-btn")?.addEventListener("click", toggleTheme);
-      showMode();
     }
     const foot = document.getElementById("sitefoot");
     if (foot) {
@@ -139,7 +119,7 @@
             <a class="brand brand-lg" href="/" aria-label="Advantage AI, home">${emblem(44, "f")}${wordmark}</a>
             <p class="bf-tag">Turn match data into <em>match wins</em>.</p>
           </div>
-          <nav class="bf-nav" aria-label="Footer"><a href="/#new">New analysis</a><a href="/#reports">My reports</a><a href="/report?job=${EXAMPLE_JOB}">Example report</a></nav>
+          <nav class="bf-nav" aria-label="Footer"><a href="/new#new">New analysis</a><a href="/new#reports">My reports</a><a href="/report?job=${EXAMPLE_JOB}">Example report</a></nav>
           <p class="bf-note">Built by a player, for players. Made to work alongside your coach, not replace one.</p>
           ${dev ? '<p class="bf-note">Dev mode is on for this device (add ?dev=0 to the address to turn it off).</p>' : ""}
         </div>`;

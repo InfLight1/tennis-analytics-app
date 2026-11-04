@@ -36,14 +36,6 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
 .topbar .nav a:hover { color: #fff; background: rgba(255,255,255,.1); }
 .topbar .nav a[aria-current="page"] { background: #fff; color: #0F1A14; box-shadow: none; border-radius: 999px; }
 @media (max-width: 559px) { .topbar { position: relative; } .topbar .nav { margin: 0 0 10px; width: auto; } }
-/* Light/dark button on every page. The icon shows the mode you are in. */
-.theme-btn { width: 44px; height: 44px; display: grid; place-items: center; margin-left: var(--space-2);
-  border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
-.theme-btn:hover { background: rgba(255,255,255,.18); }
-.theme-btn .moon, :root[data-mode="dark"] .theme-btn .sun { display: none; }
-:root[data-mode="dark"] .theme-btn .moon { display: block; }
-@media (max-width: 559px) { .theme-btn { order: 2; } }
-
 /* ── Footer ── */
 .brand-foot { position: relative; overflow: hidden; padding: var(--space-8) 0 var(--space-7); background: var(--night); color: var(--on-night); }
 .brand-foot .wrap { position: relative; z-index: 1; max-width: 1400px; }

@@ -9,7 +9,6 @@
 <meta name="theme-color" content="#0F1A14">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
@@ -1222,9 +1221,7 @@ $("shareBtn").addEventListener("click", async () => {
 let printState = null;
 function preparePrint() {
   if (printState || !DATA) return;
-  const root = document.documentElement;
-  printState = { theme: root.dataset.theme, title: document.title };
-  root.dataset.theme = "light";
+  printState = { title: document.title };
   const ids = Object.keys(DATA.players);
   $("printView").innerHTML = ids.map((id) => `<div class="print-player">
       <h2 class="print-name">${esc(DATA.players[id].name)}</h2>${playerHtml({ ...DATA.players[id], id }, true)}</div>`).join("");
@@ -1236,8 +1233,6 @@ function preparePrint() {
 }
 function restoreAfterPrint() {
   if (!printState) return;
-  const root = document.documentElement;
-  if (printState.theme) root.dataset.theme = printState.theme; else delete root.dataset.theme;
   document.title = printState.title;
   $("printView").innerHTML = "";
   printState = null;
@@ -1256,7 +1251,7 @@ $("deleteBtn").addEventListener("click", async () => {
   try {
     const res = await Site.deleteReport(JOB);
     if (!res.ok) { alert(`Couldn't delete it: ${res.error}`); $("deleteBtn").disabled = false; return; }
-    location.href = Site.session() ? "/app" : "/#reports";
+    location.href = Site.session() ? "/app" : "/new#reports";
   } catch (e) {
     alert("Couldn't reach the server. Check the connection and try again.");
     $("deleteBtn").disabled = false;

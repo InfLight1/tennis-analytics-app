@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Advantage AI: Turn Match Data Into Match Wins</title>
+<title>New analysis · Advantage AI</title>
 <meta name="description" content="Upload a tennis match video and see what's costing each player points, and what to practise.">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0F1A14">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<script>try{var t=localStorage.getItem("aa-theme")||localStorage.getItem("report_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
@@ -43,7 +42,7 @@
   --hero-overlap: 24px;
   --hero-under-w: 960px;
   --topbar-h: 64px;
-  --hero-full-h: min(100svh, 860px);
+  --hero-full-h: min(70svh, 560px);
   --hero-full-focus: 50% 62%;
   --hero-full-filter: saturate(1.05);
   --panel-pad-x: var(--space-6);
@@ -477,9 +476,8 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 
 <div class="hero hero-full">
   <div class="hero-copy">
-  <p class="hero-kicker">Built by a player, for players</p>
-  <h1>Turn match data into <span class="kw">match wins</span></h1>
-  <p class="sub">See what's costing you points. Upload a match video and each player gets their top 3 things to fix, with drills to practise.</p>
+  <h1>New <span class="kw">analysis</span></h1>
+  <p class="sub">Upload a match video or record one. Each player gets their top fixes, with drills to practise.</p>
   <div class="actions">
     <a class="btn btn-primary" href="#new">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M5 20h14"/></svg>
@@ -694,14 +692,6 @@ body.photo-hero .topbar { margin-bottom: -64px; }
   </section>
 
   <!-- Closing call to action -->
-  <section class="block band cta-band" aria-labelledby="ctaH">
-    <div class="band-photo" aria-hidden="true"><img src="band-ball-800.webp" srcset="band-ball-800.webp 800w, band-ball-1600.webp 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt=""></div>
-    <div class="cta-in">
-      <h2 id="ctaH">Every point <span class="kw">counts</span></h2>
-      <p>See what a report looks like: each player's top 3 things to fix, ranked by the points they cost.</p>
-      <a class="btn btn-primary" href="/report?job=76a383379d90">See an example report</a>
-    </div>
-  </section>
 </main>
 
 <div id="recOverlay" class="rec-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="recTitle">

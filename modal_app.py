@@ -262,6 +262,7 @@ cpu_image = (
     .add_local_file("camera_test.html", "/root/web/camera_test.html")
     .add_local_file("account.html", "/root/web/account.html")
     .add_local_file("app.html", "/root/web/app.html")
+    .add_local_file("landing.html", "/root/web/landing.html")
     # passcode.js, manifest + icons (install-on-phone). Served at the site root.
     .add_local_dir("web_assets", remote_path="/root/web/assets")
 )
@@ -2075,6 +2076,12 @@ def web_app():
     from fastapi.responses import FileResponse
 
     @fastapi_app.get("/")
+    def landing_page():
+        """Front page for new visitors; signed-in players go on to /app."""
+        return FileResponse("/root/web/landing.html", media_type="text/html",
+                            headers={"Cache-Control": "no-store"})
+
+    @fastapi_app.get("/new")
     @fastapi_app.get("/calibration_demo.html")
     def home_page():
         return FileResponse("/root/web/calibration_demo.html", media_type="text/html",

@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Advantage AI: Turn Match Data Into Match Wins</title>
+<meta name="description" content="Film a tennis match on your phone. See what cost you points, and what to fix first.">
+<meta name="theme-color" content="#0A1410">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="court.css">
+<link rel="stylesheet" href="site.css">
+<style>
+/* Landing page (DESIGN.md): the one wow moment is the court in the first screen. The camera starts
+   where the phone films from, rises as you scroll, and the match sorts itself into the #1 fix.
+   Without scripts or with reduced motion, everything is simply stacked and readable. */
+html{background:var(--court-deep);scroll-behavior:smooth}
+body{background:var(--page);font-family:var(--sans)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.022em;text-wrap:balance}
+em{font-style:italic}
+.btn{font-family:var(--sans)}
+.kick{font:600 .82rem/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.big{font-size:clamp(2.5rem,5.4vw,5.2rem);line-height:1.02}
+
+/* header */
+.lnav{position:fixed;z-index:30;inset:0 0 auto;color:#fff;transition:background-color .2s}
+.lnav.solid{background:var(--court-deep)}
+.lnav .wrap{display:flex;align-items:center;gap:8px;min-height:76px}
+.lnav .brand{margin-right:auto}
+.lnav .wm,.lnav .wm-ai{font-family:var(--serif);font-weight:500;font-size:1.4rem}
+.lnav .wm-ai{margin-left:-2px}
+.lnav .l{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;color:#E6ECE8;text-decoration:none;font-weight:500}
+.lnav .l:hover{color:#fff;text-decoration:underline}
+.lnav .btn{min-height:44px;padding:0 20px;margin-left:8px;font-size:1rem;white-space:nowrap}
+.lnav .l{white-space:nowrap}
+
+/* the court stage */
+.stage{position:relative;background:var(--court-deep);color:#fff}
+.pin{position:relative;min-height:100svh;overflow:hidden}
+#court{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scene{position:relative;z-index:2;padding:0 var(--gutter)}
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:1400px;margin:0 auto;padding-top:76px}
+.hero .kick{color:var(--ball)}
+.hero h1{margin-top:20px;font-size:clamp(3.2rem,8vw,8.4rem);line-height:.96;letter-spacing:-.035em;max-width:9.5ch;font-weight:400}
+.hero h1 em{color:var(--ball)}
+.hero .sub{margin-top:26px;max-width:30ch;font-size:clamp(1.1rem,1.5vw,1.4rem);line-height:1.4;color:#DCE4DF}
+.hero .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.cue{position:absolute;z-index:2;left:50%;bottom:22px;transform:translateX(-50%);display:none;font:500 .9rem/1 var(--sans);color:#C9D3CD}
+.story{padding-block:48px;max-width:1400px;margin:0 auto}
+.story .inner{max-width:520px}
+.story h2{font-size:clamp(2.3rem,4.2vw,4.2rem);line-height:1.03}
+.story p.say{margin-top:18px;font-size:clamp(1.05rem,1.35vw,1.3rem);line-height:1.45;color:#DCE4DF}
+.note{margin-top:14px;font-size:.9rem;color:#B9C4BD}
+.fixcard{background:var(--tile);color:var(--ink);border-radius:var(--r-tile);padding:clamp(20px,2.4vw,34px)}
+.fixcard .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tag{display:inline-block;padding:7px 10px;border-radius:6px;background:var(--lost);color:#fff;font:700 .8rem/1 var(--sans);letter-spacing:.06em}
+.fixcard .lab{font-family:var(--sans);font-size:.85rem}
+.fixcard .row2{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-top:16px}
+.fixcard h2{font-size:clamp(1.9rem,3vw,3rem);line-height:1.04}
+.fixcard .n{font-size:clamp(4rem,6vw,6rem);color:var(--lost);text-align:right}
+.fixcard .n small{display:block;margin-top:2px;font:500 .85rem/1.2 var(--sans);color:var(--ink-2)}
+.fixcard .pips{margin-top:14px}
+.fixcard .try{margin-top:16px}
+.fixcard .link{margin-top:6px}
+
+/* live (scroll-driven) mode, switched on by the script */
+.live .stage{height:430vh}
+.live .pin{position:sticky;top:0;height:100svh;min-height:0}
+.live .scene{position:absolute;inset:0;visibility:hidden;opacity:0;will-change:opacity,transform}
+.live .hero{height:100%;min-height:0;visibility:visible;opacity:1}
+.live .hero{max-width:none;padding-inline:max(var(--gutter),calc((100vw - 1400px)/2 + var(--gutter)))}
+.live .story{display:flex;align-items:center;max-width:none;padding-inline:max(var(--gutter),calc((100vw - 1400px)/2 + var(--gutter)))}
+.live .cue{display:block}
+/* opening: the headline settles in while the court lines draw */
+@media (prefers-reduced-motion:no-preference){
+  .live .hero>*{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .live .hero h1{animation-delay:.12s}.live .hero .sub{animation-delay:.3s}.live .hero .acts{animation-delay:.42s}
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}}
+}
+
+/* sections */
+.sec{padding-block:clamp(72px,10vw,150px)}
+.how{background:var(--page);color:var(--ink)}
+.how .head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 64px;align-items:end}
+.how .head p{font-size:1.2rem;color:var(--ink-2);max-width:38ch}
+.steps{list-style:none;margin:clamp(40px,6vw,80px) 0 0;padding:0}
+.steps li{display:grid;grid-template-columns:minmax(90px,.5fr) minmax(0,1fr) minmax(0,1.2fr);gap:12px 40px;align-items:baseline;padding:clamp(24px,3vw,40px) 0;border-top:1px solid var(--line-2)}
+.steps li:last-child{border-bottom:1px solid var(--line-2)}
+.steps .no{font:400 clamp(3rem,6vw,5.6rem)/.9 var(--serif);font-style:italic;color:var(--ink-3)}
+.steps h3{font-size:clamp(1.8rem,3vw,3rem);line-height:1.05}
+.steps p{font-size:1.15rem;color:var(--ink-2);max-width:44ch}
+.steps a{color:var(--ink);font-weight:600}
+
+.report{background:var(--court-deep);color:#fff;overflow:hidden}
+.report .grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:48px clamp(40px,6vw,96px);align-items:center}
+.report .kick{color:var(--ball)}
+.report h2{margin-top:16px}
+.report .say{margin-top:20px;font-size:1.2rem;line-height:1.45;color:#DCE4DF;max-width:34ch}
+.report .btn{margin-top:28px}
+.sheet{position:relative;color:var(--ink)}
+.sheet .a{background:var(--tile);border-radius:var(--r-tile);padding:clamp(20px,2.4vw,32px)}
+.sheet h3{font-size:1.6rem;margin-bottom:4px}
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:grid;grid-template-columns:3.2rem 1fr;gap:12px;align-items:center;padding:14px 0}
+.rows li+li{border-top:1px solid var(--line)}
+.rows .board-num{font-size:2.5rem;color:var(--lost)}
+.rows b{display:block;font-weight:600;line-height:1.25}
+.rows span span{color:var(--ink-2);font-size:.95rem}
+.sheet .b{position:relative;margin:-14px -10px 0 18%;background:var(--ball);color:var(--ball-ink);border-radius:var(--r-tile);padding:clamp(18px,2vw,26px)}
+.sheet .b .board-num{font-size:3.2rem}
+.sheet .b .board-num small{font:500 1rem var(--sans);margin-left:6px}
+.sheet .b p{margin-top:2px;font-weight:500}
+.sheet .src{margin-top:14px;color:#B9C4BD;font-size:.9rem}
+
+.proof{background:var(--ball);color:var(--ball-ink)}
+.proof .wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px 64px;align-items:end}
+.proof .fig{font:400 clamp(5rem,16vw,15rem)/.86 var(--serif);letter-spacing:-.045em}
+.proof .fig em{font-size:.5em;letter-spacing:-.02em}
+.proof p{font-size:clamp(1.15rem,1.6vw,1.45rem);line-height:1.4}
+.proof p+p{margin-top:14px;font-size:1.05rem}
+
+.coach{position:relative;isolation:isolate;background:var(--court-deep);color:#fff}
+.coach img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover}
+.coach::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,20,16,.9) 0%,rgba(10,20,16,.72) 50%,rgba(10,20,16,.2) 100%)}
+.coach .kick{color:var(--ball)}
+.coach h2{margin-top:16px;max-width:14ch}
+.coach p{margin-top:20px;font-size:1.2rem;line-height:1.45;max-width:42ch;color:#E6ECE8}
+.coach .btn{margin-top:28px}
+
+.last{position:relative;isolation:isolate;color:#fff;min-height:min(92vh,860px);display:flex;align-items:flex-end}
+.last img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:60% 50%}
+.last::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(10,20,16,.82) 0%,rgba(10,20,16,.25) 55%,rgba(10,20,16,.1) 100%)}
+.last .wrap{padding-block:clamp(48px,7vw,96px)}
+.last h2{font-size:clamp(3.2rem,8vw,8rem);line-height:.98;letter-spacing:-.035em}
+.last h2 em{color:var(--ball)}
+.last blockquote{margin:20px 0 0;max-width:46ch;font:400 clamp(1.15rem,1.7vw,1.5rem)/1.35 var(--serif);font-style:italic;color:#F2F5F1}
+.last .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.brand-foot .wm,.brand-foot .wm-ai,.bf-tag{font-family:var(--serif);font-weight:500}
+.bf-nav a,.bf-note{font-family:var(--sans)}
+
+@media (max-width:860px){
+  .lnav .l.opt{display:none}
+  .lnav .wrap{min-height:64px}
+  .lnav .brand{min-height:44px}
+  .lnav .wm,.lnav .wm-ai{font-size:1.2rem}
+  .lnav .l{padding:0 8px}
+  .lnav .btn{margin-left:2px;padding:0 16px}
+  .hero{justify-content:flex-start;padding-top:96px}
+  .hero h1{font-size:clamp(3rem,15vw,5rem)}
+  .hero .sub{margin-top:16px}
+  .hero .acts{margin-top:20px}
+  .hero .acts .btn{min-height:50px;font-size:1rem;padding:0 18px}
+  .live .story{align-items:flex-end;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .story h2{font-size:2.1rem}
+  .story p.say{margin-top:8px;font-size:1rem}
+  .note{margin-top:6px;font-size:.8rem}
+  .fixcard .row2{margin-top:10px}
+  .fixcard .try{padding:10px 12px;font-size:.95rem;margin-top:10px}
+  .fixcard .pips{margin-top:8px}.fixcard .pips i{width:13px;height:13px}
+  .how .head,.report .grid,.proof .wrap{grid-template-columns:1fr}
+  .steps li{grid-template-columns:64px 1fr}
+  .steps p{grid-column:2}
+  .sheet .b{margin:-12px 0 0 10%}
+  .coach::after{background:rgba(10,20,16,.76)}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+<script src="site.js"></script>
+<script>
+// Signed-in players go straight to their dashboard. ?stay=1 keeps them here (to look at this page).
+if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) location.replace("/app");
+</script>
+</head>
+<body>
+<header class="lnav" id="lnav">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Advantage AI, home">
+      <svg class="emblem" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#DDF247"/><path d="M5 8c6 4 6 12 0 16M27 8c-6 4-6 12 0 16" fill="none" stroke="#0F1A14" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="wm">Advantage</span><span class="wm-ai">AI</span>
+    </a>
+    <a class="l opt" href="#how">How it works</a>
+    <a class="l opt" href="#report">Example report</a>
+    <a class="l opt" href="#coaches">For coaches</a>
+    <a class="l" href="/account">Sign in</a>
+    <a class="btn btn--ball" href="/new">Try it</a>
+  </div>
+</header>
+
+<div class="stage" id="stage">
+  <div class="pin">
+    <canvas id="court" aria-hidden="true"></canvas>
+    <section class="scene hero" id="s0">
+      <p class="kick">Built by a player, for players</p>
+      <h1>Turn match data into <em>match wins</em></h1>
+      <p class="sub">Film a match on your phone. See what cost you points, and what to fix first.</p>
+      <div class="acts">
+        <a class="btn btn--ball" href="/new">Try it on a match</a>
+        <a class="btn btn--night-line" href="/report?job=76a383379d90">See an example report</a>
+      </div>
+    </section>
+    <section class="scene story" id="s1">
+      <div class="inner">
+        <h2>See where the points <em>went</em></h2>
+        <p class="say">One phone on the back fence. The app sorts each point it can call by how it ended.</p>
+        <p class="note">11 points one player lost in our example match. Real counts; the spots are drawn for illustration.</p>
+      </div>
+    </section>
+    <section class="scene story" id="s2">
+      <div class="inner">
+        <div class="fixcard">
+          <div class="top"><span class="tag">#1 FIX</span><span class="lab">Example match</span></div>
+          <div class="row2">
+            <h2>Errors into the net</h2>
+            <p class="n board-num">4<small>of 11 points lost</small></p>
+          </div>
+          <div class="pips" aria-hidden="true"><i class="lost"></i><i class="lost"></i><i class="lost"></i><i class="lost"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="try"><b>Try this next match</b>Aim to clear the net by about a racket's length.</p>
+          <a class="link" href="/report?job=76a383379d90">Open the full example report</a>
+        </div>
+      </div>
+    </section>
+    <p class="cue" id="cue">Scroll to see the match</p>
+  </div>
+</div>
+
+<main>
+  <section class="sec how" id="how" aria-labelledby="howH">
+    <div class="wrap">
+      <div class="head">
+        <h2 class="big" id="howH">From the fence to your next <em>practice</em></h2>
+        <p>No sensors and no one filming for you. Just the phone you already carry.</p>
+      </div>
+      <ol class="steps">
+        <li><span class="no">1</span><h3>Film it</h3><p>Put your phone on the back fence, up high and centred. Record in the browser, or use a video you already have. <a href="/new#filmGuide">How to film</a></p></li>
+        <li><span class="no">2</span><h3>Send it</h3><p>Upload the video and mark the court. The app finds the points, who won them and how each one ended.</p></li>
+        <li><span class="no">3</span><h3>Fix it</h3><p>Each player gets their top fixes, ranked by the points they cost, with a tactic, a habit and a drill for each.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec report" id="report" aria-labelledby="repH">
+    <div class="wrap grid">
+      <div>
+        <p class="kick">The report</p>
+        <h2 class="big" id="repH">Know what to fix, not just <em>the score</em></h2>
+        <p class="say">Plain words, ranked by points lost. It shows what went well too, and how sure the app is.</p>
+        <a class="btn btn--ball" href="/report?job=76a383379d90">Open the example report</a>
+      </div>
+      <div class="sheet">
+        <div class="a">
+          <h3>Top fixes</h3>
+          <ol class="rows">
+            <li><span class="board-num">−4</span><span><b>Errors into the net</b><span>4 of 11 points lost</span></span></li>
+            <li><span class="board-num">−4</span><span><b>Beaten by shots they couldn't return</b><span>4 of 11 points lost</span></span></li>
+            <li><span class="board-num">−2</span><span><b>Errors long, past the baseline</b><span>2 of 11 points lost</span></span></li>
+          </ol>
+        </div>
+        <div class="b">
+          <span class="board-num">6<small>of 8 points won</small></span>
+          <p>Keeping the ball in play until the opponent misses.</p>
+        </div>
+        <p class="src">Real numbers from one player in our example match.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec proof" aria-labelledby="prH">
+    <div class="wrap">
+      <p class="fig" id="prH">17 <em>of</em> 20</p>
+      <div>
+        <p>Points where the app picked the right winner (85%), on one hand-labeled match.</p>
+        <p>For the other 3 it called no winner rather than a wrong one. We only share numbers we have measured.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec coach" id="coaches" aria-labelledby="coH">
+    <img src="band-phone-800.webp" srcset="band-phone-800.webp 800w, band-phone-1600.webp 1600w" sizes="100vw" width="1600" height="921" loading="lazy" alt="">
+    <div class="wrap">
+      <p class="kick">For coaches</p>
+      <h2 class="big" id="coH">You can't watch <em>every court</em></h2>
+      <p>Set up your team and see each player's fixes in one place. The app gives match facts, tactics and drills. Technique stays with you.</p>
+      <a class="btn btn--ball" href="/account">Set up your team</a>
+    </div>
+  </section>
+
+  <section class="last" aria-labelledby="lastH">
+    <img src="band-ball-800.webp" srcset="band-ball-800.webp 800w, band-ball-1600.webp 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt="">
+    <div class="wrap">
+      <h2 id="lastH">Every point <em>counts</em></h2>
+      <blockquote>“I built Advantage AI after losing a JV match, because when it ended, I could not say what had actually gone wrong.”</blockquote>
+      <div class="acts"><a class="btn btn--ball" href="/new">Try it on a match</a></div>
+    </div>
+  </section>
+</main>
+<footer id="sitefoot"></footer>
+
+<script>
+(() => {
+  const root = document.documentElement, calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.getElementById("court"), g = cv.getContext("2d");
+  const stage = document.getElementById("stage"), nav = document.getElementById("lnav"), cue = document.getElementById("cue");
+  const S = [0, 1, 2].map((i) => document.getElementById("s" + i));
+  const css = getComputedStyle(root), tok = (n) => css.getPropertyValue(n).trim();
+  const C = { deep: tok("--court-deep"), out: tok("--court-out"), inn: tok("--court-in"), line: tok("--court-line"), ball: tok("--ball"), lost: tok("--lost-glow") };
+  if (!calm) root.classList.add("live");
+
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const back = (t) => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+
+  // A real court, in metres: x across, y along (near end negative), z up.
+  const HW = 5.485, SW = 4.115, HL = 11.885, SL = 6.4;
+  const LINES = [[-HW, -HL, HW, -HL], [-HW, HL, HW, HL], [-HW, -HL, -HW, HL], [HW, -HL, HW, HL], [-SW, -HL, -SW, HL], [SW, -HL, SW, HL],
+    [-SW, -SL, SW, -SL], [-SW, SL, SW, SL], [0, -SL, 0, SL], [0, -HL, 0, -HL + .25], [0, HL, 0, HL - .25]];
+
+  let W = 0, H = 0, wide = true, cam = {};
+  function resize() {
+    const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
+    W = r.width; H = r.height; wide = W > 860;
+    cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+    g.setTransform(d, 0, 0, d, 0, 0);
+  }
+  // Camera: starts low behind the baseline (where the phone films from), ends straight above.
+  function setCam(rise) {
+    const e = rise, top = wide ? H * .78 : H * .5;
+    const d = lerp(25, 34, e), Fh = wide ? Math.max(H * 1.5, W * .78) : Math.max(H * .92, W * 1.9), Ft = top / 26.4 * 34;
+    cam = { p: lerp(.33, 1.5707, e), yaw: lerp(wide ? -.5 : -.16, 0, e), d, ty: lerp(1, 0, e), F: lerp(Fh, Ft, e),
+      cx: lerp(wide ? W * .66 : W * .5, wide ? W * .7 : W * .39, e), cy: lerp(wide ? H * .6 : H * .84, wide ? H * .55 : H * .36, e), rise: e };
+    cam.c = Math.cos(cam.p); cam.s = Math.sin(cam.p); cam.yc = Math.cos(cam.yaw); cam.ys = Math.sin(cam.yaw);
+    cam.Y = cam.ty - cam.d * cam.c; cam.Z = cam.d * cam.s;
+  }
+  function P(x, y, z = 0) {
+    const X = x * cam.yc - y * cam.ys, Y = x * cam.ys + y * cam.yc, vy = Y - cam.Y, vz = z - cam.Z;
+    const zc = Math.max(vy * cam.c - vz * cam.s, .5), yc = vy * cam.s + vz * cam.c;
+    return [cam.cx + cam.F * X / zc, cam.cy - cam.F * yc / zc, cam.F / zc];
+  }
+  const poly = (pts) => { g.beginPath(); pts.forEach((p, i) => { const q = P(...p); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); };
+  function seg(a, b, t = 1) { const q = P(...a), r = P(...b); g.moveTo(q[0], q[1]); g.lineTo(lerp(q[0], r[0], t), lerp(q[1], r[1], t)); }
+  function glow(x, y, r, col, a) {
+    const n = g.createRadialGradient(x, y, 0, x, y, r);
+    n.addColorStop(0, col); n.addColorStop(1, "transparent");
+    g.globalAlpha = a; g.fillStyle = n; g.fillRect(x - r, y - r, r * 2, r * 2); g.globalAlpha = 1;
+  }
+
+  function drawCourt(intro) {
+    g.fillStyle = C.deep; g.fillRect(0, 0, W, H);
+    const c0 = P(0, 0);
+    g.globalAlpha = smooth(0, .5, intro) * (1 - smooth(.15, .7, cam.rise));
+    poly([[-10, -18], [10, -18], [10, 18], [-10, 18]]); g.fillStyle = C.out; g.fill();
+    g.globalAlpha = smooth(0, .5, intro);
+    poly([[-HW, -HL], [HW, -HL], [HW, HL], [-HW, HL]]); g.fillStyle = C.inn; g.fill();
+    g.globalAlpha = 1;
+    glow(c0[0], c0[1], Math.max(W, H) * .6, "rgba(226,250,205,.34)", smooth(.2, 1, intro));
+    g.strokeStyle = C.line; g.lineCap = "round";
+    LINES.forEach((l, i) => {
+      const t = smooth(i * .045, .5 + i * .045, intro);
+      if (!t) return;
+      g.lineWidth = Math.max(1.1, P(l[0], Math.min(l[1], l[3]))[2] * .05);
+      g.beginPath(); seg([l[0], l[1], 0], [l[2], l[3], 0], t); g.stroke();
+    });
+  }
+  function drawNet(a) {
+    if (!a) return;
+    const nh = 1.0, X = 6.4;
+    g.globalAlpha = a;
+    poly([[-X, 0, 0], [X, 0, 0], [X, 0, nh], [-X, 0, nh]]); g.fillStyle = "rgba(10,20,16,.42)"; g.fill();
+    g.strokeStyle = "rgba(238,242,239,.26)"; g.lineWidth = 1; g.beginPath();
+    for (let x = -X; x <= X; x += .8) seg([x, 0, 0], [x, 0, nh]);
+    for (let z = .25; z < nh; z += .25) seg([-X, 0, z], [X, 0, z]);
+    g.stroke();
+    g.strokeStyle = C.line; g.lineWidth = Math.max(2, P(0, 0)[2] * .07); g.beginPath(); seg([-X, 0, nh], [X, 0, nh]); g.stroke();
+    g.lineWidth = Math.max(2, P(0, 0)[2] * .08); g.strokeStyle = "#7E8A84"; g.beginPath(); seg([-X, 0, 0], [-X, 0, nh + .05]); seg([X, 0, 0], [X, 0, nh + .05]); g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  // One rally on a loop: it ends the way the example's #1 fix does, in the net.
+  const SHOTS = [[[1.4, -12, 2.7], [-2.2, 5, 0], .35, .62], [[-2.2, 5, 0], [-3.2, 12.4, .9], .9, .5], [[-3.2, 12.4, .9], [3, -8.5, 0], 1.5, 1], [[3, -8.5, 0], [3.9, -12.6, .9], .8, .45],
+    [[3.9, -12.6, .9], [-3.2, 8, 0], 1.6, 1], [[-3.2, 8, 0], [-3.6, 12.2, .9], .8, .45], [[-3.6, 12.2, .9], [1.5, -7.5, 0], 1.5, .95], [[1.5, -7.5, 0], [2, -11.4, .9], .7, .42],
+    [[2, -11.4, .9], [1.1, -.1, .55], .35, .62], [[1.1, -.1, .55], [1, -.55, 0], 0, .24]];
+  const LOOP = SHOTS.reduce((s, x) => s + x[3], 0), HOLD = 1.5;
+  function ballAt(t) {
+    for (const [a, b, h, d] of SHOTS) {
+      if (t <= d) { const s = t / d; return [lerp(a[0], b[0], s), lerp(a[1], b[1], s), lerp(a[2], b[2], s) + 4 * h * s * (1 - s)]; }
+      t -= d;
+    }
+    return SHOTS[SHOTS.length - 1][1];
+  }
+  function drawRally(sec, a) {
+    if (a <= 0) return;
+    const round = Math.floor(sec / (LOOP + HOLD)), t = sec % (LOOP + HOLD), m = round % 2 ? -1 : 1;
+    const at = (u) => { const q = ballAt(clamp(u, 0, LOOP)); return [q[0] * m, q[1], q[2]]; };
+    const fade = a * (t > LOOP ? 1 - smooth(LOOP + .8, LOOP + HOLD, t) : smooth(0, .25, t));
+    const n = 16;
+    g.lineCap = "round";
+    for (let i = n; i > 0; i--) {           // trail
+      const p = P(...at(t - i * .02)), q = P(...at(t - (i - 1) * .02));
+      g.globalAlpha = fade * (1 - i / n) * .7; g.strokeStyle = C.ball; g.lineWidth = Math.max(1.5, q[2] * .075 * (1 - i / n));
+      g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
+    }
+    const b = at(t), sh = P(b[0], b[1], 0), p = P(...b), r = Math.max(4.5, p[2] * .11);
+    g.globalAlpha = fade * .4; g.fillStyle = "#04100A"; g.beginPath(); g.ellipse(sh[0], sh[1], r * 1.3, r * .5, 0, 0, 7); g.fill();
+    glow(p[0], p[1], r * 5, "rgba(221,242,71,.55)", fade);
+    g.globalAlpha = fade; g.fillStyle = C.ball; g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.globalAlpha = 1;
+    if (t > LOOP - .3) {                    // the miss
+      const k = clamp((t - LOOP + .3) / .9), q = P(...at(LOOP));
+      g.globalAlpha = fade * (1 - k); g.strokeStyle = C.lost; g.lineWidth = 2.5; g.beginPath(); g.arc(q[0], q[1], r + k * q[2] * .9, 0, 7); g.stroke(); g.globalAlpha = 1;
+    }
+  }
+
+  // The 11 points one player lost in the example match. Counts are real; spots are illustrative.
+  const MARKS = [["w", -4.7, -9.8], ["n", -3.4, -.25], ["l", -2.2, 12.9], ["n", 1.2, -.25], ["w", 4.4, -11], ["d", 1.7, 7.5], ["n", -1.2, -.25], ["w", -3.6, -12.4], ["l", 2.8, 13.1], ["n", 3.3, -.25], ["w", 3.1, -5.2]];
+  const LABELS = [["n", "4", "into the net", 0], ["l", "2", "long", 12.9], ["d", "1", "double fault", 7.5], ["w", "4", "not reached", -9.4]];
+  function drawMarks(p) {
+    const focus = smooth(.62, .72, p);
+    MARKS.forEach(([k, x, y], i) => {
+      const t = clamp((p - (.34 + i * .02)) / .035);
+      if (!t) return;
+      const q = P(x, y, 0), net = k === "n", r = Math.max(5, q[2] * .24) * back(t) * (net ? 1 + focus * .45 : 1);
+      const a = net ? 1 : 1 - focus * .8;
+      if (net) glow(q[0], q[1], r * 3.4, "rgba(242,131,111,.6)", .5 + focus * .5);
+      g.globalAlpha = a; g.fillStyle = C.lost; g.beginPath(); g.arc(q[0], q[1], r, 0, 7); g.fill();
+      g.strokeStyle = C.deep; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1;
+    });
+    const la = smooth(.5, .58, p);
+    if (!la) return;
+    const small = W < 460, f = small ? 12.5 : 16;
+    LABELS.forEach(([k, n, s, y]) => {
+      const q = P(HW + .9, y, 0), a = la * (k === "n" ? 1 : 1 - focus * .75);
+      g.globalAlpha = a; g.fillStyle = "#fff"; g.textBaseline = "middle";
+      g.font = `700 ${f * 1.9}px "Barlow Condensed", sans-serif`; g.fillText(n, q[0], q[1]);
+      const w = g.measureText(n).width + 6;
+      g.font = `500 ${f}px "Instrument Sans", sans-serif`; g.fillText(s, q[0] + w, q[1] + 1);
+      g.globalAlpha = 1;
+    });
+  }
+
+  function show(el, a, y = 0) {
+    el.style.opacity = a; el.style.visibility = a > .01 ? "visible" : "hidden";
+    el.style.transform = y ? `translateY(${y}px)` : "none";
+  }
+
+  let target = 0, p = 0, t0 = performance.now(), last = t0, running = false, visible = true;
+  const progress = () => clamp(-stage.getBoundingClientRect().top / Math.max(1, stage.offsetHeight - innerHeight));
+  function frame(now) {
+    running = false;
+    const sec = (now - t0) / 1000, intro = calm ? 1 : clamp(sec / 1.7);
+    p += (target - p) * (1 - Math.exp(-(now - last) / 90)); last = now; if (Math.abs(target - p) < .0004) p = target;
+    setCam(smooth(.1, .5, p));
+    drawCourt(intro);
+    const rallyA = 1 - smooth(.14, .3, p), netA = smooth(.1, .5, intro);
+    drawNet(netA);
+    drawRally(sec - 1.1, sec > 1.1 ? rallyA : 0);
+    drawMarks(p);
+    // Fade for the words over the court on narrow screens and on the left on wide ones.
+    const sh = wide ? g.createLinearGradient(0, 0, W * .62, 0) : g.createLinearGradient(0, 0, 0, H * .72);
+    sh.addColorStop(0, "rgba(10,20,16,.92)"); sh.addColorStop(.6, "rgba(10,20,16,.5)"); sh.addColorStop(1, "rgba(10,20,16,0)");
+    g.globalAlpha = 1 - smooth(.2, .45, p) * (wide ? .35 : 1); g.fillStyle = sh; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+    if (!calm) {
+      const a0 = 1 - smooth(.04, .13, p), a1 = smooth(.34, .42, p) * (1 - smooth(.62, .68, p)), a2 = smooth(.68, .76, p);
+      show(S[0], a0, -60 * smooth(.04, .13, p));
+      show(S[1], a1, 18 * (1 - smooth(.34, .42, p)));
+      show(S[2], a2, 18 * (1 - smooth(.68, .76, p)));
+      cue.style.opacity = 1 - smooth(0, .03, p);
+      if (visible) tick();
+    }
+  }
+  function tick() { if (!running) { running = true; requestAnimationFrame(frame); } }
+  function onScroll() {
+    target = calm ? 0 : progress();
+    nav.classList.toggle("solid", stage.getBoundingClientRect().bottom < 76);
+    tick();
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", () => { resize(); onScroll(); });
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) tick(); }).observe(stage);
+  document.fonts?.ready.then(tick);
+  resize(); onScroll();
+})();
+</script>
+</body>
+</html>
