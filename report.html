@@ -582,6 +582,10 @@ async function load() {
     const src = params.get("file") || (JOB ? `${BACKEND}/api/profile/${encodeURIComponent(JOB)}` : null);
     if (!src) throw new Error("No report selected. Open this page from the app after processing finishes.");
     const res = await fetch(src);
+    if (res.status === 403) {
+      const j = await res.json().catch(() => ({}));
+      throw Object.assign(new Error(j.error || "This report is private."), { signin: !!j.signin });
+    }
     if (!res.ok) throw new Error(res.status === 404 ? "This report isn't ready yet." : `Couldn't load the report (HTTP ${res.status}).`);
     profile = await res.json();
     if (params.get("insights")) {             // local testing: separate insights file
@@ -604,8 +608,9 @@ async function load() {
         .then((st) => { timingHtml = timingFrom(st); if (timingHtml) render(); }).catch(() => {});
     }
   } catch (e) {
-    $("title").textContent = "Report unavailable";
+    $("title").textContent = e.signin ? "This report is private" : "Report unavailable";
     $("error").textContent = e.message;
+    if (e.signin) $("error").insertAdjacentHTML("beforeend", ` <a href="/account?next=${encodeURIComponent(location.pathname + location.search)}">Sign in</a>`);
     $("error").classList.remove("hidden");
   }
 }
@@ -1235,7 +1240,7 @@ wVideo.addEventListener("seeking", () => { $("wScore").classList.add("hidden"); 
 wVideo.addEventListener("seeked", () => { drawBall(wVideo.currentTime); drawScore(wVideo.currentTime); });
 
 // Share with your coach: the phone's share sheet, or copy the link on a computer.
-// A coach opens it with their team sign-in (they see their team's reports) or the passcode.
+// A coach opens it with their team sign-in (they see their team's reports); nobody else can.
 $("shareBtn").addEventListener("click", async () => {
   const url = location.href.split("#")[0];
   if (navigator.share) {

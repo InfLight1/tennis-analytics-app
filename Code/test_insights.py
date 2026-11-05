@@ -55,8 +55,9 @@ class Fake:
 
 sent = insights.build_llm_input(PROFILE)["players"][0]
 check(sent["match_context"]["rally_length"]["short"]["played"] == 15, "the AI sees how long the points were")
-check("try_this" in insights.SYSTEM and "racket's length" in insights.SYSTEM.split("Never restate")[1].split("\n")[0],
-      "the instructions ban the racket's-length tip")
+rule = insights.SYSTEM.split("Never restate")[1].split("\n")[0]
+check("hit higher" in rule, "the instructions ban tips that only state the obvious")
+check("racket" not in rule, "a racket's length is still allowed as a way to explain a height")
 
 r = insights.generate_insights(PROFILE, client=Fake("end_turn"))
 check(r["model"] == insights.MODEL and r["version"] == insights.VERSION, "Sonnet writes the tips when it works")

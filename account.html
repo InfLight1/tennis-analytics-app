@@ -332,7 +332,9 @@ document.querySelectorAll("form[data-api]").forEach((f) => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { msg.textContent = data.error || `Something went wrong (${res.status}).`; return; }
       Site.setSession(data.session);
-      if (data.user?.role === "coach") location.reload(); else location.assign("/app");
+      const next = new URLSearchParams(location.search).get("next");   // a private report or /new sent them here
+      if (next && /^\/(report|new)([?#]|$)/.test(next)) location.assign(next);
+      else if (data.user?.role === "coach") location.reload(); else location.assign("/app");
     } catch (err) {
       msg.textContent = "Couldn't reach the server. Check your connection and try again.";
     } finally { btn.disabled = false; }

@@ -718,6 +718,8 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 <script src="passcode.js"></script>
 <script src="recorder.js"></script>
 <script>
+// A match has to belong to an account (private reports, Nov 4), so sign in first and come back.
+if (!Site.session()) location.replace("/account?next=" + encodeURIComponent(location.pathname + location.search + location.hash));
 // ── EXTENDED_POINT_LABELS / CLICK_INSTRUCTIONS mirror calibration.py's
 // schema, but the authoritative copy is fetched from /api/upload's
 // response each time -- these are just the fallback/initial render

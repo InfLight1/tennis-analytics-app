@@ -1556,8 +1556,8 @@ def web_app():
 
     # Accounts (2026-10-28, see Code/accounts.py): a signed-in player or coach
     # gets in with their session instead of the shared passcode, but only to
-    # their own (or their team's) reports. The passcode still opens everything
-    # (beta testers and Claude's checks) and is needed to create a team.
+    # their own (or their team's) reports. Private reports (Rudra, Nov 4): the passcode
+    # never opens a match that isn't the example; it's only for signing up and watching video.
     import accounts as accounts_mod
     import progress as progress_mod
     accts = accounts_mod.Accounts(modal.Dict.from_name("advantage-accounts", create_if_missing=True))
@@ -1567,7 +1567,10 @@ def web_app():
     # create-team is NOT public: it needs the passcode header, checked like every other route
     auth_public = {"/api/auth/signin", "/api/auth/join"}
     import re as _re
-    job_in_path = _re.compile(r"^/api/(?:upload|record|profile|status|names|job|frame|court-guess|debug|watch|ball)/([0-9a-f]{12})(?:/|$)")
+    job_in_path = _re.compile(r"^/api/(?:(?:upload|record)/([0-9a-f]{12})|(?:profile|status|names|job|frame|court-guess|debug|watch|ball)/([^/]+))(?:/|$)")
+    examples = (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID)
+    # A match has to start signed in: with no owner, nobody could ever open its report.
+    match_starts = {"/api/upload", "/api/upload/init", "/api/record/init", "/api/calibrate"}
     job_writes = ("/api/names/", "/api/job/")
     video_in_path = _re.compile(r"^/api/(?:watch|ball)/([^/]+)$")   # any code: fail closed
 
@@ -1580,20 +1583,23 @@ def web_app():
         is_public = (request.method == "GET" and path in public_api) or path in auth_public
         if path.startswith("/api/") and request.method != "OPTIONS" and not is_public:
             given = request.headers.get("x-passcode", "").strip().encode()
-            if passcode and given and hmac.compare_digest(given, passcode):
-                request.state.full_access = True
-            else:
-                user = request.state.user
-                if not user:
-                    await asyncio.sleep(0.5)          # slows guessing
-                    return JSONResponse({"error": "passcode required"}, status_code=401)
-                m = job_in_path.match(path)
-                if m:
-                    job = m.group(1)
-                    allowed = (accts.can_change(user, job) if path.startswith(job_writes) and request.method != "GET"
-                               else accts.can_see(user, job))
-                    if not allowed:
-                        return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
+            request.state.full_access = bool(passcode and given and hmac.compare_digest(given, passcode))
+            user = request.state.user
+            m = job_in_path.match(path)
+            job = m and (m.group(1) or m.group(2))
+            # 403 (not 401) with "signin": the page asks the viewer to sign in, not for the passcode.
+            if not user and (path in match_starts or (job and job not in examples)):
+                await asyncio.sleep(0.5)              # slows guessing
+                return JSONResponse({"error": "This report is private. Sign in to the account it belongs to." if job
+                                     else "Sign in to start a match.", "signin": True}, status_code=403)
+            if not user and not request.state.full_access:
+                await asyncio.sleep(0.5)              # slows guessing
+                return JSONResponse({"error": "passcode required"}, status_code=401)
+            if job and not (request.state.full_access and job in examples):
+                allowed = (accts.can_change(user, job) if path.startswith(job_writes) and request.method != "GET"
+                           else accts.can_see(user, job))
+                if not allowed:
+                    return JSONResponse({"error": "This report belongs to someone else."}, status_code=403)
             # Match video needs BOTH (Rudra, Nov 1): the passcode and a signed-in account that may see
             # this report (the player, or their team's coach). The example has no owner, so any account.
             # 403 (not 401), so the page keeps the saved passcode and asks the viewer to sign in.
@@ -1604,7 +1610,7 @@ def web_app():
                     return JSONResponse({"error": "passcode required"}, status_code=401)
                 if not user:
                     return JSONResponse({"error": "Sign in to watch your match video.", "signin": True}, status_code=403)
-                if v.group(1) not in (EXAMPLE_JOB_ID, TEST_EXAMPLE_JOB_ID) and not accts.can_see(user, v.group(1)):
+                if v.group(1) not in examples and not accts.can_see(user, v.group(1)):
                     return JSONResponse({"error": "Only the player and their coach can watch this video."}, status_code=403)
         return await call_next(request)
 
@@ -1634,8 +1640,9 @@ def web_app():
             print(f"[job {job_id}] volume commit FAILED: {e}")
 
     @fastapi_app.post("/api/upload")
-    async def upload_video(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
+    async def upload_video(request: Request, file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
         job_id = uuid.uuid4().hex[:12]
+        accts.set_owner(job_id, request.state.user["username"])
         p = _job_paths(job_id)
         os.makedirs(os.path.dirname(p["video_path"]), exist_ok=True)
 
@@ -1706,8 +1713,7 @@ def web_app():
     @fastapi_app.post("/api/upload/init")
     def upload_init(request: Request, size: int = Form(...), chunk_size: int = Form(...)):
         job_id = uuid.uuid4().hex[:12]
-        if request.state.user:
-            accts.set_owner(job_id, request.state.user["username"])
+        accts.set_owner(job_id, request.state.user["username"])
         os.makedirs(_parts_dir(job_id), exist_ok=True)
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"size": size, "chunk_size": chunk_size}, f)
@@ -1832,8 +1838,7 @@ def web_app():
     @fastapi_app.post("/api/record/init")
     def record_init(request: Request, mime: str = Form("")):
         job_id = uuid.uuid4().hex[:12]
-        if request.state.user:
-            accts.set_owner(job_id, request.state.user["username"])
+        accts.set_owner(job_id, request.state.user["username"])
         os.makedirs(_parts_dir(job_id), exist_ok=True)
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"mode": "record", "mime": mime[:80]}, f)
@@ -1977,7 +1982,7 @@ def web_app():
                              match_type: str = Form("singles")):
         """Saving the court marking must never answer with a bare crash page: log it, explain it."""
         import traceback
-        if request.state.user and not accts.can_change(request.state.user, job_id):
+        if not accts.can_change(request.state.user, job_id):
             return JSONResponse({"error": "This match belongs to someone else."}, status_code=403)
         user = request.state.user
         allowed, why = limits.try_start(job_id, user["username"] if user else None)
@@ -2137,8 +2142,8 @@ def web_app():
     @fastapi_app.get("/api/debug/{job_id}/{name}")
     def debug_file(job_id: str, name: str):
         """Pipeline intermediates for offline checking (ball/player positions
-        and events only -- no video). Needs the passcode like every /api/ route:
-        curl -H "X-Passcode: <code>" <url>/api/debug/<job>/<name>"""
+        and events only -- no video). Needs a sign-in that may see the report:
+        curl -H "X-Session: <session>" <url>/api/debug/<job>/<name>"""
         allowed = {"rally_events_resolved.csv": "resolved_events_csv_path",
                    "raw_detection.csv": "raw_csv_path", "match_data.csv": "match_csv_path"}
         if name not in allowed:

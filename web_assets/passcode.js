@@ -47,6 +47,9 @@
   // Its video is not: clips show real players, so watching always needs the passcode or a sign-in.
   const isPublic = (url) => /\/api\/profile\/(76a383379d90|e0e0e0e0e0e0)$/.test(String(url instanceof Request ? url.url : url));
 
+  // Private matches open with a sign-in, never the passcode (Nov 4), so don't ask for a code that can't help.
+  const needsAccount = (url) => /\/api\/(profile|status|names|job|frame|court-guess|debug|upload|record|calibrate)(\/|$)/.test(String(url instanceof Request ? url.url : url));
+
   // Accounts (2026-10-28): a signed-in player or coach sends their session (X-Session) instead,
   // and is never asked for the passcode. Sign-in routes need neither.
   const session = () => (window.Site && Site.session()) || null;
@@ -56,6 +59,7 @@
     if (!isApi(url)) return realFetch(url, opts);
     if (isAuth(url)) return realFetch(url, opts);
     if (!code && !session() && isPublic(url) && (opts.method || "GET").toUpperCase() === "GET") return realFetch(url, opts);
+    if (!code && !session() && needsAccount(url)) return realFetch(url, opts);
     // creating a team and watching match video always need the passcode, even for someone signed in
     const needsCode = /\/api\/(auth\/create-team|watch\/|ball\/)/.test(String(url instanceof Request ? url.url : url));
     if (!code && (!session() || needsCode)) await ask(false);

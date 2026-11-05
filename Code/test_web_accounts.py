@@ -116,8 +116,28 @@ if __name__ == "__main__":
     check(rp["matches"] == 2 and rp["latest"]["top_fix"]["id"] == "errors_net", "coach team view: latest #1 fix")
     check(client.get("/api/team", headers={"x-session": rudra}).status_code == 403, "players have no team view")
 
-    check(client.get(f"/api/profile/{job}", headers={"x-passcode": "test-1234"}).status_code == 200,
-          "the passcode still opens everything (beta + checks)")
+    # private reports (Nov 4): only a sign-in that may see the report opens it; the passcode opens nothing private
+    r = client.get(f"/api/profile/{job}", headers=pw)
+    check(r.status_code == 403 and r.json().get("signin"), "the passcode alone can't open a private report; the page asks to sign in")
+    r = client.get(f"/api/profile/{job}")
+    check(r.status_code == 403 and r.json().get("signin"), "nobody signed in can't open a private report")
+    check(client.get(f"/api/profile/{job}", headers={**pw, "x-session": sam}).status_code == 403,
+          "the passcode doesn't help another player open it")
+    for route in (f"/api/status/{job}", f"/api/frame/{job}", f"/api/court-guess/{job}", f"/api/debug/{job}/match_data.csv"):
+        check(client.get(route, headers=pw).status_code == 403, f"passcode alone: {route.split('/')[2]} is locked too")
+    check(client.delete(f"/api/job/{job}", headers=pw).status_code == 403, "the passcode can't delete a report")
+    check(form(f"/api/names/{job}", {"player1_name": "X"}, **pw).status_code == 403, "the passcode can't rename a report")
+    check(client.get("/api/profile/nothex", headers=pw).status_code == 403, "odd report codes stay locked")
+    for route, data in (("/api/upload/init", {"size": 100, "chunk_size": 50}), ("/api/record/init", {}),
+                        ("/api/calibrate", {"job_id": job, "points_json": "[]"})):
+        check(form(route, data, **pw).status_code == 403, f"{route}: a match has to start signed in")
+    check(form("/api/calibrate", {"job_id": job, "points_json": "[]"}, **{"x-session": sam}).status_code == 403,
+          "another player can't mark the court on this match")
+    for ex in (modal_app.EXAMPLE_JOB_ID, modal_app.TEST_EXAMPLE_JOB_ID):
+        fake_report(ex, net=2)
+        check(client.get(f"/api/profile/{ex}").status_code == 200, "the example report stays public")
+        check(client.get(f"/api/profile/{ex}", headers={"x-session": sam}).status_code == 200, "the example opens signed in too")
+        check(form(f"/api/names/{ex}", {"player1_name": "X"}, **{"x-session": sam}).status_code == 403, "nobody signed in can rename the example")
     check(form("/api/auth/signin", {"username": "rudra", "password": "nope"}).status_code == 400, "wrong password")
     solo_form = {"username": "soloplayer", "password": "secret123", "name": "Mia Chen", "email": "mia@example.com"}
     check(form("/api/auth/solo", solo_form).status_code == 401, "solo sign-up needs the passcode")

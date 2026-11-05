@@ -4,7 +4,7 @@ from what the app called, so labeling a new match means CHECKING rows
 instead of stepping through every frame.
 
 Input: the job's rally_events_resolved.csv (download it with
-  curl -H "X-Passcode: <code>" <url>/api/debug/<job>/rally_events_resolved.csv).
+  curl -H "X-Session: <session>" <url>/api/debug/<job>/rally_events_resolved.csv).
 Output: a CSV in the ground_truth_points.csv format (one row per serve
 attempt, two serves count) plus two helper columns:
   video_time  where the point starts in the video (m:ss), to jump there
