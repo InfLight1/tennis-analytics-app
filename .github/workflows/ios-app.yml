@@ -65,15 +65,18 @@ jobs:
           APP=$(find ios/build/Build/Products -name '*.app' -maxdepth 3 | head -n 1)
           xcrun simctl install "$DEVICE" "$APP"
           mkdir -p shots
+          xcrun simctl spawn "$DEVICE" log stream --level debug --predicate 'process == "AdvantageAI"' > shots/app.log 2>&1 &
           xcrun simctl ui "$DEVICE" appearance light
           xcrun simctl launch "$DEVICE" com.advantageai.tennis
           sleep 25
           xcrun simctl io "$DEVICE" screenshot shots/light.png
-          xcrun simctl terminate "$DEVICE" com.advantageai.tennis
+          xcrun simctl terminate "$DEVICE" com.advantageai.tennis || true
           xcrun simctl ui "$DEVICE" appearance dark
           xcrun simctl launch "$DEVICE" com.advantageai.tennis
           sleep 15
           xcrun simctl io "$DEVICE" screenshot shots/dark.png
+          cp ~/Library/Logs/DiagnosticReports/AdvantageAI* shots/ 2>/dev/null || true
+          grep -E 'Unhandled JS|Fatal|fatal|Exception|Error:' shots/app.log | head -n 30 || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
