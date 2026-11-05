@@ -41,6 +41,8 @@ final class SendManager: NSObject {
   private var inFlight: [String: [Int: Int64]] = [:]
   private var lastChange = Date.distantPast
   private var finishEvents: (() -> Void)?
+  private var cutting: Set<String> = []     // being cut into pieces right now
+  private var fetching: Set<String> = []    // waiting for storage links right now
 
   private lazy var transfers: URLSession = {
     let config = URLSessionConfiguration.background(withIdentifier: SendManager.sessionId)
@@ -129,7 +131,7 @@ final class SendManager: NSObject {
         return [
           "jobId": job.jobId, "title": job.title, "phase": job.phase.rawValue,
           "sentBytes": Double(min(sent + moving, Int64(job.size))), "totalBytes": Double(job.size),
-          "problem": job.problem as Any,
+          "problem": job.problem ?? "",
         ]
       }
     }
@@ -206,16 +208,25 @@ final class SendManager: NSObject {
     }
   }
 
+  // Cutting takes a while, so it happens off the state queue; only one cut per match at a time.
   private func prepare(_ jobId: String) {
+    guard let job = jobs[jobId], !cutting.contains(jobId) else { return }
+    cutting.insert(jobId)
     let app = BackgroundTime()
-    defer { app.end() }
-    guard let job = jobs[jobId] else { return }
-    do {
-      try cut(job)
-      try post(job, path: "/api/upload/\(jobId)/size",
-               form: "size=\(job.size)&chunk_size=\(job.partBytes)", step: .size)
-    } catch {
-      fail(jobId, "Couldn't get the video ready to send: \(error.localizedDescription)")
+    DispatchQueue.global(qos: .userInitiated).async {
+      var problem: Error?
+      do { try self.cut(job) } catch { problem = error }
+      self.queue.async {
+        defer { app.end() }
+        self.cutting.remove(jobId)
+        do {
+          if let problem { throw problem }
+          try self.post(job, path: "/api/upload/\(jobId)/size",
+                        form: "size=\(job.size)&chunk_size=\(job.partBytes)", step: .size)
+        } catch {
+          self.fail(jobId, "Couldn't get the video ready to send: \(error.localizedDescription)")
+        }
+      }
     }
   }
 
@@ -297,6 +308,7 @@ final class SendManager: NSObject {
   }
 
   private func enqueue(_ job: SendJob, index: Int, request: URLRequest?) {
+    if jobs[job.jobId]?.done.contains(index) ?? true { return }
     let file = partFile(job.jobId, index)
     guard let request, FileManager.default.fileExists(atPath: file.path) else {
       fail(job.jobId, "Part of the video was lost on this phone, so it can't be sent. Please film it again.")
@@ -310,6 +322,8 @@ final class SendManager: NSObject {
 
   // Links straight to storage last 6 hours, so they're asked for just before use.
   private func fetchStorageLinks(_ job: SendJob, waiting: [Int]) {
+    guard !fetching.contains(job.jobId) else { return }
+    fetching.insert(job.jobId)
     let app = BackgroundTime()
     let groups = stride(from: 0, to: waiting.count, by: 200).map { Array(waiting[$0..<min($0 + 200, waiting.count)]) }
     let all = DispatchGroup()
@@ -333,6 +347,7 @@ final class SendManager: NSObject {
     }
     all.notify(queue: queue) {
       defer { app.end() }
+      self.fetching.remove(job.jobId)
       if signedOut { self.needSignIn(job.jobId); return }
       guard let job = self.jobs[job.jobId] else { return }
       for index in waiting {
@@ -340,6 +355,9 @@ final class SendManager: NSObject {
         var r = URLRequest(url: url)
         r.httpMethod = "PUT"
         self.enqueue(job, index: index, request: r)
+      }
+      if links.isEmpty {       // no signal or a server hiccup: looks again in a moment
+        self.queue.asyncAfter(deadline: .now() + .seconds(20)) { self.reconcile() }
       }
       self.save()
       self.changed()
