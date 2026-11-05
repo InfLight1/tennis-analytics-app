@@ -85,6 +85,13 @@ export default function CameraScreen() {
     return () => clearInterval(timer);
   }, [phase]);
 
+  // Hands-free, nobody is at the screen: if marking stalls, say so instead of waiting for ever.
+  useEffect(() => {
+    if (phase !== 'marking' || !auto) return;
+    const timer = setTimeout(() => { setAuto(false); speak(LINES.check); }, 40_000);
+    return () => clearTimeout(timer);
+  }, [phase, auto, speak]);
+
   const picture = useCallback(async (width: number, height: number, quality: number) => {
     const shot = await photo.capturePhoto({ enableShutterSound: false }, {});
     try {

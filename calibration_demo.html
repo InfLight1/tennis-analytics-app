@@ -1551,6 +1551,7 @@ function renderPointList() {
 
 function redrawFrame() {
   const canvas = $("frameCanvas");
+  if (!canvas._img) return;                     // no picture yet (the app sets singles/doubles first)
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(canvas._img, 0, 0, canvas.width, canvas.height);
@@ -2042,13 +2043,15 @@ renderReports();
 if (appMarking) (async () => {
   const q = new URLSearchParams(location.search);
   document.documentElement.classList.add("mark-only");
+  document.body.appendChild($("calibratePanel"));
   const type = document.querySelector(`input[name="matchType"][value="${q.get("type") === "doubles" ? "doubles" : "singles"}"]`);
   type.checked = true;
   type.dispatchEvent(new Event("change", { bubbles: true }));
   $("player1Name").value = q.get("p1") || "";
   $("player2Name").value = q.get("p2") || "";
   $("submitCalibrationBtn").textContent = "Done";
-  const data = await fetch(`${backendUrl()}/api/point-labels`).then((r) => r.json());
+  const data = await fetch(`${backendUrl()}/api/point-labels`).then((r) => r.json()).catch(() => null);
+  if (!data) { Site.tellApp({ type: "mark-check" }); $("instruction").textContent = "Couldn't reach the server. Check the signal and try again."; return; }
   POINT_LABELS = data.point_labels;
   INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
   jobId = appMarking;
