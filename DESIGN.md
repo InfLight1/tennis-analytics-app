@@ -44,8 +44,8 @@
 
 ## Landing page (`/`, Nov 4)
 - One shared header (`site.js`, same logo, links change when signed in) and footer. The logo always opens this page; signed-in players also get an About link. Signed-in visitors see "Go to your dashboard"; the app pages link back here from the footer and the empty dashboard.
-- Landing opens on a real photo (`court-dusk-2400.webp`, the film court photo with the light pole removed, graded to dusk), with a small ball placed using the court's own perspective; no lights, no glow (Rudra, Nov 4: less "AI vibe-code"). Scrolling dips to dark, then the drawn top-down data view takes over.
-- `court-night-*.webp`: a crop of that photo, used as the top band on the dashboard, report, account and new analysis pages, so every page opens on the same court.
+- Landing opens on the drawn back-fence court with a moving ball: no light poles, no players (Rudra, Nov 4: tried a dusk photo and reactive players; players hurt the premium feel).
+- `court-night-*.webp`: a still of the landing court, used as the top band on the dashboard, report, account and new analysis pages, so every page opens on the same court.
 - Colours added: `--court-deep` #0A1410 (page dark), `--court-out` #154734, `--court-in` #1E7A52, `--court-line` #EEF2EF, `--lost-glow` #F2836F.
 - **Wow moment:** a drawn court, seen from the back fence where the phone films, with a rally that ends in the net. Scrolling raises the camera overhead, the 11 lost points of the example match land on the court, then the net errors light up and the #1 fix card appears. Real counts; spots labelled as illustration.
 - Order: court story, how it works (3 steps), the report, 17 of 20 band, for coaches (sample team view, labelled), for parents and schools, Every point counts. No price shown yet. Motion is this one moment only; reduced motion or no scripts shows everything stacked.
