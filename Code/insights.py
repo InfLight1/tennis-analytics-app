@@ -25,11 +25,12 @@ import argparse
 import json
 
 MODEL = "claude-sonnet-5-5"
+BACKUP_MODEL = "claude-haiku-4-5"   # if Sonnet fails or declines, a match still gets tips
 MAX_TOKENS = 16000
 MAX_WEAKNESSES = 4     # top headline + context weaknesses sent per player
 MAX_STRENGTHS = 3
 
-VERSION = 6   # bump to regenerate cached insights.json after a prompt change
+VERSION = 7   # bump to regenerate cached insights.json after a prompt change
 
 SYSTEM = """You are a friendly tennis coach writing the "how to improve" section of a match report for club and school players.
 
@@ -38,7 +39,7 @@ You get, for each player, patterns diagnosed from tracked match video: a title, 
 For every pattern give:
 0. headline: what happened and what it cost, at most 10 words (e.g. "Net errors cost you 4 points").
    try_this: the single most useful change for next time, at most 20 words: a decision to make during a point, with when it applies and why it works (e.g. "When you're stretched or the ball is low, hit crosscourt: the net is lower in the middle and you have more court").
-   Never restate the problem or just name its opposite ("hit higher", "aim over the net", "get more first serves in", "make fewer errors"). The player already knows that. Tell them something they can use: when to do it, what to do, and the tennis reason it works.
+   Never restate the problem or just name its opposite ("hit higher", "aim over the net", "clear the net by a racket's length", "get more first serves in", "make fewer errors"). This applies to the details too. The player already knows that. Tell them something they can use: when to do it, what to do, and the tennis reason it works.
 Then the details behind a "show more" tap:
 1. match_strategy: a change in what they choose to do during points (targets, shot choice, where to stand, when to attack or stay patient).
 2. habit: a change in routine, mindset or body language they can apply right away (between-point routine, breathing before a second serve, committing to a target before swinging, resetting after an error).
@@ -54,7 +55,7 @@ Rules:
 - Ground every suggestion in the pattern's numbers and say why it matters ("this cost you 4 points"). Don't invent facts about this match. Use the match context (how long the points were, how points were lost and won, serve numbers) to pick advice that fits this player.
 - General tennis knowledge is welcome when it explains why: the net is lower in the middle than at the sides, a crosscourt shot has more court, a deep ball gives the opponent less time. Choose the idea a good coach would add, not the first obvious one.
 - Tactics, habits and practice only. Do not prescribe stroke mechanics (grip, swing path, footwork technique, body position): the video can't see technique, so that belongs to a coach.
-- Weaknesses: what to change. Strengths: how to use it more on purpose.
+- Weaknesses: what to change. Strengths: write the headline only and leave try_this, match_strategy, habit and practice_drill as empty strings; the report shows only the headline for a strength.
 - Use words like "early sign" only for patterns that happened fewer than 3 times.
 - The game_summary is ONE sentence, at most 25 words: overall style, the biggest thing to fix, the best thing to keep."""
 
@@ -119,6 +120,22 @@ def input_hash(profile):
     return hashlib.sha256(json.dumps(build_llm_input(profile), sort_keys=True).encode()).hexdigest()[:16]
 
 
+def _ask(client, model, payload):
+    """One call; raises if the model stops early, so the caller can try the backup."""
+    response = client.messages.create(
+        model=model,
+        max_tokens=MAX_TOKENS,
+        system=SYSTEM,
+        messages=[{"role": "user", "content":
+                   "Write the insights for these players. Cover every pattern listed.\n\n"
+                   + json.dumps(payload, indent=1)}],
+        output_config={"format": {"type": "json_schema", "schema": SCHEMA}},
+    )
+    if response.stop_reason != "end_turn":
+        raise RuntimeError(f"stopped early: {response.stop_reason}")
+    return json.loads(next(b.text for b in response.content if b.type == "text")), response
+
+
 def generate_insights(profile, client=None):
     """Returns {"model":..., "players": {player_id: {...}}} or None on any failure."""
     try:
@@ -132,20 +149,14 @@ def generate_insights(profile, client=None):
         payload = build_llm_input(profile)
         if not any(p["weaknesses"] or p["strengths"] for p in payload["players"]):
             return None
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM,
-            messages=[{"role": "user", "content":
-                       "Write the insights for these players. Cover every pattern listed.\n\n"
-                       + json.dumps(payload, indent=1)}],
-            output_config={"format": {"type": "json_schema", "schema": SCHEMA}},
-        )
-        if response.stop_reason != "end_turn":
-            print(f"[insights] stopped early: {response.stop_reason}")
+        for model in (MODEL, BACKUP_MODEL):
+            try:
+                data, response = _ask(client, model, payload)
+                break
+            except Exception as e:
+                print(f"[insights] {model} failed: {type(e).__name__}: {e}")
+        else:
             return None
-        text = next(b.text for b in response.content if b.type == "text")
-        data = json.loads(text)
         known = {p["player_id"]: {x["id"] for x in p["weaknesses"] + p["strengths"]}
                  for p in payload["players"]}
         out = {}
@@ -155,7 +166,7 @@ def generate_insights(profile, client=None):
                 continue
             out[pid] = {"game_summary": pl["game_summary"],
                         "insights": [i for i in pl["insights"] if i["pattern_id"] in known[pid]]}
-        return {"model": MODEL, "version": VERSION, "input_hash": input_hash(profile), "players": out,
+        return {"model": model, "version": VERSION, "input_hash": input_hash(profile), "players": out,
                 "usage": {"input_tokens": response.usage.input_tokens,
                           "output_tokens": response.usage.output_tokens}}
     except Exception as e:                            # suggestions are optional -- never fail the job
