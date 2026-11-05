@@ -263,6 +263,7 @@ cpu_image = (
     .add_local_file("account.html", "/root/web/account.html")
     .add_local_file("app.html", "/root/web/app.html")
     .add_local_file("landing.html", "/root/web/landing.html")
+    .add_local_file("privacy.html", "/root/web/privacy.html")
     # passcode.js, manifest + icons (install-on-phone). Served at the site root.
     .add_local_dir("web_assets", remote_path="/root/web/assets")
 )
@@ -967,6 +968,27 @@ def _read_status(job_id: str) -> dict:
 # via .spawn() from the /api/calibrate endpoint so that endpoint returns
 # immediately instead of blocking for the full run.
 # ---------------------------------------------------------------------------
+def _alert_players(job_id: str, title: str, body: str):
+    """The iPhone app's alert, through Expo's push service. Never gets in the way of the job."""
+    import sys
+    import urllib.request
+    try:
+        if "/root/Code" not in sys.path:
+            sys.path.insert(0, "/root/Code")
+        import accounts as accounts_mod
+        accts = accounts_mod.Accounts(modal.Dict.from_name("advantage-accounts", create_if_missing=True))
+        tokens = accts.push_tokens(accts.people_on(job_id))
+        if not tokens:
+            return
+        messages = [{"to": t, "title": title, "body": body, "sound": "default", "data": {"job": job_id}} for t in tokens]
+        request = urllib.request.Request("https://exp.host/--/api/v2/push/send", json.dumps(messages).encode(),
+                                         {"Content-Type": "application/json"})
+        urllib.request.urlopen(request, timeout=10).read()
+        print(f"[job {job_id}] alert sent to {len(tokens)} phone(s)")
+    except Exception as e:
+        print(f"[job {job_id}] alert failed: {e}")
+
+
 @app.function(image=cpu_image, volumes={VOLUME_PATH: volume}, timeout=14400)  # must outlast run_detection_remote + the CPU chain
 def run_full_job_remote(job_id: str, ball_model_name: str, player_model_name: str):
     try:
@@ -994,8 +1016,10 @@ def run_full_job_remote(job_id: str, ball_model_name: str, player_model_name: st
 
         _write_status(job_id, stage="done", message="Complete.", report=report_json,
                        profile=profile, pipeline_result=result)
+        _alert_players(job_id, "Your report is ready", "Tap to see your #1 fix.")
     except Exception as e:
         _write_status(job_id, stage="error", message=str(e))
+        _alert_players(job_id, "Your report didn't finish", "Open the app to see what happened.")
         raise
 
 
@@ -1711,15 +1735,30 @@ def web_app():
         return f"{_job_paths(job_id)['job_dir']}/input/parts"
 
     @fastapi_app.post("/api/upload/init")
-    def upload_init(request: Request, size: int = Form(...), chunk_size: int = Form(...)):
+    def upload_init(request: Request, size: int = Form(...), chunk_size: int = Form(...), later: int = Form(0)):
         job_id = uuid.uuid4().hex[:12]
         accts.set_owner(job_id, request.state.user["username"])
         os.makedirs(_parts_dir(job_id), exist_ok=True)
         with open(f"{_job_paths(job_id)['job_dir']}/input/upload.json", "w") as f:
             json.dump({"size": size, "chunk_size": chunk_size}, f)
         volume.commit()
-        _start_r2_puller(job_id)
+        if not later:       # the iPhone app opens a match before filming; its video comes after /size
+            _start_r2_puller(job_id)
         return JSONResponse({"job_id": job_id, "r2": bool(_r2())})
+
+    @fastapi_app.post("/api/upload/{job_id}/size")
+    def upload_size(job_id: str, size: int = Form(...), chunk_size: int = Form(...)):
+        """iPhone app: filming is over, so the video's size is known and its pieces are on their way."""
+        path = f"{_job_paths(job_id)['job_dir']}/input/upload.json"
+        if not os.path.isdir(_parts_dir(job_id)):
+            volume.reload()
+        if not os.path.isdir(_parts_dir(job_id)):
+            return JSONResponse({"error": f"Unknown upload {job_id}"}, status_code=404)
+        with open(path, "w") as f:
+            json.dump({"size": size, "chunk_size": chunk_size}, f)
+        volume.commit()
+        _start_r2_puller(job_id)
+        return JSONResponse({"job_id": job_id})
 
     @fastapi_app.get("/api/upload/{job_id}/parts")
     def upload_parts(job_id: str):
@@ -1936,10 +1975,17 @@ def web_app():
         if not os.path.isdir(d):
             return JSONResponse({"deleted": False, "error": "Not found"}, status_code=404)
         stage = (_read_json(f"{d}/status.json", {}) or {}).get("stage")
-        if stage in ("calibrating", "queued", "detecting", "analyzing", "preparing"):
+        if stage in BUSY_STAGES:
             return JSONResponse({"error": "This match is still being analysed. You can delete it once its report is ready."},
                                 status_code=409)
-        shutil.rmtree(d, ignore_errors=True)
+        _remove_job(job_id)
+        print(f"[job {job_id}] deleted by the player (stage was {stage})")
+        return JSONResponse({"deleted": True})
+
+    BUSY_STAGES = ("calibrating", "queued", "detecting", "analyzing", "preparing")
+
+    def _remove_job(job_id: str):
+        shutil.rmtree(_job_paths(job_id)["job_dir"], ignore_errors=True)
         volume.commit()
         r2 = _r2()
         if r2:
@@ -2103,6 +2149,11 @@ def web_app():
     @fastapi_app.get("/report.html")
     def report_page():
         return FileResponse("/root/web/report.html", media_type="text/html",
+                            headers={"Cache-Control": "no-store"})
+
+    @fastapi_app.get("/privacy")
+    def privacy_page():
+        return FileResponse("/root/web/privacy.html", media_type="text/html",
                             headers={"Cache-Control": "no-store"})
 
     @fastapi_app.get("/app")
@@ -2316,6 +2367,35 @@ def web_app():
             await asyncio.sleep(0.5)
             return _account_error(e)
         return _signed_in(accts.session_user(token), token)
+
+    @fastapi_app.post("/api/me/push-token")
+    def me_push_token(request: Request, token: str = Form(...)):
+        """The iPhone app says where to send "your report is ready"."""
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        try:
+            accts.add_push_token(u["username"], token)
+        except accounts_mod.AccountError as e:
+            return _account_error(e)
+        return JSONResponse({"saved": True})
+
+    @fastapi_app.post("/api/me/delete")
+    def me_delete(request: Request):
+        """Deletes the account and the reports only it has (Apple requires this in the app)."""
+        u = request.state.user
+        if not u:
+            return JSONResponse({"error": "Sign in first."}, status_code=401)
+        volume.reload()
+        lost = accts.jobs_lost_with(u["username"])
+        stages = [(_read_json(f"{_job_paths(j)['job_dir']}/status.json", {}) or {}).get("stage") for j in lost]
+        if any(s in BUSY_STAGES for s in stages):
+            return JSONResponse({"error": "A match is still being analysed. You can delete your account once it's finished."},
+                                status_code=409)
+        for job in accts.delete_user(u["username"]):
+            _remove_job(job)
+        print(f"account deleted: {len(lost)} report(s) removed")
+        return JSONResponse({"deleted": True})
 
     @fastapi_app.post("/api/auth/signout")
     def auth_signout(request: Request):

@@ -1282,7 +1282,7 @@ window.addEventListener("beforeprint", preparePrint);     // also when printing 
 window.addEventListener("afterprint", restoreAfterPrint);
 $("pdfBtn").addEventListener("click", () => {
   preparePrint();
-  setTimeout(() => window.print(), 50);                     // let the light colours apply first
+  setTimeout(() => Site.printPage(), 50);                   // let the light colours apply first
 });
 
 $("editNamesBtn").addEventListener("click", () => $("namesForm").classList.toggle("hidden"));

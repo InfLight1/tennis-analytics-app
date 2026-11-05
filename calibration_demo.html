@@ -1819,6 +1819,9 @@ document.querySelectorAll('input[name="matchType"]').forEach((r) => r.addEventLi
   pointsChanged();
 }));
 
+// The iPhone app opens this page for one match, to mark the court on the picture it sent.
+const appMarking = Site.app && new URLSearchParams(location.search).get("mark");
+
 $("submitCalibrationBtn").addEventListener("click", async () => {
   if (!jobId) { alert("No job: this is the offline preview. Upload a video to calibrate for real."); return; }
   $("submitCalibrationBtn").disabled = true;
@@ -1839,6 +1842,7 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
       return;
     }
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (appMarking) { Site.tellApp({ type: "marked" }); return; }   // the app films or sends next
     if (data.status === "waiting_for_video") {  // upload still being put together: analysis starts when it's ready
       markingToResend = form;
       STAGE_ORDER = PREP_STAGES;
@@ -2033,6 +2037,38 @@ renderReports();
     const reports = document.getElementById("reports"), upload = document.getElementById("new");
     upload.parentNode.insertBefore(reports, upload);
   }
+})();
+
+if (appMarking) (async () => {
+  const q = new URLSearchParams(location.search);
+  document.documentElement.classList.add("mark-only");
+  const type = document.querySelector(`input[name="matchType"][value="${q.get("type") === "doubles" ? "doubles" : "singles"}"]`);
+  type.checked = true;
+  type.dispatchEvent(new Event("change", { bubbles: true }));
+  $("player1Name").value = q.get("p1") || "";
+  $("player2Name").value = q.get("p2") || "";
+  $("submitCalibrationBtn").textContent = "Done";
+  const data = await fetch(`${backendUrl()}/api/point-labels`).then((r) => r.json());
+  POINT_LABELS = data.point_labels;
+  INSTRUCTIONS = { ...data.instructions, ...FRIENDLY_POINTS };
+  jobId = appMarking;
+  clickedPoints = {};
+  clickOrder = [];
+  fit = null;
+  $("calibratePanel").classList.remove("hidden");
+  await loadFrame();
+  if (q.get("auto") !== "1") return;
+  // Hands-free: nobody is at the screen, so a court found with confidence is accepted as is.
+  const waitForGuess = setInterval(() => {
+    if (guessing) return;
+    clearInterval(waitForGuess);
+    if (autoPlaced) {
+      $("looksRight").checked = true;
+      updateInstruction();
+      if (!$("submitCalibrationBtn").disabled) { $("submitCalibrationBtn").click(); return; }
+    }
+    Site.tellApp({ type: "mark-check" });
+  }, 300);
 })();
 </script>
 <script src="record_match.js"></script>

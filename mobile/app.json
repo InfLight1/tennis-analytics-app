@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Advantage AI",
+    "slug": "advantage-ai",
+    "scheme": "advantageai",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0F1A14",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.advantageai.tennis",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Advantage AI films your match with the camera.",
+        "NSMicrophoneUsageDescription": "Advantage AI records the sound of the match with the video.",
+        "NSPhotoLibraryUsageDescription": "Pick a match video to send for a report.",
+        "NSPhotoLibraryAddUsageDescription": "Save your match video to Photos if you want to keep it.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#0F1A14"
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-audio",
+      "expo-sharing",
+      "expo-notifications",
+      "expo-screen-orientation",
+      [
+        "expo-image-picker",
+        {
+          "microphonePermission": false,
+          "cameraPermission": false
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}

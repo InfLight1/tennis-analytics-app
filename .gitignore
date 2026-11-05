@@ -56,3 +56,6 @@ match_report.txt
 
 # Design explorations (local only)
 design/versions/
+
+# iPhone app
+!mobile/assets/*.png

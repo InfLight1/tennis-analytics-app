@@ -1,0 +1,7 @@
+{
+  "platforms": ["apple"],
+  "apple": {
+    "modules": ["AdvantageSendModule"],
+    "appDelegateSubscribers": ["SendAppDelegate"]
+  }
+}

@@ -4,6 +4,14 @@
 (() => {
   const KEY = "tennis_reports";
 
+  // Opened by the iPhone app (it sets window.AdvantageApp before any script runs): the app draws its
+  // own top and tabs, and dark mode can switch on. The website itself never takes these paths.
+  const APP = window.AdvantageApp || null;
+  if (APP) {
+    document.documentElement.dataset.app = "1";
+    document.documentElement.dataset.theme = APP.theme || "light";
+  }
+
   // The example report (and its test-site copy) isn't the visitor's own, so it never joins "My reports".
   const EXAMPLE_JOBS = ["76a383379d90", "e0e0e0e0e0e0"];
 
@@ -34,6 +42,15 @@
   window.Site = {
     EXAMPLE_JOB,
     dev,
+    app: !!APP,
+    tellApp(message) { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(message)); },
+    setTheme(theme) { document.documentElement.dataset.theme = theme; },
+    // An app page can't print itself, so it hands its print layout to the app (scripts removed: they'd run again).
+    printPage() {
+      if (!APP) { window.print(); return; }
+      const html = document.documentElement.outerHTML.replace(/<script[\s\S]*?<\/script>/g, "");
+      window.Site.tellApp({ type: "print", html: html.replace("<head>", `<head><base href="${location.origin}/">`) });
+    },
     session() { try { return localStorage.getItem(SESSION_KEY); } catch (e) { return null; } },
     // Coaches have no player dashboard: their home is the team page, so the header drops those links.
     setRole(role) {
@@ -44,6 +61,7 @@
     },
     setSession(token) {
       if (!token) { try { localStorage.removeItem(ROLE_KEY); } catch (e) {} }
+      window.Site.tellApp({ type: "session", token: token || null });
       try { token ? localStorage.setItem(SESSION_KEY, token) : localStorage.removeItem(SESSION_KEY); } catch (e) {}
     },
     reportUrl: (job) => `/report?job=${encodeURIComponent(job)}`,
@@ -92,7 +110,7 @@
   // Header into <header id="topbar" data-page="home|report">, footer into <footer id="sitefoot">.
   document.addEventListener("DOMContentLoaded", () => {
     const bar = document.getElementById("topbar");
-    if (bar) {
+    if (bar && !APP) {
       bar.className = "topbar";
       const signedIn = !!window.Site.session();
       const page = bar.dataset.page;
@@ -127,7 +145,7 @@
       if (signedIn) { try { const role = localStorage.getItem(ROLE_KEY); if (role) window.Site.setRole(role); } catch (e) {} }
     }
     const foot = document.getElementById("sitefoot");
-    if (foot) {
+    if (foot && !APP) {
       foot.className = "brand-foot";
       foot.innerHTML = `<svg class="bf-court" viewBox="0 0 360 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2">
           <path d="M40 190 L320 190 L250 20 L110 20 Z"/><path d="M68 122 H292 M96 54 H264 M180 122 V54"/><path d="M84 88 H276" stroke-width="2.4"/>

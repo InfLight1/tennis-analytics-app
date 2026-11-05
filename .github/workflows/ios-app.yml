@@ -1,0 +1,82 @@
+name: iPhone app
+
+# Builds the iPhone app on a Mac, since the project is written on Windows: this is what proves the
+# Swift code compiles. Runs the app in the iPhone simulator and keeps screenshots of the first screens.
+on:
+  push:
+    branches: [iphone-app]
+    paths: ['mobile/**', '.github/workflows/ios-app.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ios-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  build:
+    needs: check
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Generate the Xcode project
+        run: npx expo prebuild --platform ios --no-install
+      - name: Install native libraries
+        run: pod install
+        working-directory: mobile/ios
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild -workspace AdvantageAI.xcworkspace -scheme AdvantageAI -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tail -n 60
+        working-directory: mobile/ios
+      - name: Open it in the simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -m1 'iPhone' | grep -oE '[0-9A-F-]{36}')
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          APP=$(find ios/build/Build/Products -name '*.app' -maxdepth 3 | head -n 1)
+          xcrun simctl install "$DEVICE" "$APP"
+          mkdir -p shots
+          xcrun simctl ui "$DEVICE" appearance light
+          xcrun simctl launch "$DEVICE" com.advantageai.tennis
+          sleep 25
+          xcrun simctl io "$DEVICE" screenshot shots/light.png
+          xcrun simctl terminate "$DEVICE" com.advantageai.tennis
+          xcrun simctl ui "$DEVICE" appearance dark
+          xcrun simctl launch "$DEVICE" com.advantageai.tennis
+          sleep 15
+          xcrun simctl io "$DEVICE" screenshot shots/dark.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: mobile/shots
+          if-no-files-found: ignore

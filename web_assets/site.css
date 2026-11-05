@@ -18,6 +18,20 @@ body { font-family: var(--sys); }
 h1, h2 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.02em; }
 h3 { font-weight: 650; letter-spacing: -0.01em; }
 
+/* ── Inside the iPhone app: the app has its own tab bar and top, so the site's are hidden ── */
+html[data-app] { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+html[data-app] #topbar, html[data-app] #sitefoot, html[data-app] .tabbar { display: none; }
+html[data-app] a.btn, html[data-app] button { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html[data-app] .hello { padding-top: calc(env(safe-area-inset-top, 0px) + 24px); }
+html[data-app] .acct-band { height: calc(env(safe-area-inset-top, 0px) + 96px); }
+html[data-app] #signOut, html[data-app] #playerBox, html[data-app] #soloBox { display: none !important; }
+html[data-app] body { padding-bottom: 24px; }
+/* The court-marking step alone, for the app's camera screen. */
+html.mark-only body * { visibility: hidden; }
+html.mark-only #calibratePanel, html.mark-only #calibratePanel * { visibility: visible; }
+html.mark-only #calibratePanel { position: absolute; left: 0; right: 0; top: 0; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: var(--page); }
+html.mark-only .names input { font-size: 16px; }
+
 /* ── Header: the same bar on the landing page and in the app ── */
 .topbar { position: sticky; top: 0; z-index: 20; background: var(--court-deep); color: #fff; transition: background-color .2s; }
 .topbar .wrap { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; min-height: 76px; width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 56px); }

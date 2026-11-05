@@ -17,6 +17,7 @@ modal.Dict; in tests a plain dict. Keys:
   session:<token>     {username, expires}
   jobs:<username>     [{job_id, slot, date}]   reports this player has claimed
   owner:<job_id>      username who started the upload
+  push:<username>     [token]   phones that get "your report is ready" alerts
 Passwords: PBKDF2-SHA256, 200k rounds, random salt.
 """
 
@@ -267,6 +268,61 @@ class Accounts:
             members = set(team.get("players", []))
             return bool((people & members) or self.claimed_by(job_id, members))
         return False
+
+    # ── alerts ───────────────────────────────────────────────────────────
+    def add_push_token(self, username, token):
+        token = (token or "").strip()[:200]
+        if not token:
+            raise AccountError("Missing phone token.")
+        self.s[f"push:{username}"] = ([token] + [t for t in self.s.get(f"push:{username}", []) if t != token])[:5]
+
+    def people_on(self, job_id):
+        """Who hears about this match: whoever filmed it and the teammates named in it."""
+        owner = self.user(self.owner(job_id))
+        if not owner:
+            return []
+        team = self.team(owner.get("team_id")) or {}
+        return sorted({owner["username"], *self.claimed_by(job_id, team.get("players", []))})
+
+    def push_tokens(self, usernames):
+        return [t for u in usernames for t in self.s.get(f"push:{u}", [])]
+
+    # ── deleting an account ──────────────────────────────────────────────
+    def owned_jobs(self, username):
+        return [k.split(":", 1)[1] for k in list(self.s.keys())
+                if k.startswith("owner:") and self.s.get(k) == username]
+
+    def jobs_lost_with(self, username):
+        """Reports that go with this account. A match with a teammate in it stays for them."""
+        u = self.user(username)
+        team = self.team(u.get("team_id")) or {} if u else {}
+        others = [p for p in team.get("players", []) if p != username]
+        return [j for j in self.owned_jobs(username) if not self.claimed_by(j, others)]
+
+    def delete_user(self, username):
+        """Removes the account for good. Returns the reports to delete with it. Their sessions stop
+        working by themselves (a session for a missing user is no one)."""
+        u = self.user(username)
+        if not u:
+            raise AccountError("That account doesn't exist.")
+        name = u["username"]
+        lost = self.jobs_lost_with(name)
+        team = self.team(u.get("team_id"))
+        others = [p for p in (team or {}).get("players", []) if p != name]
+        for job in self.owned_jobs(name):
+            keeper = next(iter(self.claimed_by(job, others)), None)
+            if keeper:
+                self.s[f"owner:{job}"] = keeper
+            else:
+                del self.s[f"owner:{job}"]
+        if team:
+            team["players"] = others
+            team["coaches"] = [c for c in team.get("coaches", []) if c != name]
+            self.s[f"team:{team['id']}"] = team
+        for key in (f"user:{name}", f"jobs:{name}", f"push:{name}"):
+            if key in self.s:
+                del self.s[key]
+        return lost
 
     def can_change(self, user, job_id):
         """Rename or delete: the person who uploaded it, or their coach."""

@@ -23,9 +23,12 @@
 | `--ball-soft` | #EFF5C8 | #2A3214 | "Try this" boxes |
 | `--lost` / `--lost-soft` | #C2412F / #FBE5E1 | #F2836F / #3A221E | points lost only |
 | `--night` | #0F1A14 | #000000 | the dark "New match" tile, #1 FIX tag |
+| `--line-2` | #C3CBCF | #41494E | stronger borders, input edges |
+| `--ball-deep` | #5C7300 | #C6DA2C | ball colour as text on light tiles |
+| `--tint-court` / `--tint-good` / `--tint-sand` | #E3F0EA / #EFF4D8 / #F6EFE1 | #16251F / #20270F / #2A241A | coach section tints |
 
 ## Type
-- **One type system on every website page (Rudra, Nov 4: landing and dashboard must feel like one site):** **Newsreader** titles (regular or 500, italic for key words on the landing page), **Instrument Sans** everywhere else. The iPhone app decides its own fonts later; never bundle SF Pro.
+- **One type system on every website page (Rudra, Nov 4: landing and dashboard must feel like one site):** **Newsreader** titles (regular or 500, italic for key words on the landing page), **Instrument Sans** everywhere else. **iPhone app fonts (Rudra, Nov 4, option C):** Newsreader for big titles, Apple's system font for everything else, so it feels a bit different from the website but still familiar. Never bundle SF Pro.
 - Scoreboard numbers: **Barlow Condensed 700** (Google Fonts), numbers only.
 - Headings 700 with tight tracking: XL clamp(2.4rem, 5.4vw, 3.6rem), L clamp(1.6rem, 2.6vw, 2.1rem), M 1.3rem, S 1.05rem. Body 1.0625rem.
 - Laptops (1100px+): base size 118.75% (body about 20px), page width 1400px, bigger tiles/buttons/pips.

@@ -102,6 +102,10 @@
   .fix .acts .link{justify-content:center}
   .matches,.ngrid{grid-template-columns:1fr;gap:16px}
 }
+/* The iPhone app's Matches tab: this page's match list on its own. */
+.view-matches .start,.view-matches #teamLine{display:none}
+.view-matches .band--home{padding-bottom:20px}
+.view-matches #rest .matches{margin-top:20px}
 /* Small phones: a long fix title gets the full width; the number sits under it on one line. */
 @media (max-width:520px){
   .fix{grid-template-columns:1fr}
@@ -159,6 +163,8 @@ function fmtDate(d) {
 }
 const pips = (n, of, cls) => (of && of <= 20 ? `<div class="pips" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i${i < n ? ` class="${cls}"` : ""}></i>`).join("")}</div>` : "");
 const vs = (m) => (m.opponent ? `vs ${esc(m.opponent)}` : "Match");
+const VIEW = new URLSearchParams(location.search).get("view");
+if (VIEW === "matches") document.documentElement.classList.add("view-matches");
 const TREND = { shrinking: "fewer than before", growing: "more than before", "about the same": "about the same as before" };
 
 function fixTile(p, latest) {
@@ -248,6 +254,8 @@ function numbers(p) {
 }
 
 function restHtml(p, latest) {
+  if (VIEW === "matches") return latest ? `<ul class="matches">${p.matches.slice().reverse().map(matchCard).join("")}</ul>`
+    : `<section class="tile" style="margin-top:20px"><p class="muted">Your matches will show up here after your first report.</p></section>`;
   if (!latest) return `<div class="sh" id="matches"><h2 class="h-l">Recent matches</h2></div>
     <section class="tile"><p class="muted">Your matches will show up here after your first report.</p></section>`;
   const fixes = p.fixes || [], good = p.strengths || [];
@@ -291,7 +299,7 @@ $("rest").addEventListener("click", async (e) => {
 (async () => {
   const me = Site.session() ? await fetch("/api/me").then((r) => r.json()).catch(() => ({})) : {};
   if (!me.user || me.user.role === "coach") { location.replace("/account"); return; }
-  $("hello").textContent = `Hi, ${me.user.name}`;
+  $("hello").textContent = VIEW === "matches" ? "Matches" : `Hi, ${me.user.name}`;
   $("teamLine").textContent = me.team?.name ? `Player on ${me.team.name}` : "Solo player";
   showProgress();
 })();

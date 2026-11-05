@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy · Advantage AI</title>
+<meta name="theme-color" content="#0F1A14">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="court.css">
+<link rel="stylesheet" href="site.css">
+<style>
+main { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+main h2 { margin-top: 32px; font-size: 1.4rem; }
+main p, main li { color: var(--ink-2); }
+main ul { padding-left: 1.2em; }
+</style>
+<script src="site.js"></script>
+</head>
+<body>
+<header id="topbar" data-page="privacy"></header>
+<main>
+  <h1 class="h-l">Privacy</h1>
+  <p>Advantage AI is in a closed test. This page says what the app does with your information today.</p>
+
+  <h2>What we keep</h2>
+  <ul>
+    <li>Your name, username and a scrambled copy of your password. Team players don't give an email.</li>
+    <li>An email address, only if you're a solo player and choose to add one.</li>
+    <li>The match videos you film or upload, and the reports made from them.</li>
+    <li>If you use the iPhone app and allow alerts, a code that lets us send alerts to your phone.</li>
+  </ul>
+
+  <h2>Who can see it</h2>
+  <ul>
+    <li>A report opens only for someone signed in as a player in that match, the person who filmed it, or their team's coach.</li>
+    <li>Match video needs a sign-in as one of those people too. Nothing is public except the example report.</li>
+  </ul>
+
+  <h2>Who helps run the app</h2>
+  <ul>
+    <li>Modal runs the app and analyses the video. Cloudflare R2 holds video on its way to Modal.</li>
+    <li>Match numbers, not video, go to Anthropic's AI, which writes the tips in your report.</li>
+    <li>Expo delivers alerts to iPhones.</li>
+  </ul>
+
+  <h2>Deleting your information</h2>
+  <ul>
+    <li>Delete any report, with its video, from the report itself.</li>
+    <li>Delete your whole account in the iPhone app, under Account. That removes your account and the reports you filmed. A match with a teammate in it stays for them.</li>
+  </ul>
+</main>
+<footer id="sitefoot"></footer>
+</body>
+</html>

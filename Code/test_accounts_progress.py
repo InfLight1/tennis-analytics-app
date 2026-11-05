@@ -91,6 +91,36 @@ def _pl(net, beaten, played, fsi=50.0):
                 {"id": "opponent_winners", "title": "Beaten", "points": beaten, "top": False}) if w["points"]]}
 
 
+def test_delete_account():
+    a = accounts.Accounts({})
+    coach, team = a.create_team("Varsity", "coach1", "password1", "Coach")
+    a.join_team(team["code"], "ana", "password1", "Ana")
+    a.join_team(team["code"], "ben", "password1", "Ben")
+    a.solo_signup("solo", "password1", "Solo")
+    for job, owner in (("job_alone", "ana"), ("job_shared", "ana"), ("job_bens", "ben"), ("job_solo", "solo")):
+        a.set_owner(job, owner)
+    a.claim("ana", "job_alone", "player_1")
+    a.claim("ana", "job_shared", "player_1")
+    a.claim("ben", "job_shared", "player_2")
+    a.claim("ana", "job_bens", "player_2")
+    a.add_push_token("ana", "tok1")
+    token = a.sign_in("ana", "password1")
+
+    check(sorted(a.people_on("job_shared")) == ["ana", "ben"], "alerts go to the person filming and teammates in the match")
+    check(a.push_tokens(a.people_on("job_alone")) == ["tok1"], "alerts find the phone")
+    check(a.jobs_lost_with("ana") == ["job_alone"], "a match with a teammate in it isn't lost")
+    check(a.delete_user("ana") == ["job_alone"], "deleting returns the reports to remove")
+    check(a.user("ana") is None and a.session_user(token) is None, "the account and its sign-in are gone")
+    check(a.owner("job_alone") is None, "the removed report has no owner left")
+    check(a.owner("job_shared") == "ben", "a shared match passes to the teammate")
+    check(a.owner("job_bens") == "ben", "a teammate's own report is untouched")
+    check("ana" not in a.team(team["id"])["players"], "they leave the team")
+    check(a.claims("ana") == [] and a.push_tokens(["ana"]) == [], "their matches and phones are forgotten")
+    check(a.delete_user("solo") == ["job_solo"], "a solo player's reports go too")
+    a.delete_user("coach1")
+    check(a.team(team["id"])["players"] == ["ben"], "players stay when their coach leaves")
+
+
 def test_progress():
     r = progress.build([
         {"job_id": "b", "date": "2026-11-08", "player": _pl(net=3, beaten=4, played=20)},
@@ -147,5 +177,7 @@ def test_progress():
 
 if __name__ == "__main__":
     test_accounts()
+    test_delete_account()
+    test_delete_account()
     test_progress()
     print("\nAll account and progress checks passed.")

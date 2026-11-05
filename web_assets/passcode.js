@@ -32,6 +32,7 @@
         e.preventDefault();
         code = input.value.trim();
         try { localStorage.setItem(KEY, code); } catch (err) {}
+        if (window.Site) Site.tellApp({ type: "passcode", code });
         box.remove();
         asking = null;
         resolve(code);

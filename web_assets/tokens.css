@@ -16,6 +16,17 @@
   --r-tile: 20px; --r-box: 12px;
   color-scheme: light;
 }
+/* iPhone app only (site.js sets these when the app opens a page; the website never does).
+   Fonts, option C: Newsreader titles stay, everything else is Apple's font. */
+:root[data-app] { --sys: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+:root[data-theme="dark"] {
+  --page: #0E1113; --tile: #1A1E21; --tile-2: #23282C; --line: #2E3438; --line-2: #41494E;
+  --ink: #EEF2EF; --ink-2: #B3BDB8; --ink-3: #8F9A95;
+  --ball-soft: #2A3214; --ball-deep: #C6DA2C; --lost: #F2836F; --lost-soft: #3A221E; --night: #000000;
+  --tint-court: #16251F; --tint-good: #20270F; --tint-sand: #2A241A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
 /* Laptops: everything a size up so it reads at arm's length. */
 @media (min-width: 1100px) { html { font-size: 118.75%; } :root { --r-tile: 24px; } }
 
