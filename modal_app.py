@@ -246,7 +246,7 @@ cpu_image = (
         "tzdata==2026.2",
         "fastapi==0.115.6",
         "python-multipart==0.0.20",
-        "anthropic==1.11.0",   # insights.py (Week 2 #8): one Claude Haiku 4.5 call per job
+        "anthropic==1.11.0",   # insights.py (Week 2 #8): one Claude call per job
         "boto3>=1.35",         # direct-to-storage uploads (Cloudflare R2, S3-compatible), off until the r2 secret exists
     )
     # Added LAST so editing pipeline code doesn't invalidate the pip layers above.
@@ -866,7 +866,7 @@ def run_cpu_pipeline_remote(job_id: str):
     with open(p["profile_json_path"], "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2, default=str)
 
-    # -- LLM insights (Week 2 #8): one Claude Haiku 4.5 call, cached per job.
+    # -- LLM insights (Week 2 #8): one Claude call, cached per job.
     # A re-run (rerun_cpu_stages) reuses insights.json instead of paying
     # again; delete that file to regenerate. Failure -> no file, and the
     # report page shows the patterns without suggestions.

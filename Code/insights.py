@@ -24,12 +24,12 @@ Usage (from Code/, needs ANTHROPIC_API_KEY):
 import argparse
 import json
 
-MODEL = "claude-haiku-4-5"
-MAX_TOKENS = 4000
+MODEL = "claude-sonnet-5-5"
+MAX_TOKENS = 16000
 MAX_WEAKNESSES = 4     # top headline + context weaknesses sent per player
 MAX_STRENGTHS = 3
 
-VERSION = 5   # bump to regenerate cached insights.json after a prompt change
+VERSION = 6   # bump to regenerate cached insights.json after a prompt change
 
 SYSTEM = """You are a friendly tennis coach writing the "how to improve" section of a match report for club and school players.
 
