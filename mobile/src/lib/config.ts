@@ -1,5 +1,5 @@
 // The server the app talks to. Stays on the test site until the live app can change after judging.
-export const API_BASE = 'https://rudragoel10--tennis-perf-app-test-web-app.modal.run';
+export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'https://rudragoel10--tennis-perf-app-test-web-app.modal.run';
 
 // The website's limits, kept the same in the app.
 export const MAX_RECORDING_MINUTES = 60;

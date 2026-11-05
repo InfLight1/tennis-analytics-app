@@ -12,6 +12,9 @@ describe('routeFor', () => {
     expect(routeFor(at('/report?job=abc&watch=1'), '/app')).toEqual({ go: 'report', job: 'abc', watch: true });
     expect(routeFor(at('/report?job=abc'), '/app?view=matches')).toEqual({ go: 'report', job: 'abc', watch: false });
   });
+  it('lets the example page follow the redirect to its report', () => {
+    expect(routeFor(at('/report?job=e0'), '/example')).toEqual({ go: 'stay' });
+  });
   it('sends the website tabs to the app tabs', () => {
     expect(routeFor(at('/app#matches'), '/app')).toEqual({ go: 'tab', tab: 'matches' });
     expect(routeFor(at('/account'), '/report?job=a')).toEqual({ go: 'tab', tab: 'account' });

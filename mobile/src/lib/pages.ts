@@ -34,6 +34,7 @@ export function routeFor(url: string, here: string): Route {
   const [herePath] = here.split(/[?#]/);
   if (path === herePath && (path !== '/app' || !hash)) return { go: 'stay' };
 
+  if (herePath === '/example' && path === '/report') return { go: 'stay' };   // the site's own redirect
   if (path === '/report' || path === '/report.html') {
     const params = new URLSearchParams(query);
     const job = params.get('job');

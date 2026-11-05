@@ -66,7 +66,7 @@ export default function SignIn() {
         {!!error && <View accessibilityLiveRegion="polite"><Body color={colors.lost}>{error}</Body></View>}
         <Button title={ACTION[kind]} onPress={submit} busy={busy} />
         {kind === 'signin' && <Body muted small>Forgot your password? Your coach can set a new one for you.</Body>}
-        <Row title="See an example report" onPress={() => router.push({ pathname: '/page', params: { path: '/example' } })} />
+        <Row title="See an example report" onPress={() => router.push('/sign-in-example')} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

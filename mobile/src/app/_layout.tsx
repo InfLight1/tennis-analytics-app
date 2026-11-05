@@ -36,14 +36,15 @@ function Screens() {
       }}>
         <Stack.Protected guard={!session}>
           <Stack.Screen name="sign-in" />
+          <Stack.Screen name="sign-in-example" />
         </Stack.Protected>
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="mark" />
+          <Stack.Screen name="report" options={{ headerShown: true, title: 'Report' }} />
+          <Stack.Screen name="page" options={{ headerShown: true, title: '' }} />
         </Stack.Protected>
-        <Stack.Screen name="report" options={{ headerShown: true, title: 'Report' }} />
-        <Stack.Screen name="page" options={{ headerShown: true, title: '' }} />
       </Stack>
     </>
   );
