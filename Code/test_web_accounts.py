@@ -116,6 +116,12 @@ if __name__ == "__main__":
     check(rp["matches"] == 2 and rp["latest"]["top_fix"]["id"] == "errors_net", "coach team view: latest #1 fix")
     check(client.get("/api/team", headers={"x-session": rudra}).status_code == 403, "players have no team view")
 
+    # a sign-in that ran out: the server says "signin" so the page can ask, while filming carries on
+    old = {"x-session": "ran-out"}
+    r = form("/api/record/init", {}, **old)
+    check(r.status_code == 403 and r.json().get("signin"), "a sign-in that ran out can't start recording, and the page is told to ask")
+    r = client.post(f"/api/record/{job}/finish", data={"pieces": 1, "size": 1, "segments": "[0]"}, headers=old)
+    check(r.status_code == 403 and r.json().get("signin"), "a sign-in that ran out can't finish a recording, and the page is told to ask")
     # private reports (Nov 4): only a sign-in that may see the report opens it; the passcode opens nothing private
     r = client.get(f"/api/profile/{job}", headers=pw)
     check(r.status_code == 403 and r.json().get("signin"), "the passcode alone can't open a private report; the page asks to sign in")

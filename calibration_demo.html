@@ -703,6 +703,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
     <div class="rec-timer num" id="recTimer">0:00</div>
     <div class="rec-sent" id="recSent" role="status"></div>
     <div class="rec-actions">
+      <button type="button" class="btn btn-primary rec-main hidden" id="recSignInBtn">Sign in</button>
       <button type="button" class="btn btn-primary rec-main" id="recStartBtn">Start recording</button>
       <button type="button" class="btn btn-primary rec-main hidden" id="recContinueBtn">Continue recording</button>
       <button type="button" class="btn rec-main rec-stop hidden" id="recStopBtn">Stop: the match is over</button>
@@ -720,6 +721,7 @@ body.photo-hero .topbar { margin-bottom: -64px; }
 <script>
 // A match has to belong to an account (private reports, Nov 4), so sign in first and come back.
 if (!Site.session()) location.replace("/account?next=" + encodeURIComponent(location.pathname + location.search + location.hash));
+addEventListener("signin-needed", () => askSignIn());   // lost it while here: ask in place, so nothing stops
 // ── EXTENDED_POINT_LABELS / CLICK_INSTRUCTIONS mirror calibration.py's
 // schema, but the authoritative copy is fetched from /api/upload's
 // response each time -- these are just the fallback/initial render
@@ -921,6 +923,7 @@ function putBlob(url, blob, onProgress, toApp) {
       if (xhr.status >= 200 && xhr.status < 300) return resolve();
       const err = new Error(`server returned HTTP ${xhr.status}`);
       err.expired = toApp && xhr.status === 404;  // the server no longer knows this upload
+      if (toApp) signInCheck(url, xhr.status, xhr.responseText);
       reject(err);
     });
     xhr.addEventListener("error", () => reject(new Error("network error")));
@@ -956,7 +959,7 @@ async function canRead(blob) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Wait `ms`, longer if the device is offline (up to 2 more minutes for the connection to return).
 async function waitToRetry(ms, run) {
-  await sleep(ms);
+  await Promise.race([sleep(ms), new Promise((r) => addEventListener("signin-back", r, { once: true }))]);
   for (let t = 0; !navigator.onLine && !run.stop && t < 120; t++) await sleep(1000);
 }
 
@@ -1038,7 +1041,7 @@ async function runUpload() {
         } catch (err) {
           inflightBytes.delete(i);
           if (err.message === "network error" && !(await canRead(blob))) err.unreadable = true;
-          if (err.message === "cancelled" || err.expired || err.unreadable || run.stop || attempt >= MAX_TRIES) throw err;
+          if (err.message === "cancelled" || err.expired || err.unreadable || signInPending() || run.stop || attempt >= MAX_TRIES) throw err;
           $("uploadStatus").textContent = navigator.onLine
             ? "The connection dropped for a moment. Trying again…"
             : "You're offline. The upload will carry on when the connection is back.";
@@ -1112,6 +1115,10 @@ async function runUpload() {
       $("videoFile").value = "";
       $("fileName").textContent = "No video chosen";
       showPending();
+    } else if (signInPending()) {
+      upload.waitingForSignIn = true;
+      $("uploadStatus").textContent = "You've been signed out. What was sent is kept: sign in and the upload carries on by itself.";
+      askSignIn();
     } else if (upload.paused) {
       $("uploadStatus").classList.remove("error");
       $("uploadStatus").textContent = "Paused. Press Resume upload to carry on; what was sent is kept.";
@@ -1176,6 +1183,13 @@ $("uploadBtn").addEventListener("click", async () => {
 
 $("resumeUploadBtn").addEventListener("click", () => {
   if (!upload || upload.running) return;
+  upload.paused = false;
+  runUpload();
+});
+addEventListener("signin-back", () => {
+  if (!upload || upload.running || !upload.waitingForSignIn) return;
+  upload.waitingForSignIn = false;
+  $("uploadStatus").classList.remove("error");
   upload.paused = false;
   runUpload();
 });
@@ -1819,6 +1833,11 @@ $("submitCalibrationBtn").addEventListener("click", async () => {
   try {
     const res = await fetch(`${backendUrl()}/api/calibrate`, { method: "POST", body: form });
     const data = await res.json().catch(() => ({ error: `the server had a problem (HTTP ${res.status}). Your marking is kept: press Start analysis again in a moment` }));
+    if (signInPending()) {                      // the marking stays on screen
+      askSignIn();
+      $("submitCalibrationBtn").disabled = false;
+      return;
+    }
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     if (data.status === "waiting_for_video") {  // upload still being put together: analysis starts when it's ready
       markingToResend = form;

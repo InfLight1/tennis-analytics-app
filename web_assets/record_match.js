@@ -311,8 +311,10 @@
     const sent = S.sentBytes + inflightBytes();
     const waiting = Math.max(0, S.size - sent);
     const r = rate();
+    $("recSignInBtn").classList.toggle("hidden", !signInPending());
     let line;
-    if (S.finishing) line = "All sent. Putting the video together…";
+    if (signInPending()) line = `Sign in to keep sending: ${formatBytes(waiting)} is safe on this phone.`;
+    else if (S.finishing) line = "All sent. Putting the video together…";
     else if (note) line = note;
     else if (!navigator.onLine || S.trouble) line = `${navigator.onLine ? "The signal is weak" : "No signal right now"}: ` +
       `${formatBytes(waiting)} is waiting on this phone and is sent as soon as it gets through.`;
@@ -435,7 +437,9 @@
       return true;
     } catch (e) {
       $("recStatus").classList.add("error");
-      $("recStatus").textContent = `Couldn't get ready: ${e.message}. Check the signal and try again.`;
+      $("recStatus").textContent = signInPending() ? "You've been signed out. Sign in, then press the button again."
+        : `Couldn't get ready: ${e.message}. Check the signal and try again.`;
+      if (signInPending()) askSignIn();
       $("useViewBtn").disabled = false;
       return false;
     }
@@ -626,6 +630,14 @@
     $("openCameraBtn").classList.remove("hidden");
     $("openCameraBtn").disabled = false;
   }
+
+  $("recSignInBtn").addEventListener("click", () => askSignIn());
+  addEventListener("signin-needed", () => render());
+  addEventListener("signin-back", () => {
+    render();
+    $("recStatus").classList.remove("error");
+    $("recStatus").textContent = "";
+  });
 
   // ── A recording left unsent when the page closed ──
   async function discard() {
