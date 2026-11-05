@@ -2120,7 +2120,7 @@ def web_app():
     _assets = {"passcode.js": "text/javascript", "site.js": "text/javascript", "site.css": "text/css", "tokens.css": "text/css", "court.css": "text/css",
                "recorder.js": "text/javascript", "record_match.js": "text/javascript",
                "manifest.webmanifest": "application/manifest+json",
-               "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png",
+               "icon.svg": "image/svg+xml", "icon-192.png": "image/png", "icon-512.png": "image/png", "court-dusk-2400.webp": "image/webp",
                **{f"{n}-{w}.webp": "image/webp" for n in ("hero-court", "band-phone", "band-ball", "court-night") for w in (800, 1600)}}
 
     @fastapi_app.get("/{name}")

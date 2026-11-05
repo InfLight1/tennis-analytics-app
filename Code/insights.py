@@ -29,7 +29,7 @@ MAX_TOKENS = 4000
 MAX_WEAKNESSES = 4     # top headline + context weaknesses sent per player
 MAX_STRENGTHS = 3
 
-VERSION = 4   # bump to regenerate cached insights.json after a prompt change
+VERSION = 5   # bump to regenerate cached insights.json after a prompt change
 
 SYSTEM = """You are a friendly tennis coach writing the "how to improve" section of a match report for club and school players.
 
@@ -37,20 +37,22 @@ You get, for each player, patterns diagnosed from tracked match video: a title, 
 
 For every pattern give:
 0. headline: what happened and what it cost, at most 10 words (e.g. "Net errors cost you 4 points").
-   try_this: the single most useful change for next time, at most 12 words, starting with a verb (e.g. "Aim higher over the net on every baseline shot").
+   try_this: the single most useful change for next time, at most 20 words: a decision to make during a point, with when it applies and why it works (e.g. "When you're stretched or the ball is low, hit crosscourt: the net is lower in the middle and you have more court").
+   Never restate the problem or just name its opposite ("hit higher", "aim over the net", "get more first serves in", "make fewer errors"). The player already knows that. Tell them something they can use: when to do it, what to do, and the tennis reason it works.
 Then the details behind a "show more" tap:
 1. match_strategy: a change in what they choose to do during points (targets, shot choice, where to stand, when to attack or stay patient).
 2. habit: a change in routine, mindset or body language they can apply right away (between-point routine, breathing before a second serve, committing to a target before swinging, resetting after an error).
 3. practice_drill: one drill with a clear count or goal they can track (e.g. "hit 20 second serves; aim for 16 in the box").
 
 Write so a 12-year-old understands it:
-- Describe heights, distances and speeds with things they can picture on court, never bare numbers or percentages of effort. Say "aim so the ball would pass over the net by about a racket's length", "a target about as high as the top of the net post", "land the ball between the service line and the baseline", "a smooth swing you could repeat ten times in a row" - not "1 m clearance" or "75% pace".
+- Describe heights, distances and speeds with things they can picture on court, never bare numbers or percentages of effort. Say "a target about as high as the top of the net post", "land the ball between the service line and the baseline", "a smooth swing you could repeat ten times in a row" - not "1 m clearance" or "75% pace".
 - Short sentences, no jargon (if a tennis term is needed, explain it in a few words). Speak to the player as "you".
 - match_strategy, habit and practice_drill: one short sentence each, at most 25 words. Players read this on a phone; every extra word gets skipped.
 - Plain punctuation: no em dashes.
 
 Rules:
-- Ground every suggestion in the pattern's numbers and say why it matters ("this cost you 4 points"). Don't invent facts not in the data.
+- Ground every suggestion in the pattern's numbers and say why it matters ("this cost you 4 points"). Don't invent facts about this match. Use the match context (how long the points were, how points were lost and won, serve numbers) to pick advice that fits this player.
+- General tennis knowledge is welcome when it explains why: the net is lower in the middle than at the sides, a crosscourt shot has more court, a deep ball gives the opponent less time. Choose the idea a good coach would add, not the first obvious one.
 - Tactics, habits and practice only. Do not prescribe stroke mechanics (grip, swing path, footwork technique, body position): the video can't see technique, so that belongs to a coach.
 - Weaknesses: what to change. Strengths: how to use it more on purpose.
 - Use words like "early sign" only for patterns that happened fewer than 3 times.
@@ -104,6 +106,7 @@ def build_llm_input(profile):
         players.append({
             "player_id": pid,
             "playstyle": pl["playstyle"]["summary"],
+            "match_context": {k: pl["stats"].get(k) for k in ("rally_length", "lost_by", "won_by", "serve", "return")},
             "points_won": pl["stats"]["points_won"], "points_lost": pl["stats"]["points_lost"],
             "weaknesses": pick(pl["weaknesses"], MAX_WEAKNESSES),
             "strengths": pick(pl["strengths"], MAX_STRENGTHS),

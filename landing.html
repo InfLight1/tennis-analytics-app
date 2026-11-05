@@ -217,7 +217,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
             <p class="n board-num">4<small>of 11 points lost</small></p>
           </div>
           <div class="pips" aria-hidden="true"><i class="lost"></i><i class="lost"></i><i class="lost"></i><i class="lost"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="try"><b>Try this next match</b>Aim to clear the net by about a racket's length.</p>
+          <p class="try"><b>Try this next match</b>When you're stretched or the ball is low, hit crosscourt. The net is lower in the middle and you have more court.</p>
           <a class="link" href="/example">Open the full example report</a>
         </div>
       </div>
@@ -289,7 +289,7 @@ if (window.Site && Site.session() && !/[?&]stay=1/.test(location.search)) locati
       <div class="team">
         <span class="lab">Sample team view, made-up names and numbers</span>
         <h3>Team weak spot: errors into the net</h3>
-        <p class="try"><b>Team drill</b>30 baseline shots. Clear the net by a racket's length.</p>
+        <p class="try"><b>Team drill</b>Crosscourt rally to 10. Any ball in the net restarts the count.</p>
         <ul class="who">
           <li><b>Maya</b><span>Errors into the net</span><i>−5</i></li>
           <li><b>Theo</b><span>Errors into the net</span><i>−4</i></li>
@@ -419,16 +419,6 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
     });
     g.globalAlpha = 1;
   }
-  function drawLights(a) {
-    if (a <= 0) return;
-    [[-12, 19], [12, 19], [-12, -6], [12, -6]].forEach(([x, y]) => {
-      const f = P(x, y, 0), t = P(x, y, 8.6);
-      g.globalAlpha = a; g.strokeStyle = "#35443D"; g.lineWidth = Math.max(1.5, t[2] * .1);
-      g.beginPath(); g.moveTo(f[0], f[1]); g.lineTo(t[0], t[1]); g.stroke(); g.globalAlpha = 1;
-      glow(t[0], t[1], t[2] * 5, "rgba(255,250,225,.75)", a);
-      g.globalAlpha = a; g.fillStyle = "#FFFDF0"; g.beginPath(); g.ellipse(t[0], t[1], t[2] * .42, t[2] * .17, 0, 0, 7); g.fill(); g.globalAlpha = 1;
-    });
-  }
   function drawCourt(intro) {
     const low = 1 - smooth(.12, .6, cam.rise), on = smooth(0, .5, intro);
     g.fillStyle = C.deep; g.fillRect(0, 0, W, H);
@@ -440,10 +430,6 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
     g.globalAlpha = on * .9;
     poly([[-HW, -HL], [HW, -HL], [HW, HL], [-HW, HL]]); g.fillStyle = g.createPattern(grain, "repeat"); g.fill();
     g.globalAlpha = 1;
-    const c0 = P(0, 0), r = Math.max(W, H) * .58;
-    g.globalCompositeOperation = "screen";                        // floodlight pool on the court
-    glow(c0[0], c0[1], r, "rgba(236,255,214,.3)", smooth(.2, 1, intro));
-    g.globalCompositeOperation = "source-over";
     g.fillStyle = "rgba(4,14,10,.3)";                             // the net's shadow
     if (intro > .5) { g.globalAlpha = smooth(.5, 1, intro) * (1 - cam.rise); poly([[-6.4, 0], [6.4, 0], [6.4, .85], [-6.4, .85]]); g.fill(); g.globalAlpha = 1; }
     g.fillStyle = C.line;
@@ -452,7 +438,6 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
       if (t) band(l[0], l[1], l[2], l[3], .085 * (across ? lerp(2.1, 1, cam.rise) : lerp(1.3, 1, cam.rise)), t);
     });
     drawFence(low * smooth(.3, .8, intro));
-    drawLights(low * smooth(.4, 1, intro));
   }
   function drawNet(a) {
     if (!a) return;
@@ -480,26 +465,31 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
     }
     return SHOTS[SHOTS.length - 1][1];
   }
+  // The opening shot is a real photo of a court. The ball is placed on it with the court's own perspective,
+  // measured from the photo's lines; scrolling fades the photo into the app's top-down view.
+  const PW = 1600, PH = 1067, HM = [74.989005, 37.04882, 802.284402, -.977408, 20.682633, 707.352523, -.000974, .045422];
+  const photo = new Image();
+  let fit = { s: 1, x: 0, y: 0 };
+  function fitPhoto(push) {
+    const s = Math.max(W / PW, H / PH) * (wide ? 1.14 : 1) * (1 + push * .07);
+    fit = { s, x: clamp((wide ? W * .6 : W * .5) - PW * s / 2, W - PW * s, 0), y: H - PH * s };
+  }
+  function onPhoto(x, y, z = 0) {
+    const m = (a, b) => { const w = HM[6] * a + HM[7] * b + 1; return [(HM[0] * a + HM[1] * b + HM[2]) / w, (HM[3] * a + HM[4] * b + HM[5]) / w]; };
+    const q = m(x, y), e = m(x + 1, y), px = Math.hypot(e[0] - q[0], e[1] - q[1]);
+    return [fit.x + q[0] * fit.s, fit.y + (q[1] - z * px * .83) * fit.s, px * fit.s];
+  }
   function drawRally(sec, a) {
-    if (a <= 0) return;
+    if (a <= 0 || sec < 0) return;
     const round = Math.floor(sec / (LOOP + HOLD)), t = sec % (LOOP + HOLD), m = round % 2 ? -1 : 1;
     const at = (u) => { const q = ballAt(clamp(u, 0, LOOP)); return [q[0] * m, q[1], q[2]]; };
-    const fade = a * (t > LOOP ? 1 - smooth(LOOP + .8, LOOP + HOLD, t) : smooth(0, .25, t));
-    const n = 16;
-    g.lineCap = "round";
-    for (let i = n; i > 0; i--) {           // trail
-      const p = P(...at(t - i * .02)), q = P(...at(t - (i - 1) * .02));
-      g.globalAlpha = fade * (1 - i / n) * .7; g.strokeStyle = C.ball; g.lineWidth = Math.max(1.5, q[2] * .075 * (1 - i / n));
-      g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
-    }
-    const b = at(t), sh = P(b[0], b[1], 0), p = P(...b), r = Math.max(4.5, p[2] * .11);
-    g.globalAlpha = fade * .4; g.fillStyle = "#04100A"; g.beginPath(); g.ellipse(sh[0], sh[1], r * 1.3, r * .5, 0, 0, 7); g.fill();
-    glow(p[0], p[1], r * 5, "rgba(198,218,44,.55)", fade);
-    g.globalAlpha = fade; g.fillStyle = C.ball; g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.globalAlpha = 1;
-    if (t > LOOP - .3) {                    // the miss
-      const k = clamp((t - LOOP + .3) / .9), q = P(...at(LOOP));
-      g.globalAlpha = fade * (1 - k); g.strokeStyle = C.lost; g.lineWidth = 2.5; g.beginPath(); g.arc(q[0], q[1], r + k * q[2] * .9, 0, 7); g.stroke(); g.globalAlpha = 1;
-    }
+    const fade = a * (t > LOOP ? 1 - smooth(LOOP + .4, LOOP + 1, t) : smooth(0, .25, t));
+    const b = at(t), sh = onPhoto(b[0], b[1]), p = onPhoto(...b), o = onPhoto(...at(t - .012)), r = Math.max(2.2, p[2] * .036);
+    g.globalAlpha = fade * .5 / (1 + b[2] * .5); g.fillStyle = "#050C08";          // soft shadow on the court
+    g.beginPath(); g.ellipse(sh[0], sh[1], r * 1.5, r * .6, 0, 0, 7); g.fill();
+    g.lineCap = "round"; g.strokeStyle = "#DDE86A"; g.lineWidth = r * 2;           // motion blur, as a camera sees it
+    g.globalAlpha = fade * .85; g.beginPath(); g.moveTo(o[0], o[1]); g.lineTo(p[0], p[1]); g.stroke();
+    g.globalAlpha = 1;
   }
 
   // The 11 points one player lost in the example match. Counts are real; spots are illustrative.
@@ -548,11 +538,18 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
       g = main;
     }
     g.drawImage(bg, 0, 0, W, H);
-    const rallyA = 1 - smooth(.14, .3, p);
-    drawRally(sec - 1.1, sec > 1.1 ? rallyA : 0);
+    const ready = photo.complete && photo.naturalWidth, photoA = ready ? 1 - smooth(.1, .2, p) : 0;
+    if (ready && p < .28) {                 // the photo dips to dark, then the data view comes up: never two courts at once
+      g.globalAlpha = 1 - smooth(.2, .28, p); g.fillStyle = C.deep; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+    }
+    if (photoA) {
+      fitPhoto(smooth(0, .3, p));
+      g.globalAlpha = photoA; g.drawImage(photo, fit.x, fit.y, PW * fit.s, PH * fit.s); g.globalAlpha = 1;
+      drawRally(sec - .6, photoA);
+    }
     drawMarks(p);
     // Fade for the words over the court on narrow screens and on the left on wide ones.
-    const sh = wide ? g.createLinearGradient(0, 0, W * .62, 0) : g.createLinearGradient(0, 0, 0, H * .72);
+    const sh = wide ? g.createLinearGradient(0, 0, W * .54, 0) : g.createLinearGradient(0, 0, 0, H * .72);
     sh.addColorStop(0, "rgba(10,20,16,.92)"); sh.addColorStop(.6, "rgba(10,20,16,.5)"); sh.addColorStop(1, "rgba(10,20,16,0)");
     g.globalAlpha = 1 - smooth(.2, .45, p) * (wide ? .35 : 1); g.fillStyle = sh; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
     if (!calm) {
@@ -574,6 +571,8 @@ if (window.Site && Site.session()) document.getElementById("backLink").hidden = 
   addEventListener("resize", () => { resize(); onScroll(); });
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) tick(); }).observe(stage);
   document.fonts?.ready.then(tick);
+  photo.onload = tick;
+  photo.src = "court-dusk-2400.webp";
   resize(); onScroll();
 })();
 </script>
