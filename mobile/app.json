@@ -47,6 +47,12 @@
         }
       ],
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c88f4eaf-74d8-4d2b-9b77-bc4c7aa0ad02"
+      }
+    },
+    "owner": "infinite_lightning"
   }
 }
