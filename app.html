@@ -25,8 +25,8 @@
 .fix .top{grid-column:1/-1;display:flex;justify-content:space-between;gap:4px 12px;flex-wrap:wrap}
 .fix h2{margin-top:10px}
 .fix .why{margin-top:8px;font-size:1.1rem;max-width:40ch}
-.fix .score{text-align:center;padding:14px 18px;border-radius:var(--r-box);background:var(--tile-2);border:1px solid var(--line);align-self:center}
-.fix .score .board-num{font-size:4.2rem;color:var(--lost)}
+.fix .score{text-align:center;padding:14px 18px;border-radius:var(--r-box);background:var(--tile);border:1px solid color-mix(in srgb,var(--clay) 35%,var(--line));align-self:center}
+.fix .score .board-num{font-size:4.2rem;color:var(--clay)}
 .fix .score small{display:block;font:500 .85rem/1.25 var(--sys);color:var(--ink-2);margin-top:2px}
 .fix .try,.fix .acts,.fix .wide{grid-column:1/-1}
 .fix .try{margin-top:12px}
@@ -78,10 +78,10 @@
 .bars .who{font-size:.85rem;line-height:1.2;color:var(--ink-2);overflow-wrap:anywhere}
 .bars .who b{display:block;color:var(--ink);font-weight:600;font-size:.92rem}
 .bars .track{height:12px;border-radius:6px;background:var(--tile-2);border:1px solid var(--line);overflow:hidden}
-.bars .fill{display:block;height:100%;background:var(--ink-3)}
-.bars li.now .fill{background:var(--ink)}
-.bars.lost .fill{background:color-mix(in srgb,var(--lost) 45%,var(--tile))}
-.bars.lost li.now .fill{background:var(--lost)}
+.bars .fill{display:block;height:100%;background:color-mix(in srgb,var(--tone,var(--ink)) 45%,var(--tile))}
+.bars li.now .fill{background:var(--tone,var(--ink))}
+.bars.lost .fill{background:color-mix(in srgb,var(--clay) 45%,var(--tile))}
+.bars.lost li.now .fill{background:var(--clay)}
 .bars .val{font:700 1.45rem/1 var(--board);text-align:right}
 .trend .verdict{margin-top:14px;font-weight:600}
 
@@ -134,7 +134,7 @@
 
 <main class="wrap">
   <div class="start">
-    <section class="tile fix" id="fixTile" aria-live="polite"><p class="muted">Loading…</p></section>
+    <section class="tile fix tone-clay" id="fixTile" aria-live="polite"><p class="muted">Loading…</p></section>
 
     <section class="tile tile--night new" id="record" aria-labelledby="nw">
       <span class="lab"><span class="ball" aria-hidden="true"></span>New match</span>
@@ -209,7 +209,7 @@ function matchCard(m) {
        <button class="chip" type="button" data-result="loss" data-job="${esc(m.job_id)}">Lost</button>`;
   const score = m.points_won != null ? `<span class="sc board-num">${m.points_won}–${m.points_lost}</span>` : "";
   const sets = m.sets && m.sets.length ? ` · sets ${m.sets.map(esc).join(", ")}` : "";
-  return `<li class="tile match"><span class="who"><a href="${Site.reportUrl(m.job_id)}">${vs(m)}</a><span class="muted">${fmtDate(m.date)}</span></span>
+  return `<li class="tile match tone-hard"><span class="who"><a href="${Site.reportUrl(m.job_id)}">${vs(m)}</a><span class="muted">${fmtDate(m.date)}</span></span>
     ${score}<span class="muted">points${sets}</span>${m.top_fix ? `<span class="muted">#1 fix: ${esc(you(m.top_fix.title))}</span>` : ""}
     <span class="tags">${tag}</span></li>`;
 }
@@ -243,12 +243,12 @@ function numbers(p) {
   return `<section class="numbers" aria-labelledby="nb">
     <div class="intro"><h2 class="h-l" id="nb">Your numbers</h2><p class="muted">More detail across your matches, for when you want it.</p></div>
     <div class="ngrid">
-      ${f ? `<div class="tile trend"><h3 class="h-s">Is your #1 fix getting better?</h3>
+      ${f ? `<div class="tile trend tone-clay"><h3 class="h-s">Is your #1 fix getting better?</h3>
         <p class="rule muted">${esc(you(f.title))}: points lost out of every 10 played. <b>Fewer is better.</b></p>
         ${bars(fixRows, (v) => v, fixMax, "lost")}<p class="verdict">${say[f.trend] || ""}</p></div>` : ""}
-      <div class="tile trend"><h3 class="h-s">Points you won</h3><p class="rule muted">Out of every point played. <b>More is better.</b></p>
+      <div class="tile trend tone-grass"><h3 class="h-s">Points you won</h3><p class="rule muted">Out of every point played. <b>More is better.</b></p>
         ${bars(won, pct, 100)}<p class="verdict">${verdictPct(won)}</p></div>
-      ${serve.length ? `<div class="tile trend"><h3 class="h-s">First serves in</h3><p class="rule muted">How many first serves landed in. <b>More is better.</b></p>
+      ${serve.length ? `<div class="tile trend tone-hard"><h3 class="h-s">First serves in</h3><p class="rule muted">How many first serves landed in. <b>More is better.</b></p>
         ${bars(serve, pct, 100)}<p class="verdict">${verdictPct(serve)}</p></div>` : ""}
     </div></section>`;
 }
@@ -260,9 +260,9 @@ function restHtml(p, latest) {
     <section class="tile"><p class="muted">Your matches will show up here after your first report.</p></section>`;
   const fixes = p.fixes || [], good = p.strengths || [];
   const line = [vs(latest), fmtDate(latest.date), latest.points_won != null ? `${latest.points_won}–${latest.points_lost} points` : ""].filter(Boolean).join(" · ");
-  const fixTileHtml = fixes.length ? `<section class="tile" aria-labelledby="fx"><h3 class="h-m" id="fx" style="margin-bottom:6px">Top ${fixes.length === 1 ? "fix" : `${fixes.length} fixes`}</h3>
+  const fixTileHtml = fixes.length ? `<section class="tile tone-clay" aria-labelledby="fx"><h3 class="h-m" id="fx" style="margin-bottom:6px">Top ${fixes.length === 1 ? "fix" : `${fixes.length} fixes`}</h3>
       <ol class="fixes">${fixes.map(fixRow).join("")}</ol></section>` : "";
-  const goodTile = good.length ? `<section class="tile" aria-labelledby="wl"><h3 class="h-m" id="wl">What you did well</h3>
+  const goodTile = good.length ? `<section class="tile tone-grass" aria-labelledby="wl"><h3 class="h-m" id="wl">What you did well</h3>
       <ul class="well">${good.map((s) => `<li><span class="board-num">${s.points}<small>${s.chances ? `of ${s.chances} ` : ""}points won</small></span>
         <p>${esc(you(s.title))}.</p>${pips(s.points, s.chances, "won")}</li>`).join("")}</ul></section>` : "";
   const all = p.matches.slice().reverse();

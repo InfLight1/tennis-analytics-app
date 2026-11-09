@@ -13,6 +13,11 @@
   --serif: "Newsreader", "Iowan Old Style", Georgia, serif; --sans: var(--sys);
   --tint-court: #E3F0EA; --tint-good: #EFF4D8; --tint-sand: #F6EFE1;
   --court-deep: #0A1410; --court-out: #154734; --court-in: #1E7A52; --court-line: #EEF2EF; --lost-glow: #F2836F;
+  /* Tennis-surface colours, one per kind of section (Rudra, Nov 8): clay = fixes, grass = went well,
+     hard court = serve, return and numbers. The page header is the night sky with shot arcs. */
+  --clay: #C4572D; --clay-soft: #FBE8DF; --grass: #2C8549; --grass-soft: #E1F2E6; --hard: #2B66CC; --hard-soft: #E3ECFB;
+  --sky-deep: #0B1622; --sky-glow: #16324F;
+  --arcs: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400' preserveAspectRatio='xMaxYMid slice'%3E%3Cg fill='none' stroke-width='4' stroke-linecap='round' stroke-dasharray='2 14'%3E%3Cpath d='M380 420 Q 640 -60 1010 190' stroke='%23C6DA2C' opacity='.95'/%3E%3Cpath d='M560 440 Q 820 40 1260 120' stroke='%237AA8F2' opacity='.85'/%3E%3Cpath d='M700 450 Q 930 160 1260 330' stroke='%23F08D63' opacity='.85'/%3E%3Cpath d='M200 430 Q 560 60 1240 40' stroke='%235CC283' opacity='.55'/%3E%3C/g%3E%3Ccircle cx='1010' cy='190' r='62' fill='%23C6DA2C' opacity='.14'/%3E%3Ccircle cx='1010' cy='190' r='26' fill='%23C6DA2C'/%3E%3Cpath d='M992 172c9 7 9 29 0 36M1028 172c-9 7-9 29 0 36' fill='none' stroke='%230F1A14' stroke-width='3' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E");
   --r-tile: 20px; --r-box: 12px;
   color-scheme: light;
 }
@@ -24,6 +29,8 @@
   --ink: #EEF2EF; --ink-2: #B3BDB8; --ink-3: #8F9A95;
   --ball-soft: #2A3214; --ball-deep: #C6DA2C; --lost: #F2836F; --lost-soft: #3A221E; --night: #000000;
   --tint-court: #16251F; --tint-good: #20270F; --tint-sand: #2A241A;
+  --tag-ink: #0F1A14;
+  --clay: #F08D63; --clay-soft: #3A2218; --grass: #5CC283; --grass-soft: #13291B; --hard: #7AA8F2; --hard-soft: #16223A;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
   color-scheme: dark;
 }

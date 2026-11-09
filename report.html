@@ -381,12 +381,12 @@ details.fold > summary svg { color: var(--muted); }
 #error{margin-top:0;position:relative}
 
 .strip{margin-top:-84px;position:relative;display:grid;grid-template-columns:auto 1fr auto;padding:0;overflow:hidden}
-.strip .tag{display:grid;place-items:center;align-content:center;min-height:0;padding:0 26px;border:0;border-radius:0;background:#0F1A14;color:var(--ball);font:700 1.5rem/1 var(--board);letter-spacing:.02em;text-align:center}
-.strip .tag small{display:block;font:600 .72rem/1 var(--sys);letter-spacing:.08em;color:#fff;opacity:.8;margin-bottom:6px}
+.strip .tag{display:grid;place-items:center;align-content:center;min-height:0;padding:0 26px;border:0;border-radius:0;background:var(--clay);color:var(--tag-ink,#fff);font:700 1.5rem/1 var(--board);letter-spacing:.02em;text-align:center}
+.strip .tag small{display:block;font:600 .72rem/1 var(--sys);letter-spacing:.08em;color:var(--tag-ink,#fff);opacity:.8;margin-bottom:6px}
 .strip .what{padding:24px 28px}
 .strip .what p{margin-top:6px;font-size:1.08rem;color:var(--ink-2);max-width:52ch}
 .strip .count{padding:24px 28px;border-left:1px solid var(--line);display:grid;gap:10px;align-content:center;justify-items:end}
-.strip .count .board-num{font-size:3.4rem;color:var(--lost)}
+.strip .count .board-num{font-size:3.4rem;color:var(--clay)}
 .strip .count .board-num small{font:500 .95rem var(--sys);color:var(--ink-2);margin-left:6px}
 .strip .count{min-width:0}
 .strip .count .pips{flex-wrap:nowrap;justify-content:flex-end;min-width:0;width:calc(var(--n)*22px - 6px)}
@@ -855,7 +855,7 @@ function flowHtml(pl) {
   const finish = steps[steps.length - 1][1];
   const say = finish === 0 ? "Ended level" : finish > 0 ? `Ended up ${finish}` : `Ended down ${-finish}`;
   return `<div class="sh"><h2 class="h-l">Point by point</h2><p>Your lead after each of the ${pts.length} points the app called.</p></div>
-    <section class="tile flow" aria-label="Point by point"><div class="chart">
+    <section class="tile flow tone-ball" aria-label="Point by point"><div class="chart">
       <svg viewBox="0 0 640 200" preserveAspectRatio="none" role="img" aria-label="${esc(say)}. Biggest lead ${best}, furthest behind ${-worst}.">
         <defs><clipPath id="ab"><rect width="640" height="100"/></clipPath><clipPath id="be"><rect y="100" width="640" height="100"/></clipPath></defs>
         ${ticks.filter((v) => v).map((v) => `<path d="M0 ${Y(v)} H640" stroke="var(--line)" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>`).join("")}
@@ -877,21 +877,21 @@ function courtHtml(pl) {
   const moments = (n1 && n1.moments) || [];
   const a1 = n1 && n1.advice;
   const tryThis = a1 ? (a1.try_this || firstSentence(a1.match_strategy)) : "";
-  const strip = n1 ? `<section class="tile strip" aria-label="Your number one fix">
+  const strip = n1 ? `<section class="tile strip tone-clay" aria-label="Your number one fix">
       <div class="tag"><small>YOUR</small>#1 FIX</div>
       <div class="what"><h2 class="h-l">${esc(you(headlineOf(n1)))}</h2><p>${esc(you(n1.detail))}</p></div>
       <div class="count"><span class="board-num">${n1.points}<small>${n1.chances ? `of ${n1.chances} ` : ""}points lost</small></span>${pips(n1.points, n1.chances, "lost")}</div>
-    </section>` : `<section class="tile strip"><div class="tag"><small>YOUR</small>#1 FIX</div><div class="what"><h2 class="h-l">Nothing to rank yet</h2><p>Not enough tracked points to pick a fix.</p></div></section>`;
-  const watch = moments.length ? `<section class="tile g-video" aria-labelledby="wH">
+    </section>` : `<section class="tile strip tone-clay"><div class="tag"><small>YOUR</small>#1 FIX</div><div class="what"><h2 class="h-l">Nothing to rank yet</h2><p>Not enough tracked points to pick a fix.</p></div></section>`;
+  const watch = moments.length ? `<section class="tile g-video tone-hard" aria-labelledby="wH">
       <div class="vhead"><h2 class="h-m" id="wH">Watch the ${moments.length === 1 ? "point" : `${moments.length} points`}</h2><span class="muted">Tap a time to jump there</span></div>
       <button type="button" class="poster" data-w="${esc(n1.id)}" data-i="0" aria-label="Play the first point"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg></span></button>
       <div id="watchSlot"></div>
       <div class="moments">${moments.map((t, i) => `<button type="button" class="tbtn" data-w="${esc(n1.id)}" data-i="${i}" aria-label="Watch the point at ${clock(t)}">${clock(t)}</button>`).join("")}</div>
       ${tryThis ? `<p class="try"><b>Try this next match</b>${esc(tryThis)}</p>` : ""}
     </section>` : "";
-  const fixTile = top.length ? `<section class="tile g-fixes" id="fixes" aria-labelledby="fxH"><h2 class="h-m" id="fxH" style="margin-bottom:6px">Top ${top.length === 1 ? "fix" : `${top.length} fixes`}</h2>
+  const fixTile = top.length ? `<section class="tile g-fixes tone-clay" id="fixes" aria-labelledby="fxH"><h2 class="h-m" id="fxH" style="margin-bottom:6px">Top ${top.length === 1 ? "fix" : `${top.length} fixes`}</h2>
       <ol class="fixes">${top.map(fixRow).join("")}</ol></section>` : "";
-  const kpi = (p) => `<div class="tile kpi"><h3>${esc(you(headlineOf(p)))}</h3>${p.points
+  const kpi = (p) => `<div class="tile kpi tone-grass"><h3>${esc(you(headlineOf(p)))}</h3>${p.points
     ? `<span class="board-num">${p.points}<small>${p.chances ? `of ${p.chances} ` : ""}points won</small></span>${pips(p.points, p.chances, "won")}`
     : `<p>${esc(you(p.detail))}</p>`}</div>`;
   const rl = s.rally_length, played = rl.short.played + rl.medium.played + rl.long.played;
@@ -903,7 +903,7 @@ function courtHtml(pl) {
       ${HAS_INSIGHTS ? `<p class="ai-note">Tips are written by AI from the tracked patterns. They cover tactics and practice, not stroke technique.</p>` : ""}` : ""}
     <div class="sh"><h2 class="h-l">How the match went</h2></div>
     <div class="pair">
-      <section class="tile game" aria-label="Your game">
+      <section class="tile game tone-hard" aria-label="Your game">
         ${pl.playstyle.tags.length ? `<div class="tags">${pl.playstyle.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
         ${pl.ai_summary ? `<p class="summary">${esc(pl.ai_summary)}</p>` : ""}
         <div class="minis">
@@ -912,7 +912,7 @@ function courtHtml(pl) {
           <div class="mini"><div class="mv">${rally}</div><div class="ml">${s.avg_rally_shots != null ? "Shots per rally" : "Short points"}</div></div>
         </div>
       </section>
-      <section class="tile" aria-labelledby="barH">
+      <section class="tile tone-clay" aria-labelledby="barH">
         <div class="sec-head"><h3 class="h-m" id="barH">How ${esc(pl.name)} <span id="barWord">${barView}</span> points</h3>
           <div class="seg" role="group" aria-label="Show points lost or won">
             <button type="button" data-view="lost" aria-pressed="${barView === "lost"}">Lost</button>
@@ -922,7 +922,7 @@ function courtHtml(pl) {
       </section>
     </div>
     ${rows.length ? `<div class="sh"><h2 class="h-l">Serve and return</h2></div>
-      <div class="sgrid n${rows.length}">${rows.map((r) => `<div class="tile stat"><span class="board-num">${r.v}</span><h3>${esc(r.l)}</h3><p>${esc(r.x)}</p></div>`).join("")}</div>` : ""}
+      <div class="sgrid n${rows.length}">${rows.map((r) => `<div class="tile stat tone-hard"><span class="board-num">${r.v}</span><h3>${esc(r.l)}</h3><p>${esc(r.x)}</p></div>`).join("")}</div>` : ""}
     ${flowHtml(pl)}
     ${sureHtml("")}`;
 }
