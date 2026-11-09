@@ -4,6 +4,7 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Field, Label, Row, Segments, Tile, Title } from '@/components/ui';
 import { apiPost } from '@/lib/api';
+import { useVersionLine } from '@/lib/appUpdates';
 import { useAuth } from '@/lib/auth';
 import { fonts, useTheme, type Appearance_ } from '@/lib/theme';
 
@@ -21,6 +22,7 @@ export default function Account() {
   const [code, setCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [note, setNote] = useState('');
+  const version = useVersionLine();
   const coach = user?.role === 'coach';
   const solo = !coach && !user?.team_id;
 
@@ -96,6 +98,7 @@ export default function Account() {
       <Tile style={{ gap: 0 }}>
         <Row title="Sign out" onPress={signOut} />
         <Row title="Delete account" danger onPress={confirmDelete} />
+        <Body muted small>{version}</Body>
       </Tile>
     </ScrollView>
   );

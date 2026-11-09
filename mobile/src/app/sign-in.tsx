@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CourtScene } from '@/components/CourtScene';
 import { BallIcon } from '@/components/icons';
 import { Body, Button, Field, Label, Row, Segments, Title } from '@/components/ui';
+import { useVersionLine } from '@/lib/appUpdates';
 import { useAuth, type SignUp } from '@/lib/auth';
 import { codeProblem, passwordProblem, usernameProblem } from '@/lib/signupRules';
 import { store } from '@/lib/store';
@@ -34,6 +35,7 @@ export default function SignIn() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const version = useVersionLine();
   const [mode, setMode] = useState<Mode>('signup');
   const [who, setWho] = useState<Who>('join');
   const [f, setF] = useState({ username: '', password: '', code: '', name: '', email: '', passcode: '', team_name: '' });
@@ -116,6 +118,7 @@ export default function SignIn() {
 
         <View style={{ paddingHorizontal: 24, marginTop: 8 }}>
           <Row title="See an example report" onPress={() => router.push('/sign-in-example')} />
+          <Body muted small>{version}</Body>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
