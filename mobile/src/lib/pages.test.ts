@@ -34,6 +34,12 @@ describe('routeFor', () => {
 });
 
 describe('appScript', () => {
+  it('paints the page dark from the start in dark mode', () => {
+    const s = appScript({ session: null, passcode: null, theme: 'dark', page: '#0E1113' });
+    expect(s).toContain('d.dataset.theme="dark"');
+    expect(s).toContain('d.style.backgroundColor="#0E1113"');
+    expect(s.indexOf('backgroundColor')).toBeLessThan(s.indexOf('localStorage'));
+  });
   it('hands the sign-in to the page and marks it as the app', () => {
     const s = appScript({ session: 'tok"en', passcode: null, role: 'coach', theme: 'dark' });
     expect(s).toContain('window.AdvantageApp={theme:"dark"}');

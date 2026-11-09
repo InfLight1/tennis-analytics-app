@@ -3,19 +3,23 @@
 import { API_BASE } from './config';
 import type { Scheme } from './theme';
 
-export type PageState = { session: string | null; passcode: string | null; role?: string; theme: Scheme };
+export type PageState = { session: string | null; passcode: string | null; role?: string; theme: Scheme; page?: string };
 
 // Runs before a page's own scripts: site.js reads window.AdvantageApp and drops the website's
 // header and footer, and the page finds the sign-in where it always looks for it.
-export function appScript({ session, passcode, role, theme }: PageState): string {
+export function appScript({ session, passcode, role, theme, page }: PageState): string {
   const set = (key: string, value: string | null | undefined) =>
     value ? `localStorage.setItem(${JSON.stringify(key)},${JSON.stringify(value)});` : `localStorage.removeItem(${JSON.stringify(key)});`;
+  // Dark or light from the very first paint, so a reload never flashes white in dark mode.
+  const first = `var d=document.documentElement;d.dataset.app="1";d.dataset.theme=${JSON.stringify(theme)};d.style.colorScheme=${JSON.stringify(theme)};${page ? `d.style.backgroundColor=${JSON.stringify(page)};` : ''}`;
   return `window.AdvantageApp={theme:${JSON.stringify(theme)}};
+try{${first}}catch(e){}
 try{${set('advantage_session', session)}${set('tennis_passcode', passcode)}${set('advantage_role', role)}}catch(e){}
 true;`;
 }
 
-export const themeScript = (theme: Scheme) => `window.Site&&Site.setTheme&&Site.setTheme(${JSON.stringify(theme)});true;`;
+export const themeScript = (theme: Scheme, page?: string) =>
+  `${page ? `document.documentElement.style.backgroundColor=${JSON.stringify(page)};document.documentElement.style.colorScheme=${JSON.stringify(theme)};` : ''}window.Site&&Site.setTheme&&Site.setTheme(${JSON.stringify(theme)});true;`;
 
 export type Route =
   | { go: 'stay' }

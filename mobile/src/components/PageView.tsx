@@ -25,9 +25,9 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  const script = useMemo(() => appScript({ session, passcode, role: user?.role, theme: scheme }), [session, passcode, user?.role, scheme]);
+  const script = useMemo(() => appScript({ session, passcode, role: user?.role, theme: scheme, page: colors.page }), [session, passcode, user?.role, scheme, colors.page]);
 
-  useEffect(() => { web.current?.injectJavaScript(themeScript(scheme)); }, [scheme]);
+  useEffect(() => { web.current?.injectJavaScript(themeScript(scheme, colors.page)); }, [scheme, colors.page]);
 
   useFocusEffect(useCallback(() => {
     if (reloadOnFocus && loadedAt.current && Date.now() - loadedAt.current > STALE_MS) web.current?.reload();
@@ -76,6 +76,7 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       allowsLinkPreview={false}
+      decelerationRate="normal"
       pullToRefreshEnabled
       sharedCookiesEnabled
       originWhitelist={['*']}
