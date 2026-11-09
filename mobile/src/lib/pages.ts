@@ -14,6 +14,7 @@ export function appScript({ session, passcode, role, theme, page }: PageState): 
   const first = `var d=document.documentElement;d.dataset.app="1";d.dataset.theme=${JSON.stringify(theme)};d.style.colorScheme=${JSON.stringify(theme)};${page ? `d.style.backgroundColor=${JSON.stringify(page)};` : ''}`;
   return `window.AdvantageApp={theme:${JSON.stringify(theme)}};
 try{${first}}catch(e){}
+document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){window.ReactNativeWebView&&window.ReactNativeWebView.postMessage('{"type":"painted"}');});});
 try{${set('advantage_session', session)}${set('tennis_passcode', passcode)}${set('advantage_role', role)}}catch(e){}
 true;`;
 }
@@ -56,6 +57,7 @@ export function routeFor(url: string, here: string): Route {
 export type PageMessage =
   | { type: 'session'; token: string | null }
   | { type: 'passcode'; code: string }
+  | { type: 'painted' }
   | { type: 'marked' }
   | { type: 'mark-check' }
   | { type: 'print'; html: string };

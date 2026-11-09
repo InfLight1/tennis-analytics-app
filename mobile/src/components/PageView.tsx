@@ -1,7 +1,7 @@
 // A website page inside the app: the site's own phone page, minus its header and footer.
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from 'react';
-import { Linking, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import type { IOSWebViewProps } from 'react-native-webview/lib/WebViewTypes';
 import { useAuth } from '@/lib/auth';
@@ -24,6 +24,9 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
   const loadedAt = useRef(0);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // The phone's built-in browser draws plain white while a page loads (this library never passes it our
+  // colour), so a cover in the app's own colour sits on top until the page has drawn.
+  const [cover, setCover] = useState(true);
 
   const script = useMemo(() => appScript({ session, passcode, role: user?.role, theme: scheme, page: colors.page }), [session, passcode, user?.role, scheme, colors.page]);
 
@@ -46,6 +49,7 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
   const onPageMessage = useCallback((e: WebViewMessageEvent) => {
     const m = readMessage(e.nativeEvent.data);
     if (!m) return;
+    if (m.type === 'painted') setCover(false);
     if (m.type === 'session') setSession(m.token);
     if (m.type === 'passcode') setPasscode(m.code);
     if (m.type === 'print') savePdf(m.html).catch(() => {});
@@ -63,6 +67,7 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.page }}>
     <Web
       key={attempt}
       ref={web}
@@ -80,7 +85,8 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
       pullToRefreshEnabled
       sharedCookiesEnabled
       originWhitelist={['*']}
-      onLoadEnd={() => { loadedAt.current = Date.now(); }}
+      onLoadStart={() => setCover(true)}
+      onLoadEnd={() => { loadedAt.current = Date.now(); setCover(false); }}
       onError={() => setFailed(true)}
       onContentProcessDidTerminate={() => web.current?.reload()}
       onMessage={onPageMessage}
@@ -92,5 +98,11 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
         return false;
       }}
     />
+    {cover && (
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.page, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.ink3} />
+      </View>
+    )}
+    </View>
   );
 }
