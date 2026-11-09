@@ -2,7 +2,7 @@
 // flies up to become the logo. Runs over the app while it loads underneath, then fades away.
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useDerivedValue, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Circle, Ellipse } from 'react-native-svg';
@@ -42,6 +42,9 @@ export function Intro({ ready, onDone }: { ready: boolean; onDone: () => void })
     if (!(played || calm) || !ready) return;
     fade.value = withTiming(0, { duration: calm ? 200 : 380, easing: Easing.out(Easing.quad) }, (ok) => { if (ok) scheduleOnRN(onDone); });
   }, [played, ready, calm, fade, onDone]);
+
+  // A tap jumps to the end, for anyone in a hurry.
+  const skip = () => { t.set(1); setPlayed(true); };
 
   const draw = useDerivedValue(() => span(t.value, 0.02, 0.4));
 
@@ -88,6 +91,7 @@ export function Intro({ ready, onDone }: { ready: boolean; onDone: () => void })
         <Text style={styles.name}>Advantage AI</Text>
         <Text style={styles.tag}>Film your match. Get your top fixes.</Text>
       </Animated.View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Skip intro" onPress={skip} style={StyleSheet.absoluteFill} />
     </Animated.View>
   );
 }

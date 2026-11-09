@@ -1,12 +1,14 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CourtScene } from '@/components/CourtScene';
 import { BallIcon } from '@/components/icons';
 import { Body, Button, Field, Label, Row, Segments, Title } from '@/components/ui';
 import { useAuth, type SignUp } from '@/lib/auth';
+import { codeProblem, passwordProblem, usernameProblem } from '@/lib/signupRules';
+import { store } from '@/lib/store';
 import { radius, useTheme } from '@/lib/theme';
 
 type Mode = 'login' | 'signup';
@@ -32,7 +34,7 @@ export default function SignIn() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<Mode>('signup');
   const [who, setWho] = useState<Who>('join');
   const [f, setF] = useState({ username: '', password: '', code: '', name: '', email: '', passcode: '', team_name: '' });
   const [busy, setBusy] = useState(false);
@@ -40,6 +42,10 @@ export default function SignIn() {
   const set = (key: keyof typeof f) => (value: string) => setF((old) => ({ ...old, [key]: value }));
   const kind: Kind = mode === 'login' ? 'signin' : who;
   const switchTo = (m: Mode) => { setMode(m); setError(''); };
+  const fresh = kind !== 'signin';
+
+  // A phone that has signed in before opens on Log in; a new one on Sign up.
+  useEffect(() => { store.get('known').then((k) => { if (k) setMode('login'); }); }, []);
 
   const submit = async () => {
     setBusy(true);
@@ -84,11 +90,11 @@ export default function SignIn() {
             </View>
           )}
 
-          {kind === 'join' && <Field label="Team code" hint="6 letters, from your coach" value={f.code} onChangeText={set('code')} autoCapitalize="characters" maxLength={6} autoCorrect={false} />}
+          {kind === 'join' && <Field label="Team code" hint="6 letters, from your coach" value={f.code} onChangeText={(v) => set('code')(v.toUpperCase())} problem={codeProblem(f.code)} autoCapitalize="characters" maxLength={6} autoCorrect={false} />}
           {kind === 'coach' && <Field label="Team name" placeholder="e.g. Varsity Boys" value={f.team_name} onChangeText={set('team_name')} maxLength={60} />}
           {kind !== 'signin' && <Field label="Your name" hint={kind === 'solo' ? 'use this name when you film' : undefined} value={f.name} onChangeText={set('name')} maxLength={40} textContentType="name" autoComplete="name" />}
-          <Field label="Username" hint={kind === 'signin' ? undefined : '3-24 letters or numbers'} value={f.username} onChangeText={set('username')} autoCapitalize="none" autoCorrect={false} textContentType="username" autoComplete="username" />
-          <Field label="Password" hint={kind === 'signin' ? undefined : 'at least 8 characters'} value={f.password} onChangeText={set('password')} secureTextEntry textContentType={kind === 'signin' ? 'password' : 'newPassword'} autoComplete={kind === 'signin' ? 'current-password' : 'new-password'} />
+          <Field label="Username" hint={fresh ? '3-24 letters or numbers' : undefined} problem={fresh ? usernameProblem(f.username) : null} value={f.username} onChangeText={set('username')} autoCapitalize="none" autoCorrect={false} textContentType="username" autoComplete="username" />
+          <Field label="Password" hint={fresh ? 'at least 8 characters' : undefined} problem={fresh ? passwordProblem(f.password) : null} value={f.password} onChangeText={set('password')} secureTextEntry textContentType={kind === 'signin' ? 'password' : 'newPassword'} autoComplete={kind === 'signin' ? 'current-password' : 'new-password'} />
           {kind === 'solo' && <Field label="Email" hint="optional, for password resets" value={f.email} onChangeText={set('email')} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={120} />}
           {(kind === 'solo' || kind === 'coach') && (
             <>

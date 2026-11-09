@@ -53,7 +53,7 @@ export function Button({ title, onPress, kind = 'ink', busy, disabled }: { title
   );
 }
 
-export function Field({ label, hint, ...input }: TextInputProps & { label: string; hint?: string }) {
+export function Field({ label, hint, problem, ...input }: TextInputProps & { label: string; hint?: string; problem?: string | null }) {
   const { colors, scheme } = useTheme();
   return (
     <View style={{ gap: 6 }}>
@@ -63,8 +63,9 @@ export function Field({ label, hint, ...input }: TextInputProps & { label: strin
         keyboardAppearance={scheme}
         placeholderTextColor={colors.ink3}
         {...input}
-        style={{ minHeight: 48, borderRadius: radius.box, borderWidth: 1, borderColor: colors.line2, backgroundColor: colors.tile2, color: colors.ink, paddingHorizontal: 12, fontSize: 16 }}
+        style={{ minHeight: 48, borderRadius: radius.box, borderWidth: problem ? 2 : 1, borderColor: problem ? colors.lost : colors.line2, backgroundColor: colors.tile2, color: colors.ink, paddingHorizontal: 12, fontSize: 16 }}
       />
+      {!!problem && <Text accessibilityLiveRegion="polite" style={{ fontSize: 14, lineHeight: 19, color: colors.lost }}>{problem}</Text>}
     </View>
   );
 }

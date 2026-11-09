@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setSession = useCallback((token: string | null) => {
     setSessionState(token);
     store.set('session', token);
+    if (token) store.set('known', '1');   // this phone has an account: open on Log in next time
     if (!token) { setMe({ user: null }); store.set('me', null); }
   }, []);
   const setPasscode = useCallback((code: string) => {
