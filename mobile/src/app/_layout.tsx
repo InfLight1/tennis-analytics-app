@@ -4,10 +4,11 @@ import { Stack } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Intro } from '@/components/Intro';
 import { useReportAlerts } from '@/lib/alerts';
+import { useAppUpdates } from '@/lib/appUpdates';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 
@@ -21,7 +22,9 @@ function Screens() {
   const [boardFont] = useBoardFont({ BarlowCondensed_700Bold });
   const loaded = ready && titleFont && boardFont;
   const [intro, setIntro] = useState(true);
-  const endIntro = useCallback(() => setIntro(false), []);
+  const introShowing = useRef(true);
+  const endIntro = useCallback(() => { introShowing.current = false; setIntro(false); }, []);
+  useAppUpdates(useCallback(() => introShowing.current, []));
   useReportAlerts();
 
   // The phone's still launch picture hands over to the moving intro as soon as fonts are in.

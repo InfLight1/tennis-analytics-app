@@ -53,6 +53,14 @@
         "projectId": "c88f4eaf-74d8-4d2b-9b77-bc4c7aa0ad02"
       }
     },
-    "owner": "infinite_lightning"
+    "owner": "infinite_lightning",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c88f4eaf-74d8-4d2b-9b77-bc4c7aa0ad02",
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
