@@ -98,8 +98,11 @@ dl.fold dd{margin:2px 0 0;color:var(--ink-2)}
 .tabbar{display:none}
 
 
+/* Phones: tighter, so a report or dashboard needs less scrolling (Rudra, Nov 8). */
 @media (max-width:860px){
-  .sh{margin-top:40px}
+  .sh{margin:30px 0 10px}
+  .tile{padding:16px}
+  .fixes summary{padding:10px 0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
