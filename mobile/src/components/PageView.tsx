@@ -76,7 +76,7 @@ export function PageView({ path, onMessage, reloadOnFocus }: { path: string; onM
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       allowsLinkPreview={false}
-      decelerationRate="normal"
+      decelerationRate={0.999}
       pullToRefreshEnabled
       sharedCookiesEnabled
       originWhitelist={['*']}
