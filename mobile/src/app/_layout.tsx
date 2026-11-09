@@ -4,7 +4,9 @@ import { Stack } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { Intro } from '@/components/Intro';
 import { useReportAlerts } from '@/lib/alerts';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ThemeProvider, useTheme } from '@/lib/theme';
@@ -18,15 +20,18 @@ function Screens() {
   const [titleFont] = useTitleFont({ Newsreader_500Medium });
   const [boardFont] = useBoardFont({ BarlowCondensed_700Bold });
   const loaded = ready && titleFont && boardFont;
+  const [intro, setIntro] = useState(true);
+  const endIntro = useCallback(() => setIntro(false), []);
   useReportAlerts();
 
-  useEffect(() => { if (loaded) SplashScreen.hideAsync().catch(() => {}); }, [loaded]);
-  if (!loaded) return null;
+  // The phone's still launch picture hands over to the moving intro as soon as fonts are in.
+  useEffect(() => { if (titleFont) SplashScreen.hideAsync().catch(() => {}); }, [titleFont]);
+  if (!titleFont) return null;
 
   return (
-    <>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{
+    <View style={{ flex: 1, backgroundColor: colors.page }}>
+      <StatusBar style={intro || scheme === 'dark' ? 'light' : 'dark'} />
+      {loaded && <Stack screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.page },
         headerStyle: { backgroundColor: colors.tile },
@@ -45,8 +50,9 @@ function Screens() {
           <Stack.Screen name="report" options={{ headerShown: true, title: 'Report' }} />
           <Stack.Screen name="page" options={{ headerShown: true, title: '' }} />
         </Stack.Protected>
-      </Stack>
-    </>
+      </Stack>}
+      {intro && <Intro ready={!!loaded} onDone={endIntro} />}
+    </View>
   );
 }
 

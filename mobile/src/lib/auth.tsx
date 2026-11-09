@@ -1,6 +1,7 @@
 // Who is signed in. Same accounts as the website; the sign-in is kept in the phone's secure storage.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiError, apiGet, apiPost, type Creds } from './api';
+import { API_BASE } from './config';
 import { store } from './store';
 
 export type User = { username: string; name: string; role: 'player' | 'coach'; team_id: string | null };
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setSession = useCallback((token: string | null) => {
     setSessionState(token);
     store.set('session', token);
-    if (!token) setMe({ user: null });
+    if (!token) { setMe({ user: null }); store.set('me', null); }
   }, []);
   const setPasscode = useCallback((code: string) => {
     setPasscodeState(code);
@@ -49,17 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async (token: string, code: string | null) => {
     const data = await apiGet<Me>('/api/me', { session: token, passcode: code });
-    if (data.user) setMe(data);
+    if (data.user) { setMe(data); store.set('me', JSON.stringify(data)); }
     else setSession(null);            // the sign-in ran out
   }, [setSession]);
 
   useEffect(() => {
     (async () => {
-      const [token, code] = await Promise.all([store.get('session'), store.get('passcode')]);
+      const [token, code, saved] = await Promise.all([store.get('session'), store.get('passcode'), store.get('me')]);
       setSessionState(token);
       setPasscodeState(code);
-      if (token) await load(token, code).catch(() => {});   // no signal: stay signed in
+      if (token && saved) { try { setMe(JSON.parse(saved) as Me); } catch { /* re-fetched below */ } }
       setReady(true);
+      // Checked in the background so the app opens at once; this also wakes the server.
+      // No signal: stay signed in. A sign-in that ran out sends the player to sign in.
+      if (token) load(token, code).catch(() => {});
+      else fetch(`${API_BASE}/api/me`).catch(() => {});
     })();
   }, [load]);
 

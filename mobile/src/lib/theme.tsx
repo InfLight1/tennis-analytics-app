@@ -21,6 +21,9 @@ export const palettes = {
 };
 export type Colors = typeof palettes.light;
 
+// The drawn night court (tokens.css --court-*), the same in light and dark: it is the brand scene.
+export const court = { deep: '#0A1410', out: '#154734', inn: '#1E7A52', line: '#EEF2EF' };
+
 // Fonts, option C (Rudra, Nov 4): Newsreader big titles, Apple's font for the rest, scoreboard numbers.
 export const fonts = {
   title: 'Newsreader_500Medium',

@@ -7,7 +7,7 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#0F1A14",
+    "backgroundColor": "#0A1410",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.advantageai.tennis",
@@ -30,7 +30,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#0F1A14"
+          "backgroundColor": "#0A1410"
         }
       ],
       "expo-secure-store",
