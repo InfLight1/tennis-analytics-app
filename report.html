@@ -438,7 +438,7 @@ body.watching .poster{display:none}
 .sgrid.n5>:nth-child(n+4){grid-column:span 3}
 .sgrid.n1>*{grid-column:1/-1}
 .stat .board-num{font-size:2.6rem;display:block;line-height:1.05}
-.stat h3{font:700 1rem/1.3 var(--sys);letter-spacing:0;margin-top:6px}
+.stat h3{font:700 1rem/1.3 var(--sys);letter-spacing:0;margin-bottom:6px}
 .stat p{color:var(--ink-2);font-size:.92rem;margin-top:2px}
 
 .flow .chart{position:relative;margin:8px 0 0 64px}
@@ -469,12 +469,19 @@ body.watching .end{height:var(--space-6)}
   .strip .count .board-num{font-size:2.4rem;white-space:nowrap}
   .strip .count .pips{justify-content:flex-start;width:100%;gap:5px}
   .rgrid,.pair{gap:12px;margin-top:12px}
-  .kpis{grid-template-columns:1fr;gap:12px}
-  .sgrid{grid-template-columns:1fr 1fr;gap:12px}
-  .sgrid>*,.sgrid.n2>*,.sgrid.n4>*,.sgrid.n5>:nth-child(n+4){grid-column:1/-1}
+  .kpis{grid-template-columns:1fr;gap:10px}
+  .kpi .board-num{font-size:2.3rem;margin:4px 0 6px}
+  .sgrid{grid-template-columns:1fr 1fr;gap:10px}
+  .sgrid>*,.sgrid.n2>*,.sgrid.n4>*,.sgrid.n5>:nth-child(n+4){grid-column:span 1}
+  .sgrid.n1>*,.sgrid.n3>:last-child{grid-column:1/-1}
+  .stat{padding:14px}
+  .stat h3{font-size:.9rem}
+  .stat .board-num{font-size:2.1rem}
+  .stat p{font-size:.85rem}
+  .stat .why{display:none}
   .flow .chart{margin-left:52px}
   .flow .yl{left:-52px}
-  #player .sure{margin-top:40px}
+  #player .sure{margin-top:28px}
 }
 @media print{
   .wrap{max-width:none;padding:0}
@@ -686,45 +693,39 @@ function matchLine(P, ids) {
   return bits.join(" · ");
 }
 
-// Serve and return stats, each with one plain line saying what it means (Rudra, Nov 1).
+// Serve and return: four stats only (Rudra, Nov 8: the rest took too much room on a phone).
+// Each has a count line (x) and a plain line saying what it means (y, hidden on phones).
 // Double faults, missed shots and rally length are left out: the bars and fixes above
 // already show them (pretend users, Nov 1: "it says the same thing three times").
 const wonOf = (pctWon, n) => Math.round((pctWon || 0) * n / 100);
 function statRows(s) {
   const sv = s.serve, rt = s.return, rows = [];
-  const add = (v, l, x) => rows.push({ v, l, x });
+  const add = (v, l, x, y = "") => rows.push({ v, l, x, y });
   if (sv.first_serves) {
     const p = sv.first_serve_in_pct;
-    add(pct(p), "First serves in", `${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves} first serves went in. ` +
+    add(pct(p), "First serves in", `${sv.first_serves - sv.first_serve_faults} of ${sv.first_serves} went in.`,
       (p >= 65 ? "Reliable: most points start on a first serve." : p < 50 ? "Under half, so the opponent sees a lot of second serves." : "About half: every extra first serve in takes pressure off the second."));
   }
   if (sv.second_serves && sv.second_serves_in != null) {
-    add(pct(sv.second_serve_in_pct), "Second serves in", `${sv.second_serves_in} of ${sv.second_serves} second serves went in. Every miss here is a double fault.` +
-      (sv.first_serve_faults > sv.second_serves ? ` The app only saw ${sv.second_serves} of the second serves after ${sv.first_serve_faults} missed first serves, so this is a small sample.` : ""));
-  }
-  if (sv.first_serve_points && sv.second_serve_points) {
-    const p1 = sv.first_serve_points_won_pct, p2 = sv.second_serve_points_won_pct;
-    const n1 = sv.first_serve_points, n2 = sv.second_serve_points, few = Math.min(n1, n2) < 5;
-    const val = (p, n) => (n < 5 ? `${wonOf(p, n)} of ${n}` : pct(p));   // a percent of 1 or 2 points misleads
-    add(val(p1, n1), "Won after a first serve", `Won ${wonOf(p1, n1)} of ${n1} points when the first serve went in.`);
-    add(val(p2, n2), "Won after a second serve", `Won ${wonOf(p2, n2)} of ${n2} points played on a second serve. ` +
-      (few ? "Too few points to compare the two serves yet." : p1 - p2 >= 15 ? "The second serve is where points slip away: the opponent can attack it." : p2 - p1 >= 15 ? "Points after a second serve went better than after a first serve this match." : "About the same on both serves."));
+    const few = sv.first_serve_faults > sv.second_serves;
+    add(pct(sv.second_serve_in_pct), "Second serves in", `${sv.second_serves_in} of ${sv.second_serves} went in.${few ? " Small sample." : ""}`,
+      "Every miss here is a double fault." + (few ? ` The app only saw ${sv.second_serves} of the second serves after ${sv.first_serve_faults} missed first serves.` : ""));
   }
   if (sv.points_served) {
     const p = sv.service_points_won_pct;
-    add(pct(p), "Won on serve", `Won ${wonOf(p, sv.points_served)} of ${sv.points_served} points when serving. ` +
+    add(pct(p), "Won on serve", `${wonOf(p, sv.points_served)} of ${sv.points_served} points.`,
       (p >= 55 ? "Serving gave an edge." : p < 45 ? "Lost more than half of these." : "About even on serve."));
   }
   if (rt.return_points) {
     const p = rt.return_points_won_pct;
-    add(pct(p), "Won on return", `Won ${wonOf(p, rt.return_points)} of ${rt.return_points} points when the opponent served. ` +
+    add(pct(p), "Won on return", `${wonOf(p, rt.return_points)} of ${rt.return_points} points.`,
       (p >= 50 ? "Even or better when returning." : "Lost most of these: the opponent held serve well."));
   }
   return rows;
 }
 function statsHtml(s, idp) {
   return `<section class="sec" aria-labelledby="${idp}statH"><h2 id="${idp}statH">Serve and return, explained</h2>
-    <ul class="stats-x">${statRows(s).map((r) => `<li><div class="v">${r.v}</div><div><div class="l">${esc(r.l)}</div><p class="x">${esc(r.x)}</p></div></li>`).join("")}</ul>
+    <ul class="stats-x">${statRows(s).map((r) => `<li><div class="v">${r.v}</div><div><div class="l">${esc(r.l)}</div><p class="x">${esc(r.x)} ${esc(r.y)}</p></div></li>`).join("")}</ul>
   </section>`;
 }
 
@@ -922,7 +923,7 @@ function courtHtml(pl) {
       </section>
     </div>
     ${rows.length ? `<div class="sh"><h2 class="h-l">Serve and return</h2></div>
-      <div class="sgrid n${rows.length}">${rows.map((r) => `<div class="tile stat tone-hard"><span class="board-num">${r.v}</span><h3>${esc(r.l)}</h3><p>${esc(r.x)}</p></div>`).join("")}</div>` : ""}
+      <div class="sgrid n${rows.length}">${rows.map((r) => `<div class="tile stat tone-hard"><h3>${esc(r.l)}</h3><span class="board-num">${r.v}</span><p>${esc(r.x)}</p>${r.y ? `<p class="why">${esc(r.y)}</p>` : ""}</div>`).join("")}</div>` : ""}
     ${flowHtml(pl)}
     ${sureHtml("")}`;
 }
