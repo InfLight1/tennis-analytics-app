@@ -1,7 +1,8 @@
 // The Court look's building blocks for the app's native screens.
 import * as Haptics from 'expo-haptics';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { EyeIcon, EyeOffIcon } from '@/components/icons';
 import { fonts, radius, useTheme } from '@/lib/theme';
 
 export function Title({ children, size = 30, color }: { children: ReactNode; size?: number; color?: string }) {
@@ -53,18 +54,30 @@ export function Button({ title, onPress, kind = 'ink', busy, disabled }: { title
   );
 }
 
-export function Field({ label, hint, problem, ...input }: TextInputProps & { label: string; hint?: string; problem?: string | null }) {
+export function Field({ label, hint, problem, secureTextEntry, ...input }: TextInputProps & { label: string; hint?: string; problem?: string | null }) {
   const { colors, scheme } = useTheme();
+  const [shown, setShown] = useState(false);
+  const hidden = !!secureTextEntry && !shown;
   return (
     <View style={{ gap: 6 }}>
       <Text style={{ fontSize: 15, fontWeight: '600', color: colors.ink }}>{label}{hint ? <Text style={{ fontWeight: '400', color: colors.ink2 }}>{`  ${hint}`}</Text> : null}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        keyboardAppearance={scheme}
-        placeholderTextColor={colors.ink3}
-        {...input}
-        style={{ minHeight: 48, borderRadius: radius.box, borderWidth: problem ? 2 : 1, borderColor: problem ? colors.lost : colors.line2, backgroundColor: colors.tile2, color: colors.ink, paddingHorizontal: 12, fontSize: 16 }}
-      />
+      <View style={{ justifyContent: 'center' }}>
+        <TextInput
+          accessibilityLabel={label}
+          keyboardAppearance={scheme}
+          placeholderTextColor={colors.ink3}
+          {...input}
+          secureTextEntry={hidden}
+          style={{ minHeight: 48, borderRadius: radius.box, borderWidth: problem ? 2 : 1, borderColor: problem ? colors.lost : colors.line2, backgroundColor: colors.tile2, color: colors.ink, paddingHorizontal: 12, paddingRight: secureTextEntry ? 52 : 12, fontSize: 16 }}
+        />
+        {!!secureTextEntry && (
+          <Pressable accessibilityRole="button" accessibilityLabel={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} hitSlop={6}
+            onPress={() => setShown((v) => !v)}
+            style={({ pressed }) => ({ position: 'absolute', right: 2, width: 48, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+            {shown ? <EyeOffIcon color={colors.ink2} size={22} /> : <EyeIcon color={colors.ink2} size={22} />}
+          </Pressable>
+        )}
+      </View>
       {!!problem && <Text accessibilityLiveRegion="polite" style={{ fontSize: 14, lineHeight: 19, color: colors.lost }}>{problem}</Text>}
     </View>
   );

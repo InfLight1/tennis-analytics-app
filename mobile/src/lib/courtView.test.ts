@@ -1,4 +1,4 @@
-import { ballAt, HL, HW, makeCam, project, RALLY } from './courtView';
+import { HL, HW, makeCam, project } from './courtView';
 
 describe('court seen from the back fence', () => {
   const cam = makeCam(390, 844, 0.3);
@@ -17,12 +17,5 @@ describe('court seen from the back fence', () => {
 
   it('puts the near baseline where asked', () => {
     expect(project(cam, 0, -HL)[1]).toBeCloseTo(844 * 0.78, 3);
-  });
-
-  it('plays the rally from the serve to the last shot', () => {
-    expect(RALLY.reduce((s, r) => s + r[3], 0)).toBeCloseTo(1, 6);
-    expect(ballAt(0)).toEqual(RALLY[0][0]);
-    const end = ballAt(1), last = RALLY[RALLY.length - 1][1];
-    end.forEach((v, i) => expect(v).toBeCloseTo(last[i], 6));
   });
 });

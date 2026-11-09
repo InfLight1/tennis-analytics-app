@@ -29,7 +29,6 @@ export function makeCam(W: number, H: number, top = 0.3, bottom = 0.78): Cam {
 
 // Screen x, y and scale (pixels per metre at that spot).
 export function project(cam: Cam, x: number, y: number, z = 0): [number, number, number] {
-  'worklet';
   const dx = x - cam.C[0], dy = y - cam.C[1], dz = z - cam.C[2];
   const zc = Math.max(dx * 0 + dy * cam.f[1] + dz * cam.f[2], 0.5);
   const yc = dy * cam.u[1] + dz * cam.u[2];
@@ -46,27 +45,4 @@ export function polyPath(cam: Cam, pts: [number, number, number?][]): string {
 export function linePath(cam: Cam, [x1, y1, x2, y2]: [number, number, number, number]): { d: string; len: number } {
   const a = project(cam, x1, y1), b = project(cam, x2, y2);
   return { d: `M${a[0].toFixed(1)} ${a[1].toFixed(1)} L${b[0].toFixed(1)} ${b[1].toFixed(1)}`, len: Math.hypot(b[0] - a[0], b[1] - a[1]) };
-}
-
-// A short rally: serve, return, a deep ball. Each shot: from, to, arc height (m), share of the rally time.
-export const RALLY: [[number, number, number], [number, number, number], number, number][] = [
-  [[1.6, -12.2, 2.7], [-2.4, 5.2, 0], 0.4, 0.3],
-  [[-2.4, 5.2, 0], [-3.1, 12.6, 1.0], 0.9, 0.2],
-  [[-3.1, 12.6, 1.0], [2.8, -8.2, 0], 1.6, 0.32],
-  [[2.8, -8.2, 0], [3.4, -12.4, 1.0], 0.8, 0.18],
-];
-
-// Ball position in court metres at rally progress s (0-1).
-export function ballAt(s: number): [number, number, number] {
-  'worklet';
-  let t = Math.min(Math.max(s, 0), 1);
-  for (let i = 0; i < RALLY.length; i++) {
-    const [a, b, h, share] = RALLY[i];
-    if (t <= share || i === RALLY.length - 1) {
-      const k = Math.min(t / share, 1);
-      return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k + 4 * h * k * (1 - k)];
-    }
-    t -= share;
-  }
-  return RALLY[RALLY.length - 1][1];
 }
