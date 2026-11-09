@@ -22,5 +22,5 @@ export function useVersionLine(): string {
     : isDownloading ? ' · downloading a new version'
     : '';
   const problem = checkError ?? downloadError;
-  return `Version ${running}${state}${problem ? ` · update problem: ${problem.message}` : ''}`;
+  return `Test update 1 arrived · Version ${running}${state}${problem ? ` · update problem: ${problem.message}` : ''}`;
 }
